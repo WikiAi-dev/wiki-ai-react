@@ -1,25 +1,28 @@
 // Unified API configuration for both HTTP and WebSocket connections
 // Uses environment variables for flexible backend configuration
 
-// Get API URL from environment variables with fallback
+// HTTP requests go through this Next.js server's own /v1/* rewrite (see
+// next.config.mjs) rather than a direct cross-origin call, so BASE_URL is
+// same-origin (empty) by default — NEXT_PUBLIC_API_URL remains a supported
+// override for anyone who wants the browser to call a backend directly
+// instead, bypassing the proxy.
 const getApiUrlFromEnv = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   if (envUrl) {
     return envUrl.replace(/\/$/, ''); // Remove trailing slash
   }
-  // Fallback to localhost for development
-  return "https://api.wikiai.by";
+  return "";
 };
 
-// Get WebSocket URL from environment variables with fallback
+// WebSocket connections are NOT proxied (Next.js rewrites don't handle the
+// upgrade handshake), so this always needs a real absolute URL the browser
+// can reach directly — it can't be derived from the now-relative API URL.
 const getWsUrlFromEnv = (): string => {
   const envWsUrl = process.env.NEXT_PUBLIC_WS_URL;
   if (envWsUrl) {
     return envWsUrl.replace(/\/$/, ''); // Remove trailing slash
   }
-  // Derive from API URL if not specified
-  const apiUrl = getApiUrlFromEnv();
-  return apiUrl.replace("http://", "ws://").replace("https://", "wss://");
+  return "ws://localhost:9001";
 };
 
 // Get CMS prefix (now /v1/cms for go-core)

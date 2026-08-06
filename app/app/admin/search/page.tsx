@@ -5,7 +5,7 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi, queryApi, pluginsApi, catalogsApi, resolveTenantId } from "@/lib/api"
-import { API_CONFIG } from "@/lib/config"
+import { getWsUrl } from "@/lib/config"
 import { useWebSocket } from "@/lib/use-websocket"
 import { AppHeader } from "@/components/app-header"
 import { Button } from "@/components/ui/button"
@@ -442,11 +442,10 @@ export default function AdminSearchPage() {
     const tenantId = await resolveTenantId(token)
     return new Promise((resolve, reject) => {
       try {
-        // Use the same API base URL from config for WebSocket
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.wikiai.by'
-        const wsProtocol = apiUrl.startsWith('https://') ? 'wss:' : 'ws:'
-        const wsHost = apiUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')
-        const wsUrl = `${wsProtocol}//${wsHost}/v1/query/stream?token=${encodeURIComponent(token || '')}`
+        // WebSocket isn't proxied through the same-origin rewrite (see
+        // next.config.mjs) — it needs the real backend address, which is
+        // what NEXT_PUBLIC_WS_URL (via getWsUrl) is for.
+        const wsUrl = getWsUrl(`/v1/query/stream?token=${encodeURIComponent(token || '')}`)
         
         console.log('Connecting to WebSocket:', wsUrl)
         

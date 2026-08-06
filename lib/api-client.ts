@@ -9,6 +9,8 @@
  * - Request/response interceptors
  */
 
+import { API_CONFIG } from "./config"
+
 export interface CacheEntry<T> {
   data: T
   timestamp: number
@@ -343,7 +345,7 @@ export class ApiClient {
 }
 
 // Create singleton instance
-export const apiClient = new ApiClient(process.env.NEXT_PUBLIC_API_URL || 'https://api.wikiai.by')
+export const apiClient = new ApiClient(API_CONFIG.BASE_URL)
 
 // For debugging in browser console
 if (typeof window !== 'undefined') {
