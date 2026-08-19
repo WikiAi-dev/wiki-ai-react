@@ -285,6 +285,23 @@ export const authApi = {
     }),
 }
 
+export interface UploadFileResult {
+  filename: string
+  status: "success" | "error"
+  documentId?: string
+  // Backend status right after ingest accepts the file - "pending" for a
+  // fresh async ingest (WAI-52), or "duplicate" if it deduped against an
+  // already-indexed document. Absent when status is "error".
+  initialStatus?: string
+  message?: string
+}
+
+export interface UploadResponse {
+  status: "success" | "error"
+  message?: string
+  response?: { results: UploadFileResult[] }
+}
+
 export const filesApi = {
   // GET /files/list returns { status: 'success', response: { documents: [...] } }
   list: async (token: string) => {
@@ -370,7 +387,14 @@ export const filesApi = {
   // (dtm.IngestRequest.Content is a string) - there is no multipart/binary upload path. We read
   // each file's text client-side and reject file types that can't be meaningfully read as text
   // (e.g. PDF/DOCX/images) rather than silently uploading mangled FileReader.readAsText() output.
-  upload: async (token: string, files: File[]) => {
+  //
+  // Ingest is asynchronous (WAI-52): a successful per-file response here means the document was
+  // accepted and is now indexing in the background, not that indexing finished. Each per-file
+  // result carries the document_id + initial status ("pending", or "duplicate" for an
+  // already-indexed dedup hit) so callers can poll filesApi.getStatus() to follow progress
+  // (see hooks/use-upload-status-poll.ts) instead of the old behavior of the whole call just
+  // hanging until every file finished indexing.
+  upload: async (token: string, files: File[]): Promise<UploadResponse> => {
     const tenantId = await resolveTenantId(token)
     if (!tenantId) {
       return { status: "error" as const, message: "Tenant ID is required for file uploads" }
@@ -400,16 +424,31 @@ export const filesApi = {
         reader.readAsText(file)
       })
 
+    const results: UploadFileResult[] = []
+    let hadError = false
+    let firstErrorMessage: string | undefined
+
     for (const file of files) {
       if (isLikelyBinary(file)) {
-        return {
-          status: "error" as const,
-          message: `"${file.name}" looks like a binary file. Only plain-text documents (txt, md, csv, json, html, code, srt, etc.) can be uploaded - the knowledge base stores document content as text.`,
-        }
+        const message = `"${file.name}" looks like a binary file. Only plain-text documents (txt, md, csv, json, html, code, srt, etc.) can be uploaded - the knowledge base stores document content as text.`
+        results.push({ filename: file.name, status: "error", message })
+        hadError = true
+        firstErrorMessage ??= message
+        continue
       }
 
-      const content = await readFileText(file)
-      const result = await apiRequest({
+      let content: string
+      try {
+        content = await readFileText(file)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : `Failed to read file ${file.name}`
+        results.push({ filename: file.name, status: "error", message })
+        hadError = true
+        firstErrorMessage ??= message
+        continue
+      }
+
+      const result = await apiRequest<{ document_id: string; status: string }>({
         url: API_CONFIG.ENDPOINTS.FILES_UPLOAD,
         method: "POST",
         token,
@@ -425,11 +464,41 @@ export const filesApi = {
       })
 
       if (result.status === "error") {
-        return result
+        results.push({ filename: file.name, status: "error", message: result.message })
+        hadError = true
+        firstErrorMessage ??= result.message
+        continue
       }
+
+      results.push({
+        filename: file.name,
+        status: "success",
+        documentId: result.response?.document_id,
+        initialStatus: result.response?.status,
+      })
     }
 
-    return { status: "success" as const }
+    return {
+      status: hadError ? ("error" as const) : ("success" as const),
+      message: hadError ? firstErrorMessage : undefined,
+      response: { results },
+    }
+  },
+
+  // GET /v1/documents/{id}/status - lightweight polling endpoint (WAI-53) for an in-flight
+  // upload's indexing progress. Intended to be called every ~2s per pending/indexing document
+  // (see hooks/use-upload-status-poll.ts), so it deliberately never fetches document content or
+  // chunk data.
+  getStatus: async (token: string, documentId: string) => {
+    const tenantId = await resolveTenantId(token)
+    if (!tenantId) {
+      return { status: "error" as const, message: "Tenant ID is required for status requests" }
+    }
+    return apiRequest<{ document_id: string; status: string; chunk_count: number; updated_at: string }>({
+      url: `${API_CONFIG.ENDPOINTS.FILES_LIST}/${encodeURIComponent(documentId)}/status`,
+      token,
+      params: { tenant_id: tenantId },
+    })
   },
 
   // PATCH/PUT /v1/documents/{id}
