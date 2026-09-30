@@ -334,16 +334,16 @@
     animation-delay: var(--wl-delay, 0ms);
   }
 
-  /* Call transcript: hidden until the panel is on screen, then played line by line. */
-  .wl-call:not([data-started="true"]) > li {
+  /* Conversation demos: hidden until the panel is on screen, then played line by line. */
+  .wl-play:not([data-started="true"]) > li {
     opacity: 0;
   }
-  .wl-call[data-started="true"] > li {
+  .wl-play[data-started="true"] > li {
     animation: wl-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--wl-delay, 0ms);
   }
 
-  /* Only used for real live state (an active call). */
+  /* Only used for real live state (the update feed). */
   .wl-live-dot {
     animation: wl-pulse 1.6s ease-in-out infinite;
   }
