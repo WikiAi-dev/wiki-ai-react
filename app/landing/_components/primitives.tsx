@@ -16,6 +16,11 @@ const buttonVariants = {
   inverse: "bg-primary-foreground text-primary hover:bg-primary-foreground/90",
 } as const;
 
+/** Button classes, for anchors and buttons that can't use ButtonLink (external links, actions). */
+export function buttonClasses(variant: keyof typeof buttonVariants = "primary", className?: string) {
+  return cn(buttonBase, buttonVariants[variant], className);
+}
+
 export function ButtonLink({
   href,
   variant = "primary",
@@ -28,7 +33,7 @@ export function ButtonLink({
   children: ReactNode;
 }) {
   return (
-    <Link href={href} className={cn(buttonBase, buttonVariants[variant], className)}>
+    <Link href={href} className={buttonClasses(variant, className)}>
       {children}
     </Link>
   );

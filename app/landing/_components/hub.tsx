@@ -2,13 +2,13 @@
 
 import type { CSSProperties, PointerEvent, ReactNode } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { FileText, Headset, MessagesSquare, PhoneCall, Search } from "lucide-react";
+import { Database, FileText, Headset, MessagesSquare, PhoneCall, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCopy } from "../_lib/copy";
 import { BrandLogo } from "./primitives";
 
 export type Focus = "connect" | "sync" | "call" | "operator" | "chat" | "search";
-type TileId = "bitrix24" | "1c" | "docs" | "telephony" | "call" | "operator" | "chat" | "search";
+type TileId = "bitrix24" | "1c" | "docs" | "custom" | "call" | "operator" | "chat" | "search";
 type Point = { x: number; y: number };
 
 /*
@@ -26,7 +26,7 @@ const SOURCES: (Point & { id: TileId })[] = [
   { id: "bitrix24", x: 8, y: 3 },
   { id: "1c", x: 22, y: 3 },
   { id: "docs", x: 8, y: 10.5 },
-  { id: "telephony", x: 22, y: 10.5 },
+  { id: "custom", x: 22, y: 10.5 },
 ];
 const CHANNELS: (Point & { id: TileId })[] = [
   { id: "call", x: 8, y: 29.5 },
@@ -37,7 +37,7 @@ const CHANNELS: (Point & { id: TileId })[] = [
 
 const ACTIVE: Record<Focus, TileId[]> = {
   connect: ["bitrix24", "1c"],
-  sync: ["bitrix24", "1c", "docs", "telephony"],
+  sync: ["bitrix24", "1c", "docs", "custom"],
   call: ["call"],
   operator: ["operator"],
   chat: ["chat"],
@@ -85,11 +85,12 @@ export function Hub({ focus }: { focus: Focus }) {
   const sourceLabel = (id: TileId): ReactNode => {
     if (id === "bitrix24") return <BrandLogo id="bitrix24" decorative className="h-[1.1em]" />;
     if (id === "1c") return <BrandLogo id="1c" decorative className="h-[1.5em]" />;
-    const Icon = id === "docs" ? FileText : PhoneCall;
+    // "custom" stands for any other system the customer connects.
+    const Icon = id === "docs" ? FileText : Database;
     return (
       <>
         <Icon className="size-[1.1em] text-primary" strokeWidth={1.75} aria-hidden />
-        {t(id === "docs" ? "hero.flow.docs" : "hero.flow.telephony")}
+        {t(id === "docs" ? "hero.flow.docs" : "hero.flow.custom")}
       </>
     );
   };
@@ -97,7 +98,7 @@ export function Hub({ focus }: { focus: Focus }) {
   return (
     <div className="hub" onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
       <p className="sr-only">
-        {t("hero.flow.sourcesLabel")}: Bitrix24, 1C, {t("hero.flow.docs")}, {t("hero.flow.telephony")}. {t("hero.flow.channelsLabel")}:{" "}
+        {t("hero.flow.sourcesLabel")}: Bitrix24, 1C, {t("hero.flow.docs")}, {t("hero.flow.custom")}. {t("hero.flow.channelsLabel")}:{" "}
         {channels.map((c) => c.label).join(", ")}.
       </p>
       <div className="hub-canvas" aria-hidden>

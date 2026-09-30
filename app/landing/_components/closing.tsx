@@ -29,15 +29,29 @@ export function FinalCta() {
   );
 }
 
-export function Footer() {
+/** Site footer. `compact` keeps only the copyright bar (used on one-screen pages). */
+export function Footer({ compact = false }: { compact?: boolean }) {
   const { t } = useCopy();
+  const copyright = (
+    <p className="text-sm text-muted-foreground">
+      © 2026 WikiAI. {t("footer.rights")}
+    </p>
+  );
+  if (compact) {
+    return (
+      <footer className="border-t border-border/70">
+        <Container className="py-4">{copyright}</Container>
+      </footer>
+    );
+  }
+
   const columns = [
     {
       title: t("footer.product"),
       links: [
-        { href: "#systems", label: t("menu.systems") },
-        { href: "#how", label: t("menu.how") },
-        { href: "#pilot", label: t("menu.pilot") },
+        { href: "/landing#systems", label: t("menu.systems") },
+        { href: "/landing#how", label: t("menu.how") },
+        { href: "/landing#pilot", label: t("menu.pilot") },
         { href: "/pricing", label: t("footer.pricing") },
       ],
     },
@@ -73,11 +87,7 @@ export function Footer() {
           </div>
         ))}
       </Container>
-      <Container className="border-t border-border/70 py-6">
-        <p className="text-sm text-muted-foreground">
-          © 2026 WikiAI. {t("footer.rights")}
-        </p>
-      </Container>
+      <Container className="border-t border-border/70 py-6">{copyright}</Container>
     </footer>
   );
 }
