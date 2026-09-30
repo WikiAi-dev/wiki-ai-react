@@ -1,11 +1,11 @@
 "use client";
 
-import { BookOpenCheck, Library, ShoppingCart, Timer, type LucideIcon } from "lucide-react";
+import { GraduationCap, Library, MessagesSquare, Timer, type LucideIcon } from "lucide-react";
 import { useCopy } from "../_lib/copy";
 import { Reveal } from "./motion";
 import { Container, SectionTitle } from "./primitives";
 
-const ICONS: LucideIcon[] = [Timer, ShoppingCart, BookOpenCheck, Library];
+const ICONS: LucideIcon[] = [Timer, MessagesSquare, GraduationCap, Library];
 
 export function Results() {
   const { t, get } = useCopy();

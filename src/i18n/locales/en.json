@@ -801,9 +801,13 @@
       "home": "WikiAI home"
     },
     "hero": {
-      "subtitle": "WikiAI connects to Bitrix24, 1C, telephony and your documents. Every answer comes from your own data, always up to date.",
+      "subtitle": "WikiAI brings data from Bitrix24, 1C, documents and your other systems into one knowledge base. Staff, customers and your services get accurate answers with a link to the source.",
       "lead": "The knowledge base that",
       "phrases": [
+        {
+          "text": "gathers all company knowledge",
+          "focus": "gather"
+        },
         {
           "text": "connects to Bitrix24 and 1C",
           "focus": "connect"
@@ -813,138 +817,169 @@
           "focus": "sync"
         },
         {
-          "text": "answers customer calls",
-          "focus": "call"
-        },
-        {
-          "text": "prompts your operators",
-          "focus": "operator"
-        },
-        {
-          "text": "answers shoppers in chat",
-          "focus": "chat"
-        },
-        {
           "text": "helps staff find information",
-          "focus": "search"
+          "focus": "team"
+        },
+        {
+          "text": "answers customers 24/7",
+          "focus": "clients"
+        },
+        {
+          "text": "shares knowledge with AI agents",
+          "focus": "api"
         }
       ],
       "flow": {
         "sourcesLabel": "Your systems",
-        "channelsLabel": "Where it answers",
+        "channelsLabel": "Who gets answers",
         "docs": "Documents",
         "custom": "Your sources",
         "channelItems": [
           {
-            "id": "call",
-            "label": "Calls"
+            "id": "team",
+            "label": "Staff"
           },
           {
-            "id": "operator",
-            "label": "Operators"
+            "id": "api",
+            "label": "API & AI agents"
           },
           {
             "id": "chat",
             "label": "Website chat"
           },
           {
-            "id": "search",
-            "label": "Search"
+            "id": "call",
+            "label": "Calls"
           }
         ]
       }
     },
-    "call": {
-      "incoming": "Incoming call",
-      "live": "On the line",
-      "replay": "Replay",
-      "customer": "Customer",
-      "operator": "Operator",
-      "hint": "WikiAI prompt",
-      "caption": "What the operator sees during a call",
-      "bot": "WikiAI",
-      "handoff": "Call transferred to an operator with the order number",
-      "botLines": [
-        {
-          "type": "customer",
-          "text": "Hi, where is my order 48213?"
-        },
-        {
-          "type": "bot",
-          "text": "Your order is with the courier. Delivery is today between 2 and 6 pm.",
-          "source": "1C, order status"
-        },
-        {
-          "type": "customer",
-          "text": "Can I move the delivery to tomorrow?"
-        },
-        {
-          "type": "bot",
-          "text": "An operator handles rescheduling. I'm putting you through and passing on your order number.",
-          "source": "Delivery rules, section 4"
-        },
-        {
-          "type": "handoff"
-        }
-      ],
-      "operatorLines": [
-        {
-          "type": "customer",
-          "text": "Hi! Is the R7 robot vacuum in stock? I'd like to pick it up today."
-        },
-        {
-          "type": "hint",
-          "title": "In stock",
-          "text": "4 units at the Minsk warehouse. Pickup today after 4 pm.",
-          "source": "1C, warehouse stock"
-        },
-        {
-          "type": "operator",
-          "text": "Yes, it's in stock. You can pick it up today after 4 pm."
-        },
-        {
-          "type": "customer",
-          "text": "And if it doesn't work for me, can I return it?"
-        },
-        {
-          "type": "hint",
-          "title": "Returns",
-          "text": "Within 14 days if the packaging and receipt are kept. Returns are handled at the pickup point.",
-          "source": "Returns procedure, section 3"
-        }
-      ]
-    },
     "pains": {
-      "title": "What slows your call center down",
+      "title": "Where company knowledge gets lost",
       "items": [
         {
-          "title": "Customers wait on hold",
-          "desc": "The operator searches guides, Bitrix24 and 1C while the customer waits or hangs up."
+          "title": "Information is scattered across systems",
+          "desc": "Prices live in 1C, clients in Bitrix24, procedures in folders and chats. To find an answer, people open five apps or interrupt a colleague."
         },
         {
-          "title": "A month to train a new hire",
-          "desc": "A new operator needs a month to learn the procedures, prices and return rules."
+          "title": "Documents go out of date",
+          "desc": "A rule changes in one place, while staff and customers keep getting the old answer."
         },
         {
           "title": "Knowledge leaves with people",
-          "desc": "With high turnover, experienced operators leave and new hires have to build that experience from scratch."
+          "desc": "Experience lives in people's heads. When someone leaves, a new hire needs a month to figure everything out."
         }
       ]
     },
     "how": {
-      "title": "How WikiAI helps",
-      "sip": {
-        "title": "Connects to your phone system over SIP",
-        "desc": "Works with your existing PBX. Numbers, operators and call routing stay as they are.",
-        "flow": [
-          "Customer",
-          "Your PBX",
-          "Operator and WikiAI"
+      "title": "One knowledge base for the whole company",
+      "subtitle": "Staff find answers in seconds, customers get them in chat and by phone, and your services and AI agents get them through the API.",
+      "ask": {
+        "title": "Answers staff in every department",
+        "desc": "Ask in plain words. WikiAI finds the answer in your connected systems and shows where it came from.",
+        "assistant": "WikiAI assistant",
+        "connected": "Bitrix24 · 1C · Documents · Google Drive",
+        "status": "Checked all connected sources",
+        "placeholder": "Ask anything about the company",
+        "replay": "Replay",
+        "tabs": [
+          {
+            "id": "sales",
+            "label": "Sales",
+            "role": "Sales manager",
+            "turns": [
+              {
+                "question": "What discount can we give a wholesale client on coffee machines?",
+                "answer": "7% from 10 units, 12% from 30 units. There are 46 coffee machines in stock, ready to ship tomorrow.",
+                "sources": [
+                  "1C, prices and stock",
+                  "Bitrix24, wholesale terms"
+                ]
+              },
+              {
+                "question": "What if the client picks it up themselves?",
+                "answer": "Then add another 2% for pickup. The Minsk warehouse is open 9:00 to 20:00.",
+                "sources": [
+                  "Wholesale price list, page 2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "support",
+            "label": "Support",
+            "role": "Support agent",
+            "turns": [
+              {
+                "question": "A customer wants to return a vacuum 10 days after buying it. Is that allowed?",
+                "answer": "Yes, returns are accepted within 14 days if the box and receipt are kept. The return is handled at the pickup point.",
+                "sources": [
+                  "Returns policy, section 3"
+                ]
+              },
+              {
+                "question": "What if they lost the receipt?",
+                "answer": "Find the order in 1C by the customer's phone number and print a copy of the receipt. The return goes through with it.",
+                "sources": [
+                  "Returns policy, section 5"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "warehouse",
+            "label": "Warehouse",
+            "role": "Logistics",
+            "turns": [
+              {
+                "question": "Which warehouse has the most R7 robot vacuums?",
+                "answer": "Gomel has 12, Minsk 4 and Brest 2. The next delivery arrives on October 3.",
+                "sources": [
+                  "1C, warehouse stock",
+                  "1C, delivery schedule"
+                ]
+              },
+              {
+                "question": "How long is a transfer from Gomel to Minsk?",
+                "answer": "2 business days. The truck between warehouses leaves on Tuesdays and Fridays.",
+                "sources": [
+                  "Warehouse transfer procedure"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "hr",
+            "label": "HR",
+            "role": "New hire",
+            "turns": [
+              {
+                "question": "How do I request time off?",
+                "answer": "Submit a request in Bitrix24 at least 2 weeks ahead. Your manager approves it within 3 business days.",
+                "sources": [
+                  "Leave policy",
+                  "Bitrix24, Time off workflow"
+                ]
+              },
+              {
+                "question": "Who approves it if my manager is on leave?",
+                "answer": "Their deputy. The request moves to them automatically.",
+                "sources": [
+                  "Leave policy, section 4"
+                ]
+              }
+            ]
+          }
         ]
       },
-      "chat": {
-        "title": "Answers shoppers in chat 24/7",
-        "desc": "The chat on your website answers questions about products, delivery and returns at night and on weekends, when operators are off.",
+      "clients": {
+        "title": "Answers customers 24/7",
+        "desc": "In your website chat, on Telegram and by phone. When a person is needed, it hands the conversation to your team.",
+        "channels": [
+          "Website",
+          "Telegram",
+          "Phone (SIP)"
+        ],
         "widget": "Website chat",
         "status": "Online 24/7",
         "time": "23:40",
@@ -952,17 +987,17 @@
         "answer": "By courier in 1-2 business days for 9 BYN. Delivery is free for orders over 150 BYN.",
         "source": "Delivery terms, section 2"
       },
-      "calls": {
-        "title": "Answers calls and prompts operators",
-        "modes": {
-          "operator": "Operator prompts",
-          "bot": "Voice bot"
-        }
+      "api": {
+        "title": "API for services and AI agents",
+        "desc": "Your website, CRM or AI agent gets WikiAI's answers, with sources, through the API.",
+        "query": "Return policy",
+        "overview": "14 days with a receipt",
+        "source": "Returns policy.pdf"
       }
     },
     "systems": {
       "title": "Connect the systems you already use",
-      "subtitle": "WikiAI pulls data from your systems on its own. Change a price in 1C or a rule in a guide, and the operator sees the new answer right away.",
+      "subtitle": "WikiAI pulls data from your systems on its own. Change a price in 1C or a rule in a procedure, and everyone gets the new answer right away.",
       "more": "Also Google Drive, Confluence, email, Telegram and OpenCart. Other systems and AI agents connect through the API.",
       "feedTitle": "Updates in the last hour",
       "status": "Updated",
@@ -973,19 +1008,23 @@
         },
         {
           "system": "Bitrix24",
-          "text": "New script for returns added"
+          "text": "New sales script added"
         },
         {
           "system": "1C",
           "text": "Minsk warehouse stock updated"
         },
         {
-          "system": "Telephony",
-          "text": "Transcripts of new calls added"
+          "system": "Google Drive",
+          "text": "New price list added"
         },
         {
           "system": "Guides",
           "text": "Regional delivery terms changed"
+        },
+        {
+          "system": "Confluence",
+          "text": "Leave policy updated"
         },
         {
           "system": "Bitrix24",
@@ -996,7 +1035,7 @@
         {
           "id": "bitrix24",
           "name": "Bitrix24",
-          "data": "Deals, clients, sales scripts"
+          "data": "Deals, clients, tasks and workflows"
         },
         {
           "id": "1c",
@@ -1006,12 +1045,12 @@
         {
           "id": "docs",
           "name": "Documents",
-          "data": "Guides, procedures and price lists in PDF, Word and Excel"
+          "data": "Procedures, guides and price lists in PDF, Word and Excel"
         },
         {
-          "id": "telephony",
-          "name": "SIP telephony",
-          "data": "Calls and their transcripts"
+          "id": "custom",
+          "name": "Your sources",
+          "data": "Your website, your own databases and any service through the API"
         }
       ],
       "feedTimes": [
@@ -1025,38 +1064,38 @@
       "title": "What changes for your business",
       "items": [
         {
-          "title": "Shorter calls",
-          "desc": "Operators don't have to put customers on hold to find an answer."
+          "title": "Answers in seconds",
+          "desc": "Staff don't dig through folders or interrupt colleagues: WikiAI answers right away and links to the source."
         },
         {
-          "title": "More orders",
-          "desc": "Customers get an accurate answer right away and order before they change their mind."
+          "title": "Customers don't wait",
+          "desc": "Shoppers get an accurate answer day and night and place the order before they change their mind."
         },
         {
-          "title": "Training in days, not a month",
-          "desc": "New operators take calls sooner, with prompts guiding them through your procedures."
+          "title": "New hires up to speed in days",
+          "desc": "A new hire asks WikiAI instead of hunting for a mentor, and gets up to speed in days, not a month."
         },
         {
           "title": "Knowledge stays in the company",
-          "desc": "Guides, answers and call transcripts are kept in one place and don't leave with your staff."
+          "desc": "Data, procedures and your team's experience live in one place and don't leave with people."
         }
       ]
     },
     "pilot": {
-      "title": "Try it on your own call center for 2 weeks",
+      "title": "Try it on your own data for 2 weeks",
       "subtitle": "No lengthy rollout or approvals. After the pilot, the decision is yours.",
       "steps": [
         {
           "title": "Connect",
-          "desc": "We connect Bitrix24, 1C and your phone system and load your guides and scripts."
+          "desc": "We connect Bitrix24, 1C, documents and your other sources. No developer needed."
         },
         {
           "title": "Run",
-          "desc": "For two weeks, operators take calls with prompts and the chat answers shoppers on your site."
+          "desc": "For two weeks your staff ask WikiAI questions and customers get answers in your website chat."
         },
         {
           "title": "Decide",
-          "desc": "You compare call length and orders, then decide whether to continue."
+          "desc": "You see how much time your team saves and how fast customers get answers, then decide whether to continue."
         }
       ]
     },
@@ -1065,37 +1104,37 @@
       "subtitle": "Anything else? We'll answer it when we discuss the pilot.",
       "items": [
         {
-          "q": "Do we need to change our phone system or numbers?",
-          "a": "No. WikiAI connects to your PBX over SIP. Your numbers and call routing stay the same."
+          "q": "Which systems can we connect?",
+          "a": "Bitrix24, 1C, documents in PDF, Word and Excel, Google Drive, Confluence, email, Telegram and OpenCart. Other systems and AI agents connect through the API."
         },
         {
           "q": "Do we need a developer to set it up?",
-          "a": "No. Bitrix24, 1C and telephony connect through ready-made connectors, and during the pilot we help you set everything up."
+          "a": "No. Systems connect through ready-made connectors, and during the pilot we help you set everything up."
         },
         {
-          "q": "What if a prompt is wrong?",
-          "a": "WikiAI answers only from your documents and data and shows the source of every answer, so the operator can check it on the spot. If there's no reliable answer, WikiAI says so."
+          "q": "How does the data stay up to date?",
+          "a": "Automatically. When prices and stock change in 1C, deals in Bitrix24 or your documents, WikiAI picks up the changes on its own."
         },
         {
-          "q": "How do prices, stock and guides stay up to date?",
-          "a": "Automatically. When data changes in 1C, deals in Bitrix24 or your guides, WikiAI picks up the changes on its own."
+          "q": "What if WikiAI gets an answer wrong?",
+          "a": "WikiAI answers only from your data and shows the source of every answer, so it's easy to check. If there's no reliable answer, WikiAI says so."
         },
         {
-          "q": "Where is our data stored?",
-          "a": "In our cloud or on your own servers. Each company's data is stored separately, with role-based access."
+          "q": "Where is our data stored, and who can see it?",
+          "a": "Each company's data is stored separately, in our cloud or on your own servers. Only your staff can see it, with role-based access."
         },
         {
-          "q": "Can we connect other systems?",
-          "a": "Yes. There are connectors for Google Drive, Confluence, email, Telegram and OpenCart, and any other system or AI agent can get answers from WikiAI through the API."
+          "q": "Can we connect our phone system?",
+          "a": "Yes. WikiAI connects to your PBX over SIP: it answers customers by voice and prompts your team during calls. Your numbers and call routing stay the same."
         }
       ]
     },
     "cta": {
-      "title": "Start a pilot on your own call center",
-      "subtitle": "Two weeks of prompts on your real calls, plus the website chat. Then you decide."
+      "title": "Bring your company's knowledge into one place",
+      "subtitle": "Two weeks on your real data: we connect your systems and your team starts getting answers. Then you decide."
     },
     "footer": {
-      "tagline": "A knowledge base that connects to Bitrix24, 1C and telephony and answers customers and staff.",
+      "tagline": "Your company's knowledge base. It gathers data from Bitrix24, 1C and documents and answers staff, customers and AI agents.",
       "product": "Product",
       "company": "Company",
       "pricing": "Pricing",
@@ -1106,9 +1145,9 @@
     },
     "contact": {
       "metaTitle": "WikiAI | Contact",
-      "metaDescription": "Contact WikiAI on Telegram, by email or by phone to plan a pilot for your call center.",
-      "title": "Let's plan a pilot for your call center",
-      "subtitle": "Message or call us. We'll show how WikiAI connects to Bitrix24, 1C and your phone system, and agree on a start date.",
+      "metaDescription": "Contact WikiAI on Telegram, by email or by phone to plan a pilot for your company.",
+      "title": "Let's plan a pilot for your company",
+      "subtitle": "Message or call us. We'll show how WikiAI connects to Bitrix24, 1C and your documents, and agree on a start date.",
       "name": "Afanasieff Ivan",
       "tagline": "Pilots, demos and setup",
       "labels": {
@@ -1129,15 +1168,15 @@
       "steps": [
         {
           "title": "We talk",
-          "desc": "We go over your systems, calls and call-center goals."
+          "desc": "We go over your systems, data and your team's goals."
         },
         {
           "title": "We connect",
-          "desc": "We connect Bitrix24, 1C and your phone system to WikiAI."
+          "desc": "We connect Bitrix24, 1C and your documents to WikiAI."
         },
         {
           "title": "The pilot starts",
-          "desc": "Two weeks on your real calls. The decision is yours."
+          "desc": "Two weeks on your real data. The decision is yours."
         }
       ]
     }
