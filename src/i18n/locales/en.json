@@ -771,21 +771,6 @@
     "uploadDocuments": "Upload Documents"
   },
   "landing": {
-    "nav": {
-      "features": "Features",
-      "howItWorks": "How It Works",
-      "integrations": "Integrations",
-      "pricing": "Pricing",
-      "about": "About",
-      "contact": "Contact",
-      "signIn": "Sign In",
-      "brochure": "Brochure",
-      "account": "Account",
-      "getStarted": "Get Started →",
-      "watchDemo": "▶ Watch Demo",
-      "toggleTheme": "Toggle theme",
-      "language": "Language"
-    },
     "menu": {
       "how": "How it works",
       "systems": "Integrations",
@@ -1137,9 +1122,6 @@
       "tagline": "Your company's knowledge base. It gathers data from Bitrix24, 1C and documents and answers staff, customers and AI agents.",
       "product": "Product",
       "company": "Company",
-      "pricing": "Pricing",
-      "about": "About",
-      "blog": "Blog",
       "contact": "Contact",
       "rights": "All rights reserved."
     },
@@ -1179,168 +1161,6 @@
           "desc": "Two weeks on your real data. The decision is yours."
         }
       ]
-    }
-  },
-  "about": {
-    "hero": {
-      "badge": "About WikiAI",
-      "title": "Transforming Knowledge into ",
-      "titleHighlight": "Actionable Insights",
-      "subtitle": "We're on a mission to help organizations unlock their collective intelligence through AI-powered knowledge management that's intuitive, powerful, and secure."
-    },
-    "stats": {
-      "activeUsers": "Active Users",
-      "enterpriseCustomers": "Enterprise Customers", 
-      "uptime": "Uptime",
-      "customerRating": "Customer Rating"
-    },
-    "mission": {
-      "title": "Our Mission",
-      "subtitle1": "To democratize knowledge management by making it accessible, intelligent, and actionable for every organization.",
-      "subtitle2": "We believe that every team deserves to have their collective knowledge at their fingertips, enhanced by AI that understands context and provides intelligent insights.",
-      "joinJourney": "Join Our Journey",
-      "rating": "4.9/5 rating"
-    },
-    "values": {
-      "title": "Our Values",
-      "subtitle": "The principles that guide everything we do, from product development to customer support.",
-      "innovation": {
-        "title": "Innovation",
-        "description": "Continuously pushing the boundaries of what's possible with AI and knowledge management."
-      },
-      "customerCentric": {
-        "title": "Customer-Centric", 
-        "description": "Our customers' success is our success. We build solutions that solve real problems."
-      },
-      "passion": {
-        "title": "Passion",
-        "description": "We're passionate about helping teams unlock their collective knowledge."
-      },
-      "excellence": {
-        "title": "Excellence",
-        "description": "Committed to delivering the highest quality products and experiences."
-      }
-    },
-    "journey": {
-      "title": "Our Journey",
-      "subtitle": "From a simple idea to a platform powering thousands of teams worldwide."
-    },
-    "team": {
-      "title": "Meet Our Team",
-      "subtitle": "A diverse group of passionate individuals committed to revolutionizing knowledge management."
-    },
-    "joinUs": {
-      "title": "Ready to Join Us?",
-      "subtitle": "We're always looking for talented people who share our passion for innovation and excellence.",
-      "viewPositions": "View Open Positions",
-      "contactUs": "Contact Us"
-    }
-  },
-  "pricing": {
-    "hero": {
-      "badge": "Pricing Plans",
-      "title": "Simple, Transparent ",
-      "titleHighlight": "Pricing",
-      "subtitle": "Choose the perfect plan for your team. Start with a free trial and scale as you grow.",
-      "monthly": "Monthly",
-      "annual": "Annual",
-      "save": "Save 20%"
-    },
-    "plans": {
-      "starter": {
-        "name": "Starter",
-        "description": "Perfect for small teams getting started",
-        "mostPopular": "Most Popular",
-        "buttonText": "Start Free Trial"
-      },
-      "professional": {
-        "name": "Professional", 
-        "description": "Ideal for growing teams and businesses",
-        "buttonText": "Get Started"
-      },
-      "enterprise": {
-        "name": "Enterprise",
-        "description": "Complete solution for large organizations", 
-        "buttonText": "Contact Sales"
-      }
-    },
-    "features": {
-      "upToUsers": "Up to {{count}} users",
-      "documents": "documents",
-      "basicAiSearch": "Basic AI search",
-      "advancedAiSearch": "Advanced AI search & answers",
-      "emailSupport": "Email support",
-      "prioritySupport": "Priority support",
-      "phoneSupport": "24/7 phone support",
-      "storage": "storage",
-      "standardSecurity": "Standard security",
-      "realTimeCollaboration": "Real-time collaboration",
-      "customIntegrations": "Custom integrations",
-      "advancedAnalytics": "Advanced analytics",
-      "dedicatedAccountManager": "Dedicated account manager",
-      "customAiTraining": "Custom AI training",
-      "slaGuarantee": "SLA guarantee",
-      "unlimitedUsers": "Unlimited users",
-      "unlimitedDocuments": "Unlimited documents",
-      "unlimitedStorage": "Unlimited storage",
-      "advancedSecurity": "Advanced security & compliance",
-      "onpremiseDeployment": "On-premise deployment option"
-    },
-    "comparison": {
-      "title": "Compare Features",
-      "subtitle": "Detailed comparison of all features across our plans.",
-      "feature": "Feature",
-      "users": "Users",
-      "documents": "Documents", 
-      "storage": "Storage",
-      "aiSearch": "AI Search",
-      "support": "Support",
-      "integrations": "Integrations",
-      "analytics": "Analytics",
-      "sla": "SLA"
-    },
-    "faq": {
-      "title": "Frequently Asked Questions",
-      "subtitle": "Got questions? We've got answers.",
-      "question1": "Can I change plans anytime?",
-      "answer1": "Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.",
-      "question2": "What happens if I exceed my limits?",
-      "answer2": "We'll notify you when you're approaching your limits. You can upgrade your plan or purchase additional storage/users as needed.",
-      "question3": "Do you offer discounts for non-profits?",
-      "answer3": "Yes, we offer a 50% discount for qualified non-profit organizations. Contact our sales team for more information.",
-      "question4": "Is my data secure?",
-      "answer4": "Absolutely. We use enterprise-grade encryption, regular security audits, and comply with GDPR, SOC 2, and other major compliance standards.",
-      "question5": "Can I try before I buy?",
-      "answer5": "Yes! All plans come with a 14-day free trial. No credit card required to start your trial."
-    },
-    "cta": {
-      "title": "Ready to Get Started?",
-      "subtitle": "Join thousands of teams already using WikiAI to transform their knowledge management.",
-      "startFreeTrial": "Start Free Trial",
-      "contactSales": "Contact Sales"
-    }
-  },
-  "blog": {
-    "title": "WikiAI Blog",
-    "description": "Discover the latest insights, tutorials, and updates on AI-powered knowledge management",
-    "searchPlaceholder": "Search articles...",
-    "featured": "Featured Articles",
-    "allCategories": "All Categories",
-    "latest": "Latest",
-    "popular": "Most Popular",
-    "oldest": "Oldest",
-    "articles": "articles",
-    "noArticles": "No articles found",
-    "previous": "Previous",
-    "next": "Next",
-    "newsletter": {
-      "title": "Stay Updated",
-      "description": "Get the latest articles and insights delivered to your inbox",
-      "placeholder": "Enter your email",
-      "subscribe": "Subscribe",
-      "subscribing": "Subscribing...",
-      "success": "Successfully subscribed!",
-      "error": "Failed to subscribe. Please try again."
     }
   }
 }
