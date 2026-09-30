@@ -33,7 +33,7 @@ export function Hero() {
         <div>
           <h1 className="wl-enter text-[1.9rem] font-semibold leading-[1.12] tracking-tight text-foreground sm:text-5xl lg:text-[3.1rem] xl:text-[3.4rem]">
             <span className="sr-only">{`${lead} ${phrases.map((p) => p.text).join(", ")}`}</span>
-            <span aria-hidden className="block">
+            <span aria-hidden className="block text-balance">
               {lead}
             </span>
             {/* Every phrase shares one grid cell, so the heading is as tall as the longest phrase and never jumps. */}
@@ -67,7 +67,7 @@ export function Hero() {
           </div>
         </div>
         <div className="wl-enter mx-auto w-full max-w-[34rem]" style={delay(200)}>
-          <Hub focus={phrases[current]?.focus ?? "connect"} />
+          <Hub focus={phrases[current]?.focus ?? "gather"} />
         </div>
       </Container>
     </section>
