@@ -528,7 +528,7 @@ export default function RoleBasedDashboard() {
                       <Search className="w-4 h-4 text-blue-500" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Query performed</p>
-                        <p className="text-xs text-muted-foreground">Search for "pricing information" • 3 hours ago</p>
+                        <p className="text-xs text-muted-foreground">Search for &quot;pricing information&quot; • 3 hours ago</p>
                       </div>
                     </div>
                     

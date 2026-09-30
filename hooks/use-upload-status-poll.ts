@@ -1,72 +1,91 @@
-import { useState, useRef, useCallback, useEffect } from "react"
-import { filesApi, type FileUploadResult } from "@/lib/api"
+"use client"
 
-export type UploadStatus = "pending" | "indexing" | "indexed" | "failed" | "duplicate" | "error"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { filesApi } from "@/lib/api"
 
-export interface UploadItem {
-  id: string
-  fileName: string
-  documentId: string | null
-  status: UploadStatus
-  error?: string
+export type UploadStatusValue = "pending" | "indexing" | "indexed" | "failed" | "duplicate" | "error"
+
+export interface UploadStatusEntry {
+  filename: string
+  documentId?: string
+  status: UploadStatusValue
+  message?: string
 }
 
-const POLL_INTERVAL_MS = 2000
-const TERMINAL = new Set<UploadStatus>(["indexed", "failed", "duplicate", "error"])
+const POLL_INTERVAL_MS = 5000
+const TERMINAL_STATUSES: UploadStatusValue[] = ["indexed", "failed", "duplicate", "error"]
 
-// Tracks a set of just-uploaded files through pending -> indexing ->
-// indexed/failed by polling filesApi.getStatus() for each one until it
-// reaches a terminal state. One long-lived interval per mount (matching
-// cms-system-health.tsx's always-on-heartbeat pattern) that's a no-op
-// whenever nothing is in flight, rather than tearing an interval down and
-// rebuilding it on every items change.
+// Frontend counterpart to knowledge-service's async ingest (WAI-52) and its
+// GET /v1/documents/{id}/status endpoint (WAI-53). Ingest now returns almost
+// immediately with status "pending" instead of blocking until indexing
+// finishes, so this hook polls each in-flight upload's status every ~5s
+// until it reaches a terminal state (indexed/failed/duplicate), letting the
+// UI show live pending -> indexing -> indexed/failed progress per file.
 export function useUploadStatusPoll(token: string | null) {
-  const [items, setItems] = useState<UploadItem[]>([])
-  const itemsRef = useRef(items)
-  itemsRef.current = items
+  const [entries, setEntries] = useState<UploadStatusEntry[]>([])
+  const timersRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
 
-  const addResults = useCallback((results: FileUploadResult[]) => {
-    const newItems: UploadItem[] = results.map((r) => ({
-      id: crypto.randomUUID(),
-      fileName: r.file.name,
-      documentId: r.documentId,
-      status: r.documentId ? ((r.status as UploadStatus) || "pending") : "error",
-      error: r.error,
-    }))
-    setItems((prev) => [...prev, ...newItems])
+  const stopPolling = useCallback((documentId: string) => {
+    const timer = timersRef.current.get(documentId)
+    if (timer) {
+      clearInterval(timer)
+      timersRef.current.delete(documentId)
+    }
   }, [])
 
-  const clearTerminal = useCallback(() => {
-    setItems((prev) => prev.filter((i) => !TERMINAL.has(i.status)))
-  }, [])
+  // Registers a fresh batch of upload results and starts polling any of
+  // them that aren't already in a terminal state.
+  const track = useCallback(
+    (initial: UploadStatusEntry[]) => {
+      setEntries((prev) => [...prev, ...initial])
 
-  useEffect(() => {
-    if (!token) return
+      if (!token) return
 
-    const interval = setInterval(async () => {
-      const inFlight = itemsRef.current.filter((i) => i.documentId && !TERMINAL.has(i.status))
-      if (inFlight.length === 0) return
+      for (const entry of initial) {
+        const documentId = entry.documentId
+        if (!documentId || TERMINAL_STATUSES.includes(entry.status)) continue
+        if (timersRef.current.has(documentId)) continue
 
-      const updates = await Promise.all(
-        inFlight.map(async (item) => {
-          const r = await filesApi.getStatus(token, item.documentId!)
-          if (r.status === "success" && r.response?.document) {
-            return { id: item.id, status: r.response.document.status as UploadStatus }
+        const timer = setInterval(async () => {
+          const result = await filesApi.getStatus(token, documentId)
+          if (result.status !== "success" || !result.response) return
+
+          const nextStatus = (result.response.status as UploadStatusValue) || "pending"
+          setEntries((prev) => prev.map((e) => (e.documentId === documentId ? { ...e, status: nextStatus } : e)))
+
+          if (TERMINAL_STATUSES.includes(nextStatus)) {
+            stopPolling(documentId)
           }
-          return null
-        })
-      )
+        }, POLL_INTERVAL_MS)
 
-      setItems((prev) =>
-        prev.map((item) => {
-          const update = updates.find((u) => u?.id === item.id)
-          return update ? { ...item, status: update.status } : item
-        })
-      )
-    }, POLL_INTERVAL_MS)
+        timersRef.current.set(documentId, timer)
+      }
+    },
+    [token, stopPolling],
+  )
 
-    return () => clearInterval(interval)
-  }, [token])
+  const dismiss = useCallback(
+    (documentId: string) => {
+      stopPolling(documentId)
+      setEntries((prev) => prev.filter((e) => e.documentId !== documentId))
+    },
+    [stopPolling],
+  )
 
-  return { items, addResults, clearTerminal }
+  const clear = useCallback(() => {
+    for (const documentId of timersRef.current.keys()) stopPolling(documentId)
+    setEntries([])
+  }, [stopPolling])
+
+  // Stop every in-flight timer on unmount so polling doesn't keep firing
+  // (and calling setEntries) after the page navigates away.
+  useEffect(() => {
+    const timers = timersRef.current
+    return () => {
+      for (const timer of timers.values()) clearInterval(timer)
+      timers.clear()
+    }
+  }, [])
+
+  return { entries, track, dismiss, clear }
 }

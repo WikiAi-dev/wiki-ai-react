@@ -261,6 +261,36 @@
   }
 }
 
+/* Contact page: the card floats over the same perspective grid as the hero hub. */
+.wl-contact-floor {
+  position: absolute;
+  inset: auto -20% -12% -20%;
+  height: 75%;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--hub-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hub-grid) 1px, transparent 1px);
+  background-size: 2.25rem 2.25rem;
+  background-position: center;
+  transform: perspective(36rem) rotateX(64deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: radial-gradient(ellipse 55% 60% at 50% 55%, #000 25%, transparent 75%);
+  mask-image: radial-gradient(ellipse 55% 60% at 50% 55%, #000 25%, transparent 75%);
+}
+.wl-contact-shadow {
+  position: absolute;
+  inset: auto 12% -2% 12%;
+  height: 16%;
+  pointer-events: none;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--hub-shadow), transparent);
+}
+.wl-contact-card {
+  box-shadow:
+    0 0.35rem 0 0 var(--hub-edge),
+    0 2.5rem 4.5rem -2.5rem var(--wl-shadow);
+}
+
 /* Single-color brand logos: the SVG is used as a mask and filled with the
    current text color, so every logo follows the theme. */
 .wl-logo {

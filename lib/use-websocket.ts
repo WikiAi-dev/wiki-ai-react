@@ -71,6 +71,10 @@ export function useWebSocket(options: WebSocketOptions) {
           console.log(`Attempting to reconnect in ${delay}ms...`)
           
           reconnectTimeout.current = setTimeout(() => {
+            // Self-referential by design: this callback only runs later
+            // (after the reconnect delay), by which point `connect` is
+            // fully assigned - safe despite the syntactic self-reference.
+            // eslint-disable-next-line react-hooks/immutability
             connect()
           }, delay)
         }

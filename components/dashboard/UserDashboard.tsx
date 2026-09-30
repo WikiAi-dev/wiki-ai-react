@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { useTranslation } from '@/src/i18n'
 import { useUserFiles } from '@/hooks/useUserData'
@@ -61,15 +61,13 @@ export function UserDashboard() {
   // Fetch user files
   const filesData = useUserFiles(token || undefined)
 
-  // Memoize data to prevent infinite loops
-  const filesDataMemo = useMemo(() => filesData.data, [JSON.stringify(filesData.data)])
-
-  // Sync fetched data to store
+  // Sync fetched data to store. filesData.data is already a stable
+  // reference from useUserFiles's own memoization.
   useEffect(() => {
-    if (filesDataMemo && Array.isArray(filesDataMemo)) {
-      setFiles(filesDataMemo as UserFile[])
+    if (filesData.data && Array.isArray(filesData.data)) {
+      setFiles(filesData.data as UserFile[])
     }
-  }, [filesDataMemo, setFiles])
+  }, [filesData.data, setFiles])
 
   // File columns
   const fileColumns: Column<UserFile>[] = [

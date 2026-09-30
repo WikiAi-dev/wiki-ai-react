@@ -2,13 +2,14 @@
 
 import React from "react"
 import { useFileReader } from "@/hooks/use-file-reader"
+import { UnifiedFileReader } from "@/components/ui/file-reader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye } from "lucide-react"
 
 // Example component showing how to use the unified FileReader
 export function FileReaderExample({ token }: { token: string | null }) {
-  const { openFile, FileReaderComponent } = useFileReader()
+  const { openFile, isOpen, selectedFile, setIsOpen } = useFileReader()
 
   // Example file data
   const exampleFiles = [
@@ -77,7 +78,12 @@ export function FileReaderExample({ token }: { token: string | null }) {
       </Card>
 
       {/* The FileReader component that handles all file viewing */}
-      <FileReaderComponent token={token} />
+      <UnifiedFileReader
+        file={selectedFile}
+        token={token}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      />
     </>
   )
 }

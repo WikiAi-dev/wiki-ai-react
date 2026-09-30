@@ -66,6 +66,152 @@ interface SalesLead {
   created_at: string
 }
 
+function BlogPostForm({ post, onSave, onCancel, loading }: {
+  post?: BlogPost,
+  onSave: (data: Partial<BlogPost>) => void,
+  onCancel: () => void,
+  loading: boolean
+}) {
+  const [formData, setFormData] = useState({
+    title: post?.title || "",
+    slug: post?.slug || "",
+    excerpt: post?.excerpt || "",
+    content: post?.content || "",
+    author: post?.author || "",
+    category: post?.category || "",
+    featured: post?.featured || false,
+    status: post?.status || "draft",
+    tags: post?.tags?.join(", ") || ""
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const data = {
+      ...formData,
+      tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
+    }
+    onSave(data)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{post ? "Edit Blog Post" : "Create New Blog Post"}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Title</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Slug</label>
+              <Input
+                value={formData.slug}
+                onChange={(e) => setFormData({...formData, slug: e.target.value})}
+                required
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Excerpt</label>
+            <Input
+              value={formData.excerpt}
+              onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Content</label>
+            <Textarea
+              value={formData.content}
+              onChange={(e) => setFormData({...formData, content: e.target.value})}
+              rows={10}
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Author</label>
+              <Input
+                value={formData.author}
+                onChange={(e) => setFormData({...formData, author: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Category</label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AI & ML">AI & ML</SelectItem>
+                  <SelectItem value="Product Updates">Product Updates</SelectItem>
+                  <SelectItem value="Tutorials">Tutorials</SelectItem>
+                  <SelectItem value="Company News">Company News</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
+              <Input
+                value={formData.tags}
+                onChange={(e) => setFormData({...formData, tags: e.target.value})}
+                placeholder="AI, Machine Learning, Tutorial"
+              />
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={formData.featured}
+                  onCheckedChange={(checked) => setFormData({...formData, featured: checked})}
+                />
+                <label className="text-sm font-medium">Featured</label>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-2">Status</label>
+            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button type="submit" disabled={loading}>
+              <Save className="w-4 h-4 mr-2" />
+              {loading ? "Saving..." : "Save"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+
 export default function CMSContentManager({ token }: CMSContentManagerProps) {
   const [activeTab, setActiveTab] = useState("blog")
   const [loading, setLoading] = useState(false)
@@ -300,9 +446,11 @@ export default function CMSContentManager({ token }: CMSContentManagerProps) {
     }
   }
 
-  // Load data on tab change
+  // Load data on tab change. Fetch-on-condition pattern; each fetchX sets
+  // its own data/loading state from the async response.
   useEffect(() => {
     if (activeTab === "blog") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchBlogPosts()
     } else if (activeTab === "contacts") {
       fetchContactSubmissions()
@@ -311,149 +459,6 @@ export default function CMSContentManager({ token }: CMSContentManagerProps) {
     }
   }, [activeTab])
 
-  const BlogPostForm = ({ post, onSave, onCancel }: { 
-    post?: BlogPost, 
-    onSave: (data: Partial<BlogPost>) => void,
-    onCancel: () => void 
-  }) => {
-    const [formData, setFormData] = useState({
-      title: post?.title || "",
-      slug: post?.slug || "",
-      excerpt: post?.excerpt || "",
-      content: post?.content || "",
-      author: post?.author || "",
-      category: post?.category || "",
-      featured: post?.featured || false,
-      status: post?.status || "draft",
-      tags: post?.tags?.join(", ") || ""
-    })
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault()
-      const data = {
-        ...formData,
-        tags: formData.tags.split(",").map(tag => tag.trim()).filter(Boolean)
-      }
-      onSave(data)
-    }
-
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{post ? "Edit Blog Post" : "Create New Blog Post"}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Slug</label>
-                <Input
-                  value={formData.slug}
-                  onChange={(e) => setFormData({...formData, slug: e.target.value})}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Excerpt</label>
-              <Input
-                value={formData.excerpt}
-                onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Content</label>
-              <Textarea
-                value={formData.content}
-                onChange={(e) => setFormData({...formData, content: e.target.value})}
-                rows={10}
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Author</label>
-                <Input
-                  value={formData.author}
-                  onChange={(e) => setFormData({...formData, author: e.target.value})}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Category</label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AI & ML">AI & ML</SelectItem>
-                    <SelectItem value="Product Updates">Product Updates</SelectItem>
-                    <SelectItem value="Tutorials">Tutorials</SelectItem>
-                    <SelectItem value="Company News">Company News</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Tags (comma-separated)</label>
-                <Input
-                  value={formData.tags}
-                  onChange={(e) => setFormData({...formData, tags: e.target.value})}
-                  placeholder="AI, Machine Learning, Tutorial"
-                />
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    checked={formData.featured}
-                    onCheckedChange={(checked) => setFormData({...formData, featured: checked})}
-                  />
-                  <label className="text-sm font-medium">Featured</label>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Status</label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button type="submit" disabled={loading}>
-                <Save className="w-4 h-4 mr-2" />
-                {loading ? "Saving..." : "Save"}
-              </Button>
-              <Button type="button" variant="outline" onClick={onCancel}>
-                <X className="w-4 h-4 mr-2" />
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -503,6 +508,7 @@ export default function CMSContentManager({ token }: CMSContentManagerProps) {
           {(isCreatingPost || editingPost) && (
             <BlogPostForm
               post={editingPost || undefined}
+              loading={loading}
               onSave={(data) => {
                 if (editingPost) {
                   updateBlogPost(editingPost.id, data)

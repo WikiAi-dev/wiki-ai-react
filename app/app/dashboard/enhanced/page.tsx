@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useAuth, PERMISSIONS } from "@/lib/auth-context"
-import { usePermissions } from "@/lib/permission-context"
+import { useAuth } from "@/lib/auth-context"
+import { PermissionProvider, usePermissions } from "@/lib/permission-context"
 import { AppHeader } from "@/components/app-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -67,8 +67,14 @@ interface SystemMetrics {
   querySuccessRate: number
 }
 
-export default function EnhancedRoleBasedDashboard() {
-  const { user, token, isAdmin, hasPermission } = useAuth()
+// usePermissions() requires a PermissionProvider ancestor, so the real page
+// body is wrapped by the default export below rather than mounting the
+// provider globally (a previous attempt at that broke every page in the
+// app, since useAuth() never actually exposed the hasPermission function
+// PermissionProvider used to depend on - see the comment in
+// lib/permission-context.tsx).
+function EnhancedRoleBasedDashboardContent() {
+  const { user, token, isAdmin } = useAuth()
   const {
     canViewFiles,
     canUploadFiles,
@@ -208,9 +214,9 @@ export default function EnhancedRoleBasedDashboard() {
                 {isAdmin ? "Administrator" : "User"}
               </Badge>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                {hasPermission(PERMISSIONS.MANAGE_USERS) && <Shield className="w-3 h-3" />}
-                {hasPermission(PERMISSIONS.EDIT_FILES) && <Edit3 className="w-3 h-3" />}
-                {hasPermission(PERMISSIONS.MANAGE_API_KEYS) && <Key className="w-3 h-3" />}
+                {canManageUsers && <Shield className="w-3 h-3" />}
+                {canEditFiles && <Edit3 className="w-3 h-3" />}
+                {canManageApiKeys && <Key className="w-3 h-3" />}
               </div>
               {isAdmin && (
                 <Button variant="outline" size="sm" asChild>
@@ -673,7 +679,7 @@ export default function EnhancedRoleBasedDashboard() {
                       <Search className="w-4 h-4 text-blue-500" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Query performed</p>
-                        <p className="text-xs text-muted-foreground">Search for "pricing information" • 3 hours ago</p>
+                        <p className="text-xs text-muted-foreground">Search for &quot;pricing information&quot; • 3 hours ago</p>
                       </div>
                     </div>
                     
@@ -704,5 +710,13 @@ export default function EnhancedRoleBasedDashboard() {
         </Tabs>
       </main>
     </>
+  )
+}
+
+export default function EnhancedRoleBasedDashboard() {
+  return (
+    <PermissionProvider>
+      <EnhancedRoleBasedDashboardContent />
+    </PermissionProvider>
   )
 }

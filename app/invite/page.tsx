@@ -28,12 +28,34 @@ import { useTheme } from "next-themes"
 
 interface InviteInfo {
   valid: boolean
+  org_name: string
   email?: string
   role: string
   allowed_files: string[]
   expires_at: string
   created_by: string
   message?: string
+}
+
+// Hoisted to module scope (not defined inside InvitePageContent's render
+// body) so its identity is stable across renders; takes the theme toggle
+// as a prop instead of closing over it.
+function SimpleHeader({ onToggleTheme }: { onToggleTheme: () => void }) {
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+      <div className="flex items-center gap-2">
+        <Mail className="h-6 w-6 text-primary" />
+        <span className="text-lg font-semibold">WikiAI</span>
+      </div>
+      <div className="ml-auto">
+        <Button variant="ghost" size="icon" onClick={onToggleTheme}>
+          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          <span className="sr-only">Toggle theme</span>
+        </Button>
+      </div>
+    </header>
+  )
 }
 
 function InvitePageContent() {
@@ -53,22 +75,6 @@ function InvitePageContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
-
-  const SimpleHeader = () => (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-      <div className="flex items-center gap-2">
-        <Mail className="h-6 w-6 text-primary" />
-        <span className="text-lg font-semibold">WikiAI</span>
-      </div>
-      <div className="ml-auto">
-        <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </div>
-    </header>
-  )
 
   const fetchInviteInfo = useCallback(async () => {
     if (!token) {
@@ -94,6 +100,9 @@ function InvitePageContent() {
   }, [token])
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchInviteInfo sets invite/loading state
+    // from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInviteInfo()
   }, [fetchInviteInfo])
 
@@ -153,7 +162,7 @@ function InvitePageContent() {
   if (isLoading) {
     return (
       <>
-        <SimpleHeader />
+        <SimpleHeader onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
@@ -166,7 +175,7 @@ function InvitePageContent() {
 
   return (
     <>
-      <SimpleHeader />
+      <SimpleHeader onToggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <Card>
@@ -174,7 +183,7 @@ function InvitePageContent() {
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                 <Mail className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">You're Invited!</CardTitle>
+              <CardTitle className="text-2xl">You&apos;re Invited!</CardTitle>
               <CardDescription>
                 Join our platform and start collaborating
               </CardDescription>
@@ -241,11 +250,11 @@ function InvitePageContent() {
                       <span className="text-sm text-muted-foreground">Invited by</span>
                       <span className="text-sm font-medium">{inviteInfo.created_by}</span>
                     </div>
-                    
+
                     {inviteInfo.message && (
                       <div className="pt-2 border-t">
                         <p className="text-sm text-muted-foreground italic">
-                          "{inviteInfo.message}"
+                          &quot;{inviteInfo.message}&quot;
                         </p>
                       </div>
                     )}

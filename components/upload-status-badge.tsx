@@ -1,49 +1,32 @@
+import type { ReactNode } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CheckCircle2, XCircle, Clock, Copy } from "lucide-react"
-import type { UploadStatus } from "@/hooks/use-upload-status-poll"
+import { CheckCircle2, Clock, Copy, Loader2, XCircle } from "lucide-react"
 
-const STATUS_STYLES: Record<UploadStatus, string> = {
-  pending: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-  indexing: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  indexed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  duplicate: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+interface StatusConfig {
+  label: string
+  variant: "default" | "secondary" | "destructive" | "outline"
+  icon: ReactNode
 }
 
-const STATUS_LABELS: Record<UploadStatus, string> = {
-  pending: "Pending",
-  indexing: "Indexing",
-  indexed: "Indexed",
-  duplicate: "Already indexed",
-  failed: "Failed",
-  error: "Error",
+const STATUS_CONFIG: Record<string, StatusConfig> = {
+  pending: { label: "Pending", variant: "outline", icon: <Clock className="w-3 h-3" /> },
+  indexing: { label: "Indexing", variant: "secondary", icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+  indexed: { label: "Indexed", variant: "default", icon: <CheckCircle2 className="w-3 h-3" /> },
+  failed: { label: "Failed", variant: "destructive", icon: <XCircle className="w-3 h-3" /> },
+  error: { label: "Failed", variant: "destructive", icon: <XCircle className="w-3 h-3" /> },
+  duplicate: { label: "Already indexed", variant: "outline", icon: <Copy className="w-3 h-3" /> },
 }
 
-function StatusIcon({ status }: { status: UploadStatus }) {
-  const className = "w-3.5 h-3.5"
-  switch (status) {
-    case "pending":
-      return <Clock className={className} />
-    case "indexing":
-      return <Loader2 className={`${className} animate-spin`} />
-    case "indexed":
-      return <CheckCircle2 className={className} />
-    case "duplicate":
-      return <Copy className={className} />
-    case "failed":
-    case "error":
-      return <XCircle className={className} />
-  }
-}
-
-export function UploadStatusBadge({ status }: { status: UploadStatus }) {
+// Shared status pill for a document's real indexing status (from
+// knowledge-service's pending/indexing/indexed/failed states, see WAI-52).
+// Used both for the transient just-uploaded strip (WAI-54) and, reusing the
+// same component, for each row in the persistent file list (WAI-55).
+export function UploadStatusBadge({ status, className }: { status: string; className?: string }) {
+  const config = STATUS_CONFIG[status] ?? { label: status, variant: "outline" as const, icon: null }
   return (
-    <Badge className={STATUS_STYLES[status]}>
-      <div className="flex items-center gap-1">
-        <StatusIcon status={status} />
-        <span>{STATUS_LABELS[status]}</span>
-      </div>
+    <Badge variant={config.variant} className={className}>
+      {config.icon}
+      {config.label}
     </Badge>
   )
 }

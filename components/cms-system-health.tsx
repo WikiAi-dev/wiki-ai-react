@@ -98,6 +98,7 @@ export default function CMSSystemHealth({ token }: CMSSystemHealthProps) {
 
   useEffect(() => {
     if (!token) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStatus(true)
     const interval = setInterval(() => fetchStatus(false), POLL_INTERVAL_MS)
     return () => clearInterval(interval)

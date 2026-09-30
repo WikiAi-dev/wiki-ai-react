@@ -94,6 +94,9 @@ export default function CatalogsPage() {
   }, [token])
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchCatalogs sets catalogs/loading state
+    // from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCatalogs()
   }, [fetchCatalogs])
 

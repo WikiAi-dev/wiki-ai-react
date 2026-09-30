@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi } from "@/lib/api"
 import { AppHeader } from "@/components/app-header"
@@ -49,7 +49,6 @@ interface Document {
 export default function DocumentEditor() {
   const { token, isAdmin } = useAuth()
   const [documents, setDocuments] = useState<Document[]>([])
-  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -76,7 +75,6 @@ export default function DocumentEditor() {
           starred: Math.random() > 0.8, // Simulate some starred documents
         }))
         setDocuments(docs)
-        setFilteredDocuments(docs)
       }
     } catch (error) {
       console.error("Failed to fetch documents:", error)
@@ -87,10 +85,15 @@ export default function DocumentEditor() {
   }
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchDocuments sets documents/loading state
+    // from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDocuments()
   }, [token])
 
-  useEffect(() => {
+  // Derived directly from documents/searchQuery/selectedTags during render
+  // instead of a separate state+effect.
+  const filteredDocuments = useMemo(() => {
     let filtered = documents
 
     if (searchQuery) {
@@ -106,7 +109,7 @@ export default function DocumentEditor() {
       )
     }
 
-    setFilteredDocuments(filtered)
+    return filtered
   }, [searchQuery, selectedTags, documents])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

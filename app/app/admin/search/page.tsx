@@ -57,12 +57,6 @@ function FileViewerModal({ isOpen, onClose, document, searchChunk }: { isOpen: b
   const [isLoading, setIsLoading] = useState(false)
   const { token } = useAuth()
 
-  useEffect(() => {
-    if (isOpen && token && (document.document_id || document.title)) {
-      fetchFullContent()
-    }
-  }, [isOpen, document.document_id, document.title, token])
-
   const fetchFullContent = async () => {
     setIsLoading(true)
     try {
@@ -107,6 +101,15 @@ function FileViewerModal({ isOpen, onClose, document, searchChunk }: { isOpen: b
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (isOpen && token && (document.document_id || document.title)) {
+      // Fetch-on-condition pattern; fetchFullContent sets content/loading
+      // state from the async response.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchFullContent()
+    }
+  }, [isOpen, document.document_id, document.title, token])
 
   const highlightSearchChunk = (content: string, chunk?: string) => {
     if (!chunk) return content
@@ -218,8 +221,17 @@ interface Catalog {
   total_products: number
 }
 
+function isTokenExpiringSoon(token: string, bufferMs = 10000): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now() + bufferMs
+  } catch {
+    return false
+  }
+}
+
 export default function AdminSearchPage() {
-  const { token, user } = useAuth()
+  const { token, user, refreshToken } = useAuth()
   const { t } = useTranslation()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -251,11 +263,6 @@ export default function AdminSearchPage() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
-
-  useEffect(() => {
-    loadSettings()
-    loadPluginStatus()
-  }, [])
 
   const loadSettings = () => {
     const saved = localStorage.getItem('searchSettings')
@@ -298,6 +305,14 @@ export default function AdminSearchPage() {
       setLoadingPlugins(false)
     }
   }
+
+  useEffect(() => {
+    // Fetch/load-on-mount pattern; both set local settings/plugin state
+    // from localStorage / the async API response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadSettings()
+    loadPluginStatus()
+  }, [])
 
   const loadCatalogs = async () => {
     if (!token) return
@@ -359,7 +374,7 @@ export default function AdminSearchPage() {
           source: snippet.source || 'document',
           score: snippet.final_score ?? snippet.score ?? 0,
         })) || [],
-        timestamp: new Date(Date.now()),
+        timestamp: new Date(),
       }
       setMessages(prev => [...prev, sourcesMessage])
       
@@ -369,7 +384,7 @@ export default function AdminSearchPage() {
           id: crypto.randomUUID(),
           role: "assistant",
           content: "Generating AI overview...",
-          timestamp: new Date(Date.now()),
+          timestamp: new Date(),
         }
         setMessages(prev => [...prev, overviewLoadingMessage])
       }
@@ -384,7 +399,7 @@ export default function AdminSearchPage() {
           id: crypto.randomUUID(),
           role: "overview",
           content: data.content || "",
-          timestamp: new Date(Date.now()),
+          timestamp: new Date(),
         }]
       })
     }
@@ -407,14 +422,24 @@ export default function AdminSearchPage() {
       id: crypto.randomUUID(),
       role: "user",
       content: input.trim(),
-      timestamp: new Date(Date.now()),
+      timestamp: new Date(),
     }
     setMessages(prev => [...prev, userMessage])
 
     try {
       // Use WebSocket for real-time search (like Vue implementation)
       if (typeof WebSocket !== 'undefined') {
-        await performWebSocketQuery(input.trim())
+        try {
+          await performWebSocketQuery(input.trim())
+        } catch (wsError) {
+          // The WS endpoint isn't proxied through this server (see
+          // getWsUrl's callers) and depends on the deployment's ingress
+          // supporting the Upgrade handshake — that hop can fail even when
+          // the equivalent HTTP /v1/search request would succeed. Fall back
+          // to it rather than surfacing a hard failure to the user.
+          console.error("WebSocket query failed, falling back to HTTP:", wsError)
+          await performHttpQuery(input.trim())
+        }
       } else {
         // Fallback to HTTP
         await performHttpQuery(input.trim())
@@ -425,7 +450,7 @@ export default function AdminSearchPage() {
         id: crypto.randomUUID(),
         role: "assistant",
         content: "Sorry, I encountered an error while searching. Please try again.",
-        timestamp: new Date(Date.now()),
+        timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
       setInput("")
@@ -439,13 +464,24 @@ export default function AdminSearchPage() {
     if (!token) {
       throw new Error('Authentication token is required for WebSocket search')
     }
-    const tenantId = await resolveTenantId(token)
+    // The WS connection carries its own token in the URL and isn't covered by
+    // the REST-call refresh interceptor — a still-mounted search page can
+    // easily outlive the 15-minute access token, so refresh proactively
+    // rather than let the socket fail with an opaque 1006 close.
+    let activeToken = token
+    if (isTokenExpiringSoon(activeToken)) {
+      const refreshed = await refreshToken()
+      if (refreshed) {
+        activeToken = localStorage.getItem('auth_token') || activeToken
+      }
+    }
+    const tenantId = await resolveTenantId(activeToken)
     return new Promise((resolve, reject) => {
       try {
         // WebSocket isn't proxied through the same-origin rewrite (see
         // next.config.mjs) — it needs the real backend address, which is
         // what NEXT_PUBLIC_WS_URL (via getWsUrl) is for.
-        const wsUrl = getWsUrl(`/v1/query/stream?token=${encodeURIComponent(token || '')}`)
+        const wsUrl = getWsUrl(`/v1/query/stream?token=${encodeURIComponent(activeToken || '')}`)
         
         console.log('Connecting to WebSocket:', wsUrl)
         
@@ -494,7 +530,7 @@ export default function AdminSearchPage() {
                     id: crypto.randomUUID(),
                     role: "assistant",
                     content: `🤖 AI Agent: ${message.message}`,
-                    timestamp: new Date(Date.now())
+                    timestamp: new Date()
                   }
                   setMessages(prev => [...prev, statusMessage])
                 }
@@ -524,7 +560,7 @@ export default function AdminSearchPage() {
                     content: `Found ${searchResults.length} relevant sources:`,
                     sources: sources,
                     searchResults: searchResults,
-                    timestamp: new Date(Date.now()),
+                    timestamp: new Date(),
                   }])
                   
                   if (showAiOverview && !loadingMessageAdded) {
@@ -533,7 +569,7 @@ export default function AdminSearchPage() {
                       id: crypto.randomUUID(),
                       role: "assistant",
                       content: "Generating AI overview...",
-                      timestamp: new Date(Date.now()),
+                      timestamp: new Date(),
                     }])
                   }
                 }
@@ -553,7 +589,7 @@ export default function AdminSearchPage() {
                     id: crypto.randomUUID(),
                     role: "overview",
                     content: message.data?.answer || message.data || "",
-                    timestamp: new Date(Date.now()),
+                    timestamp: new Date(),
                   }]
                 })
                 break
@@ -632,7 +668,7 @@ export default function AdminSearchPage() {
             source: chunk.source || 'document',
             score: chunk.final_score ?? 0,
           })),
-          timestamp: new Date(Date.now()),
+          timestamp: new Date(),
         }
         setMessages(prev => [...prev, sourcesMessage])
       }
@@ -642,7 +678,7 @@ export default function AdminSearchPage() {
           id: crypto.randomUUID(),
           role: "overview",
           content: aiAnswer,
-          timestamp: new Date(Date.now()),
+          timestamp: new Date(),
         }
         setMessages(prev => [...prev, overviewMessage])
       }
@@ -700,7 +736,7 @@ export default function AdminSearchPage() {
                       </p>
 
                       <div className="grid gap-3 w-full max-w-lg">
-                        <p className="text-sm font-medium text-muted-foreground">{t('search.tryAsking')}:</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t('search.tryAsking')}</p>
                         {suggestedQuestions.map((question, index) => (
                           <Button
                             key={index}

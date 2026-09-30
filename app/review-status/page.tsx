@@ -195,7 +195,7 @@ function ReviewStatusContent() {
             Organization Review Status
           </h1>
           <p className="text-muted-foreground">
-            Track your organization's approval status
+            Track your organization&apos;s approval status
           </p>
           {!orgName && adminEmail && (
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -249,8 +249,8 @@ function ReviewStatusContent() {
                     <h3 className="font-medium mb-2">What happens next?</h3>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Our team will review your organization within {organizationData.estimatedReviewTime}</li>
-                      <li>• You'll receive an email at {organizationData.adminEmail} when the review is complete</li>
-                      <li>• Once approved, you'll be able to login and start using WikiAI</li>
+                      <li>• You&apos;ll receive an email at {organizationData.adminEmail} when the review is complete</li>
+                      <li>• Once approved, you&apos;ll be able to login and start using WikiAI</li>
                     </ul>
                   </div>
                 )}

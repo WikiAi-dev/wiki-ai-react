@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { adminApi, filesApi, apiKeysApi, pluginsApi, catalogsApi } from "@/lib/api"
+import { adminApi, authApi, filesApi, apiKeysApi, pluginsApi, catalogsApi } from "@/lib/api"
 import { AppHeader } from "@/components/app-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,6 +58,7 @@ import {
 import { redirect } from "next/navigation"
 
 interface User {
+  id: string
   username: string
   role: string
   last_login?: string
@@ -65,10 +66,10 @@ interface User {
 }
 
 interface File {
-  filename: string
-  original_filename?: string
-  size?: number
-  uploaded_at?: string
+  document_id: string
+  title: string
+  chunk_count?: number
+  created_at?: string
 }
 
 interface ApiKey {
@@ -98,7 +99,7 @@ export default function AdminManagementPage() {
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false)
   const [isEditUserOpen, setIsEditUserOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [newUser, setNewUser] = useState({ username: "", password: "", role: "user" })
+  const [newUser, setNewUser] = useState({ username: "", password: "", role: "member" })
   const [showPassword, setShowPassword] = useState(false)
 
   // Files state
@@ -124,18 +125,12 @@ export default function AdminManagementPage() {
     }
   }, [authLoading, isAdmin])
 
-  useEffect(() => {
-    if (isAdmin) {
-      loadData()
-    }
-  }, [isAdmin])
-
   const loadData = async () => {
     if (!token) return
 
     try {
       const [usersRes, filesRes, keysRes, catalogsRes, pluginsRes] = await Promise.all([
-        adminApi.listAccounts(token),
+        authApi.listMembers(token),
         filesApi.list(token),
         apiKeysApi.list(token),
         catalogsApi.list(token),
@@ -143,7 +138,13 @@ export default function AdminManagementPage() {
       ])
 
       if (usersRes.status === "success") {
-        setUsers(usersRes.response?.accounts || [])
+        setUsers(
+          (usersRes.response?.items || []).map((m) => ({
+            id: m.user_id,
+            username: m.username,
+            role: m.role,
+          }))
+        )
       }
       if (filesRes.status === "success") {
         setFiles(filesRes.response?.documents || [])
@@ -184,6 +185,15 @@ export default function AdminManagementPage() {
     }
   }
 
+  useEffect(() => {
+    if (isAdmin) {
+      // Fetch-on-condition pattern; loadData sets several list/loading
+      // state fields from the async responses.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadData()
+    }
+  }, [isAdmin])
+
   // User management functions
   const handleCreateUser = async () => {
     if (!token || !newUser.username || !newUser.password) return
@@ -193,7 +203,7 @@ export default function AdminManagementPage() {
       if (result.status === "success") {
         toast.success("User created successfully")
         setIsCreateUserOpen(false)
-        setNewUser({ username: "", password: "", role: "user" })
+        setNewUser({ username: "", password: "", role: "member" })
         loadData()
       } else {
         toast.error(result.message || "Failed to create user")
@@ -207,10 +217,7 @@ export default function AdminManagementPage() {
     if (!token || !selectedUser) return
 
     try {
-      const result = await adminApi.editUser(token, {
-        username: selectedUser.username,
-        role: selectedUser.role,
-      })
+      const result = await authApi.updateMemberRole(token, selectedUser.id, selectedUser.role)
       if (result.status === "success") {
         toast.success("User updated successfully")
         setIsEditUserOpen(false)
@@ -224,11 +231,11 @@ export default function AdminManagementPage() {
     }
   }
 
-  const handleDeleteUser = async (username: string) => {
+  const handleDeleteUser = async (userId: string, username: string) => {
     if (!token || !confirm(`Are you sure you want to delete user "${username}"?`)) return
 
     try {
-      const result = await adminApi.deleteUser(token, username)
+      const result = await adminApi.deleteUser(token, userId)
       if (result.status === "success") {
         toast.success("User deleted successfully")
         loadData()
@@ -371,8 +378,7 @@ export default function AdminManagementPage() {
   }
 
   const filteredFiles = files.filter(file =>
-    file.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    file.original_filename?.toLowerCase().includes(searchQuery.toLowerCase())
+    file.title?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
@@ -507,7 +513,7 @@ export default function AdminManagementPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="member">User</SelectItem>
                               <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                           </Select>
@@ -564,7 +570,7 @@ export default function AdminManagementPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => handleDeleteUser(user.username)}
+                              onClick={() => handleDeleteUser(user.id, user.username)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
@@ -601,7 +607,7 @@ export default function AdminManagementPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="member">User</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
@@ -693,17 +699,17 @@ export default function AdminManagementPage() {
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {filteredFiles.map((file) => (
-                      <div key={file.filename} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={file.document_id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                             <FileText className="w-5 h-5 text-green-600" />
                           </div>
                           <div>
-                            <p className="font-medium">{file.original_filename || file.filename}</p>
+                            <p className="font-medium">{file.title}</p>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              {file.size && <span>{(file.size / 1024).toFixed(1)} KB</span>}
-                              {file.uploaded_at && (
-                                <span>Uploaded: {new Date(file.uploaded_at).toLocaleDateString()}</span>
+                              {typeof file.chunk_count === "number" && <span>{file.chunk_count} chunks</span>}
+                              {file.created_at && (
+                                <span>Uploaded: {new Date(file.created_at).toLocaleDateString()}</span>
                               )}
                             </div>
                           </div>
@@ -723,7 +729,7 @@ export default function AdminManagementPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => handleDeleteFile(file.filename)}
+                              onClick={() => handleDeleteFile(file.title)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
@@ -793,7 +799,7 @@ export default function AdminManagementPage() {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Save this key securely. It won't be shown again.
+                        Save this key securely. It won&apos;t be shown again.
                       </p>
                     </AlertDescription>
                   </Alert>

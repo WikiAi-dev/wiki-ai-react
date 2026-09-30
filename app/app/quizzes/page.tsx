@@ -46,10 +46,6 @@ export default function QuizzesPage() {
   const [bestScores, setBestScores] = useState<Record<string, QuizResult>>({})
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchQuizzes()
-  }, [])
-
   const fetchQuizzes = async () => {
     try {
       setLoading(true)
@@ -72,14 +68,12 @@ export default function QuizzesPage() {
       if (response.ok) {
         const data = await response.json()
         console.log("Response data:", data)
-        
-        if (data.status === "success") {
-          console.log("Setting quizzes:", data.response.quizzes)
-          setQuizzes(data.response.quizzes)
-        } else {
-          console.error("API returned error:", data)
-          toast.error(data.message || t('quizzes.failedToFetchQuizzes'))
-        }
+
+        // GET /v1/quizzes (learning-service) returns {items, next_cursor},
+        // not a {status, response} envelope - a 2xx response here always
+        // means success, including a legitimately empty items: [].
+        console.log("Setting quizzes:", data.items)
+        setQuizzes(data.items ?? [])
       } else {
         const errorText = await response.text()
         console.error("HTTP error:", response.status, errorText)
@@ -93,6 +87,13 @@ export default function QuizzesPage() {
     }
   }
 
+  useEffect(() => {
+    // Fetch-on-mount pattern; fetchQuizzes sets quizzes/loading state from
+    // the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchQuizzes()
+  }, [])
+
   const submitQuizResults = async () => {
     if (!selectedQuiz || !token) return
 
@@ -105,7 +106,7 @@ export default function QuizzesPage() {
         },
         body: JSON.stringify({
           answers: answers,
-          time_spent: selectedQuiz.time_limit * 60 - timeRemaining
+          time_spent: selectedQuiz.time_limit_minutes * 60 - timeRemaining
         })
       })
 
@@ -139,17 +140,6 @@ export default function QuizzesPage() {
     }
   }
 
-  // Timer effect
-  useEffect(() => {
-    if (quizStarted && !quizCompleted && timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setTimeRemaining(timeRemaining - 1)
-      }, 1000)
-      return () => clearTimeout(timer)
-    } else if (timeRemaining === 0 && quizStarted && !quizCompleted) {
-      handleQuizSubmit()
-    }
-  }, [quizStarted, quizCompleted, timeRemaining])
 
   const startQuiz = (quiz: Quiz) => {
     if (!quiz.questions) {
@@ -161,7 +151,7 @@ export default function QuizzesPage() {
     setQuizStarted(true)
     setCurrentQuestionIndex(0)
     setAnswers({})
-    setTimeRemaining(quiz.time_limit * 60)
+    setTimeRemaining(quiz.time_limit_minutes * 60)
     setQuizCompleted(false)
     setQuizResults(null)
   }
@@ -207,7 +197,7 @@ export default function QuizzesPage() {
     if (!selectedQuiz || !selectedQuiz.questions) return
     
     const { score, totalPoints, passed } = calculateScore()
-    const timeSpent = selectedQuiz.time_limit * 60 - timeRemaining
+    const timeSpent = selectedQuiz.time_limit_minutes * 60 - timeRemaining
     
     const result: QuizResult = {
       quizId: selectedQuiz.id,
@@ -241,6 +231,23 @@ export default function QuizzesPage() {
       toast.error(`${t('quizzes.quizCompletedYouScored')} ${score}/${totalPoints} ${t('quizzes.pointsTryAgain')}`)
     }
   }
+
+  // Timer effect
+  useEffect(() => {
+    if (quizStarted && !quizCompleted && timeRemaining > 0) {
+      const timer = setTimeout(() => {
+        setTimeRemaining(timeRemaining - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else if (timeRemaining === 0 && quizStarted && !quizCompleted) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleQuizSubmit()
+    }
+    // handleQuizSubmit intentionally omitted: it's a plain (non-memoized)
+    // function that gets a new identity every render, and this effect must
+    // only re-run when the actual timer state changes, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizStarted, quizCompleted, timeRemaining])
 
   const resetQuiz = () => {
     setSelectedQuiz(null)
@@ -410,7 +417,7 @@ export default function QuizzesPage() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {quiz.time_limit} {t('quizzes.min')}
+                        {quiz.time_limit_minutes} {t('quizzes.min')}
                       </div>
                       <div className="flex items-center gap-1">
                         <Target className="w-4 h-4" />

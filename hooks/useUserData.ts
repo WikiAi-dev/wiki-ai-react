@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useApiData } from './useApiData'
 import { ApiError } from '@/lib/api-client'
 import { resolveTenantId } from '@/lib/api'
@@ -44,6 +44,7 @@ export function useUserData(
   const [tenantId, setTenantId] = useState<string | null>(null)
   useEffect(() => {
     if (resource !== 'files' || !options.token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTenantId(null)
       return
     }
@@ -113,8 +114,13 @@ export function useUserData(
     }
   }, [resource, apiResult.data])
 
+  // See the identical comment in hooks/useAdminData.ts's useAdminData -
+  // memoizing the call here gives callers a stable reference instead of a
+  // fresh array/object every render.
+  const data = useMemo(() => getResourceData(), [getResourceData])
+
   return {
-    data: getResourceData(),
+    data,
     loading: apiResult.loading,
     error: apiResult.error,
     refetch: apiResult.refetch,

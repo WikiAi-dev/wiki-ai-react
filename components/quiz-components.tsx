@@ -17,7 +17,7 @@ export interface Quiz {
   description: string
   category: string
   difficulty: "easy" | "medium" | "hard"
-  time_limit: number
+  time_limit_minutes: number
   passing_score: number
   question_count?: number
   created_at?: string
@@ -90,7 +90,7 @@ export function QuizCard({ quiz, onStartQuiz, onViewStats, onEdit, onDelete, sho
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>{quiz.time_limit} {t('quizTaking.minutes')}</span>
+              <span>{quiz.time_limit_minutes} {t('quizTaking.minutes')}</span>
             </div>
             {quiz.question_count && (
               <div className="flex items-center gap-1">

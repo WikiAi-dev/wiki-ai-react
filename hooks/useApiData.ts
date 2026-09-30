@@ -109,8 +109,10 @@ export function useApiData<T = unknown>(
     }
   }, [url, token, paramsKey, cache, cacheTTL, retryable, skip, onError, onSuccess])
 
-  // Auto-fetch on mount and when URL changes
+  // Auto-fetch on mount and when URL changes. Fetch-on-mount pattern;
+  // fetchData sets data/loading/error state from the async response.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
 
     return () => {

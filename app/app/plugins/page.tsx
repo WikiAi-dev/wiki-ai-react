@@ -75,6 +75,9 @@ export default function PluginsPage() {
   }, [token])
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchStatus sets plugin/loading state from
+    // the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStatus()
   }, [fetchStatus])
 

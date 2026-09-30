@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { AppHeader } from "@/components/app-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -54,7 +54,6 @@ interface UserStats {
 export default function UserFilesPage() {
   const { token, user } = useAuth()
   const [files, setFiles] = useState<UserFile[]>([])
-  const [filteredFiles, setFilteredFiles] = useState<UserFile[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -132,8 +131,7 @@ export default function UserFilesPage() {
       ]
       
       setFiles(mockFiles)
-      setFilteredFiles(mockFiles)
-      
+
       // Calculate stats
       const recentDate = new Date()
       recentDate.setDate(recentDate.getDate() - 7)
@@ -157,10 +155,15 @@ export default function UserFilesPage() {
   }
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchFiles sets files/stats/loading state
+    // (currently from mock data, matching the eventual real API shape).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFiles()
   }, [token])
 
-  useEffect(() => {
+  // Derived directly from files/searchQuery/selectedTags/sortBy during
+  // render instead of a separate state+effect.
+  const filteredFiles = useMemo(() => {
     let filtered = files
 
     if (searchQuery) {
@@ -176,8 +179,10 @@ export default function UserFilesPage() {
       )
     }
 
-    // Sort files
-    filtered.sort((a, b) => {
+    // Sort files (filtered is always a fresh array from .filter() above,
+    // or a fresh copy here when no filter ran, so this never mutates the
+    // files state array).
+    return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "name":
           return a.name.localeCompare(b.name)
@@ -191,8 +196,6 @@ export default function UserFilesPage() {
           return 0
       }
     })
-
-    setFilteredFiles(filtered)
   }, [searchQuery, selectedTags, files, sortBy])
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useApiData } from './useApiData'
 import { ApiError } from '@/lib/api-client'
 import { resolveTenantId } from '@/lib/api'
@@ -57,6 +57,7 @@ export function useAdminData(
   const [tenantId, setTenantId] = useState<string | null>(null)
   useEffect(() => {
     if (resource !== 'files' || !options.token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTenantId(null)
       return
     }
@@ -158,8 +159,19 @@ export function useAdminData(
     }
   }, [resource, apiResult.data])
 
+  // getResourceData is a useCallback, but *calling* it inline in the return
+  // below would build a brand-new array every render regardless of whether
+  // the underlying data changed - callers downstream (AdminDashboard,
+  // UserDashboard) used to work around that instability with a
+  // `useMemo(() => data, [JSON.stringify(data)])` hack just to get a stable
+  // effect dependency. Memoizing the call here instead means `data` is only
+  // a new reference when getResourceData itself changes identity (i.e. when
+  // `resource` or `apiResult.data` actually changes), so callers can depend
+  // on it directly.
+  const data = useMemo(() => getResourceData(), [getResourceData])
+
   return {
-    data: getResourceData(),
+    data,
     loading: apiResult.loading,
     error: apiResult.error,
     refetch: apiResult.refetch,

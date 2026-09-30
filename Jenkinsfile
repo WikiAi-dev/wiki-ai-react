@@ -8,6 +8,14 @@ pipeline {
         CONTAINER_NAME = 'frontend'
         HOST_PORT      = '3000'
         CONTAINER_PORT = '3000'
+        // NEXT_PUBLIC_* vars are inlined into the client bundle at build
+        // time, not read at container runtime, so they must reach `docker
+        // build` as --build-args, not just live in the .env file below —
+        // the Dockerfile's own ARG/ENV fallback (ws://localhost:9001)
+        // otherwise wins over the .env file's value, since Next's dotenv
+        // loader never overrides an already-set process env var.
+        NEXT_PUBLIC_API_URL = 'https://api.wikiai.by'
+        NEXT_PUBLIC_WS_URL  = 'wss://api.wikiai.by'
     }
 
     stages {
@@ -30,8 +38,8 @@ pipeline {
 # NEXT_PUBLIC_WS_URL=ws://localhost:9001
 
 # OPTION 2: Production Server
-NEXT_PUBLIC_API_URL=https://api.wikiai.by
-NEXT_PUBLIC_WS_URL=wss://api.wikiai.by
+NEXT_PUBLIC_API_URL=${env.NEXT_PUBLIC_API_URL}
+NEXT_PUBLIC_WS_URL=${env.NEXT_PUBLIC_WS_URL}
 
 # ========================================
 # ADDITIONAL CONFIGURATION
@@ -63,7 +71,12 @@ NEXT_PUBLIC_CMS_PREFIX=/api/cms
         stage('Build Docker Image') {
             steps {
                 echo "Building ${IMAGE_NAME}:${IMAGE_TAG} ..."
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh """
+                    docker build \
+                        --build-arg NEXT_PUBLIC_WS_URL=${env.NEXT_PUBLIC_WS_URL} \
+                        --build-arg BACKEND_URL=${env.NEXT_PUBLIC_API_URL} \
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                """
             }
         }
 

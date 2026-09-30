@@ -40,7 +40,7 @@ import {
   Shield,
   Database,
   QrCode,
-  Image,
+  Image as ImageIcon,
   Download,
   X,
   Moon,
@@ -64,7 +64,10 @@ export default function LeafletPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const leafletRef = useRef<HTMLDivElement>(null)
 
+  // Standard hydration-safety mount flag (defers client-only rendering
+  // until after the initial SSR-matching render).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true)
   }, [])
 
@@ -965,6 +968,10 @@ export default function LeafletPage() {
                 <div className="flex flex-col items-center space-y-3">
                   <div className=" rounded-lg border-2 border-dashed border-border">
                     <div className="text-center space-y-2">
+                        {/* Kept as <img>, not next/image: this page is captured synchronously by
+                            html2canvas (see exportAsImage below) for PDF/PNG export, which needs a
+                            plain, immediately-rendered <img> rather than next/image's lazy-loaded,
+                            wrapped output. */}
                         <img src="qr-code.png" alt="QR Code" />
                     </div>
                   </div>
@@ -1171,8 +1178,10 @@ export default function LeafletPage() {
                 </div>
                 
                 <div className="min-h-[350px] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
-                  <img 
-                    src="/talent-diploma.jpg" 
+                  {/* Kept as <img>, not next/image: same html2canvas export constraint as the
+                      QR code above, plus a direct-DOM onError fallback next/image doesn't support. */}
+                  <img
+                    src="/talent-diploma.jpg"
                     alt="Talent Diploma"
                     className="w-full h-full object-contain rounded-lg shadow-lg"
                     onError={(e) => {
@@ -1214,8 +1223,9 @@ export default function LeafletPage() {
                 </div>
                 
                 <div className="min-h-[350px] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
-                  <img 
-                    src="/first-step-diploma.jpg" 
+                  {/* Kept as <img>, not next/image: same html2canvas export constraint (see above). */}
+                  <img
+                    src="/first-step-diploma.jpg"
                     alt="First Step Diploma"
                     className="w-full h-full object-contain rounded-lg shadow-lg"
                     onError={(e) => {
@@ -1257,8 +1267,9 @@ export default function LeafletPage() {
                 </div>
                 
                 <div className="min-h-[350px] border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center bg-muted/50">
-                  <img 
-                    src="/review.png" 
+                  {/* Kept as <img>, not next/image: same html2canvas export constraint (see above). */}
+                  <img
+                    src="/review.png"
                     alt="Review"
                     className="w-full h-full object-contain rounded-lg shadow-lg"
                     onError={(e) => {
@@ -1268,7 +1279,7 @@ export default function LeafletPage() {
                     }}
                   />
                   <div className="hidden text-center space-y-2">
-                    <Image className="h-16 w-16 text-muted-foreground mx-auto" />
+                    <ImageIcon className="h-16 w-16 text-muted-foreground mx-auto" />
                     <p className="text-muted-foreground text-sm">
                       {locale === 'ru' ? 'Рецензия заведующего кафедрой интеллектуальных информационных технологий БГУИР' : 'Review from the head of the Department of Intelligent Information Technologies BSUIR'}
                     </p>

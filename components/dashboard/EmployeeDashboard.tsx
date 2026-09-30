@@ -200,7 +200,11 @@ export default function EnhancedEmployeeDashboard() {
         console.error("Failed to fetch fallback data:", fallbackError)
       }
     }
-  }, [token, user?.organization])
+    // Depend on the whole `user` object, not just user?.organization - the
+    // optional-chained read still depends on user's identity, and a
+    // narrower dependency here caused the compiler's inferred deps (`user`)
+    // to disagree with this manually-specified list.
+  }, [token, user])
 
   // Add 30-second polling for real-time updates
   useEffect(() => {
@@ -243,7 +247,7 @@ export default function EnhancedEmployeeDashboard() {
       {/* Welcome Section */}
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Welcome back, {user?.username}</h1>
-        <p className="text-muted-foreground">Here's your personal knowledge base overview and insights.</p>
+        <p className="text-muted-foreground">Here&apos;s your personal knowledge base overview and insights.</p>
       </div>
 
       {/* Quick Search Bar */}

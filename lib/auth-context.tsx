@@ -53,11 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (result.status === "success" && (result.response?.valid || (result as any).valid)) {
       const data = result.response || result
       setToken(storedToken)
-      setUser({
+      // /v1/token/validate only returns organization_id, not a name, so a
+      // re-validation (this runs on every mount, not just login) would
+      // otherwise blank out the organization name that login() populated.
+      setUser((prev) => ({
         username: (data as any).username || "User",
         role: ((data as any).role as User["role"]) || "user",
-        organization: (data as any).organization_name || (data as any).organization || "",
-      })
+        organization: (data as any).organization_name || (data as any).organization || prev?.organization || "",
+      }))
       return true
     }
     localStorage.removeItem("auth_token")
@@ -65,8 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // One-time auth bootstrap from localStorage on mount.
     const storedToken = localStorage.getItem("auth_token")
     if (storedToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       validateAndSetToken(storedToken).finally(() => setIsLoading(false))
     } else {
       setIsLoading(false)

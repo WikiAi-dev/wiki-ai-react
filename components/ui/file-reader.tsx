@@ -17,7 +17,7 @@ import {
   File,
   FileCode,
   FileArchive,
-  Image,
+  Image as ImageIcon,
   Download,
   Maximize2,
   Minimize2,
@@ -608,6 +608,8 @@ const ImageViewer: React.FC<{ filename: string; content: string }> = ({ filename
       </div>
       
       <div className="flex items-center justify-center h-full">
+        {/* Kept as <img>, not next/image: imageUrl is a client-generated blob:/data: URI (see
+            loadImage above), not a static/remote URL - not a safe next/image use case. */}
         <img
           src={imageUrl}
           alt={filename}
@@ -630,6 +632,9 @@ const MarkdownViewer: React.FC<{ content: string }> = ({ content }) => {
   const INITIAL_CHUNK_SIZE = 2000
 
   useEffect(() => {
+    // Syncs loading state to the content prop - content arrives fully
+    // loaded from the parent, so there's nothing async to await here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false)
   }, [content])
 
@@ -720,10 +725,15 @@ const MarkdownViewer: React.FC<{ content: string }> = ({ content }) => {
                   </code>
                 )
               },
-              img({ node, ...props }) {
+              img({ node, alt, ...props }) {
+                // Kept as <img>, not next/image: this renders arbitrary markdown image
+                // syntax with an unbounded/unknown src (any URL the document author wrote),
+                // which next/image can't handle generically without width/height or a
+                // remotePatterns allowlist.
                 return (
                   <img
                     className="rounded-lg border max-h-64 object-contain"
+                    alt={alt || "Image from document"}
                     {...props}
                   />
                 )
@@ -818,9 +828,13 @@ const FileContentViewer: React.FC<FileViewerContentProps> = ({ file, token }) =>
 
     // Only try to load content if no content prop was provided and we have a token and filename
     if (!content && file.filename && token) {
+      // Fetch-on-condition pattern; loadContent sets content/loading state
+      // from the async response.
       loadContent()
     } else if (content) {
-      // Content is already provided as prop, no need to fetch
+      // Content is already provided as prop, no need to fetch - syncing it
+      // into local state directly.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContent(content)
       setLoading(false)
     } else {
@@ -880,7 +894,7 @@ export const UnifiedFileReader: React.FC<FileReaderProps> = ({
   content 
 }) => {
   const getFileIcon = (contentType: string, filename?: string) => {
-    if (contentType.startsWith("image/")) return <Image className="h-4 w-4" />
+    if (contentType.startsWith("image/")) return <ImageIcon className="h-4 w-4" />
     if (contentType.includes("pdf")) return <FileText className="h-4 w-4" />
     if (contentType.includes("text") || contentType.includes("code")) return <FileCode className="h-4 w-4" />
     if (contentType.includes("sheet") || contentType.includes("excel")) return <FileSpreadsheet className="h-4 w-4" />

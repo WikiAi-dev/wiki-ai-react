@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi, apiRequest } from "@/lib/api"
 import { getApiUrl } from "@/lib/config"
-import { useUploadStatusPoll, type UploadStatus } from "@/hooks/use-upload-status-poll"
+import { useUploadStatusPoll } from "@/hooks/use-upload-status-poll"
 import { UploadStatusBadge } from "@/components/upload-status-badge"
 import { AppHeader } from "@/components/app-header"
 import { Button } from "@/components/ui/button"
@@ -54,7 +54,7 @@ import {
   Download,
   Loader2,
   File,
-  Image,
+  Image as ImageIcon,
   FileCode,
   FileArchive,
   Calendar,
@@ -94,12 +94,10 @@ interface FileItem {
   upload_date: string
   content_type: string
   metadata?: any
-  status: string
-  // UnifiedFileReader (components/ui/file-reader.tsx) still requires its own
-  // `indexed: boolean` field on whatever it's passed - kept here, derived
-  // from the real status, purely for structural compatibility with that
-  // shared component's prop type.
   indexed: boolean
+  // Real indexing status from knowledge-service (pending/indexing/indexed/failed,
+  // see WAI-52), as already returned by GET /v1/documents in the list response.
+  status?: string
 }
 
 
@@ -114,7 +112,6 @@ export default function AdminFilesPage() {
   const [fileToDelete, setFileToDelete] = useState<{filename: string, id?: number} | null>(null)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
-  const { items: uploadItems, addResults: addUploadResults, clearTerminal: clearTerminalUploads } = useUploadStatusPoll(token)
   const [isDragging, setIsDragging] = useState(false)
   const [reindexingId, setReindexingId] = useState<string | number | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -133,6 +130,7 @@ export default function AdminFilesPage() {
         // Map API response to FileItem interface
         const mappedFiles = response.response.documents.map((doc: any, index: number) => {
           const title = doc.title || doc.Title || doc.filename || doc.original_filename || `file-${index}`
+          const status = doc.status || doc.Status
           return {
             id: doc.document_id || doc.DocumentID || doc.id || doc.ID || `${index}`,
             filename: title,
@@ -140,8 +138,10 @@ export default function AdminFilesPage() {
             upload_date: doc.upload_timestamp || doc.created_at || doc.updated_at || new Date().toISOString(),
             content_type: doc.doc_type || doc.DocType || "application/octet-stream",
             metadata: doc.metadata || null,
-            status: doc.status || doc.Status || "indexed",
-            indexed: (doc.status || doc.Status || "indexed") === "indexed",
+            // Older/synchronous responses without a status field are assumed
+            // already indexed; when a real status is present, trust it.
+            indexed: status ? status === "indexed" : true,
+            status,
           }
         })
         setFiles(mappedFiles)
@@ -154,27 +154,18 @@ export default function AdminFilesPage() {
   }, [token])
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchFiles sets files/loading state from the
+    // async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFiles()
   }, [fetchFiles])
-
-  const uploadItemsRef = useRef(uploadItems)
-  useEffect(() => {
-    const prevTerminal = new Set(
-      uploadItemsRef.current.filter((i) => i.status !== "pending" && i.status !== "indexing").map((i) => i.id)
-    )
-    const newlyTerminal = uploadItems.some(
-      (i) => i.status !== "pending" && i.status !== "indexing" && !prevTerminal.has(i.id)
-    )
-    uploadItemsRef.current = uploadItems
-    if (newlyTerminal) {
-      fetchFiles()
-    }
-  }, [uploadItems, fetchFiles])
 
   // Filter files based on search query
   const filteredFiles = files.filter(file =>
     (file.filename ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const uploadPoll = useUploadStatusPoll(token)
 
   const handleFileUpload = async () => {
     if (!uploadedFiles.length || !token) return
@@ -185,12 +176,30 @@ export default function AdminFilesPage() {
       // `content` field - there is no multipart/binary upload path. filesApi.upload() reads each
       // file's text client-side (FileReader.readAsText) and posts it as JSON; it rejects files
       // that don't look like text rather than silently uploading garbled binary content.
+      //
+      // Ingest is asynchronous (WAI-52): "success" here means accepted-and-indexing, not
+      // finished, so track each result's live status instead of just reporting a flat count.
       const result = await filesApi.upload(token, uploadedFiles)
-      addUploadResults(result.results)
-      if (result.status === "success") {
-        toast.success(`${uploadedFiles.length} file(s) queued for indexing`)
-      } else {
-        toast.error(result.message || "Failed to upload files")
+      const fileResults = result.response?.results ?? []
+      const succeeded = fileResults.filter((r) => r.status === "success")
+      const failed = fileResults.filter((r) => r.status === "error")
+
+      if (fileResults.length > 0) {
+        uploadPoll.track(
+          fileResults.map((r) => ({
+            filename: r.filename,
+            documentId: r.documentId,
+            status: (r.initialStatus as any) || (r.status === "success" ? "pending" : "error"),
+            message: r.message,
+          })),
+        )
+      }
+
+      if (succeeded.length > 0) {
+        toast.success(`${succeeded.length} file(s) accepted and indexing`)
+      }
+      if (failed.length > 0) {
+        toast.error(failed.length === 1 ? failed[0].message || "Failed to upload files" : `${failed.length} file(s) failed to upload`)
       }
     } catch (error) {
       toast.error("Failed to upload files")
@@ -200,6 +209,26 @@ export default function AdminFilesPage() {
       fetchFiles()
     }
   }
+
+  // Once every tracked upload reaches a terminal state, refresh the list so
+  // its status badges (WAI-55) pick up the final result.
+  const uploadEntries = uploadPoll.entries
+  const hasRefreshedRef = useRef(true)
+  useEffect(() => {
+    if (uploadEntries.length === 0) {
+      hasRefreshedRef.current = true
+      return
+    }
+    const allTerminal = uploadEntries.every((entry) =>
+      ["indexed", "failed", "duplicate", "error"].includes(entry.status),
+    )
+    if (allTerminal && !hasRefreshedRef.current) {
+      hasRefreshedRef.current = true
+      fetchFiles()
+    } else if (!allTerminal) {
+      hasRefreshedRef.current = false
+    }
+  }, [uploadEntries, fetchFiles])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -336,7 +365,7 @@ export default function AdminFilesPage() {
   }
 
   const getFileIcon = (contentType: string) => {
-    if (contentType.startsWith("image/")) return <Image className="h-4 w-4" />
+    if (contentType.startsWith("image/")) return <ImageIcon className="h-4 w-4" />
     if (contentType.includes("pdf")) return <FileText className="h-4 w-4" />
     if (contentType.includes("text") || contentType.includes("code")) return <FileCode className="h-4 w-4" />
     if (contentType.includes("zip") || contentType.includes("archive")) return <FileArchive className="h-4 w-4" />
@@ -344,7 +373,7 @@ export default function AdminFilesPage() {
   }
 
   const totalSize = files.reduce((acc, file) => acc + file.size, 0)
-  const indexedCount = files.filter(file => file.status === "indexed").length
+  const indexedCount = files.filter(file => file.indexed).length
 
   return (
     <>
@@ -467,20 +496,6 @@ export default function AdminFilesPage() {
                 </div>
               </div>
 
-              {uploadItems.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {uploadItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-1.5 text-sm">
-                      <span className="text-muted-foreground max-w-[10rem] truncate">{item.fileName}</span>
-                      <UploadStatusBadge status={item.status} />
-                    </div>
-                  ))}
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={clearTerminalUploads}>
-                    Clear
-                  </Button>
-                </div>
-              )}
-
               {uploadedFiles.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">{t('fileManagement.selectedFiles', { count: uploadedFiles.length })}:</h4>
@@ -497,6 +512,35 @@ export default function AdminFilesPage() {
                         >
                           <X className="h-3 w-3" />
                         </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {uploadPoll.entries.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Indexing status:</h4>
+                  <div className="space-y-1">
+                    {uploadPoll.entries.map((entry) => (
+                      <div
+                        key={`${entry.filename}-${entry.documentId ?? "pending"}`}
+                        className="flex items-center justify-between gap-2 text-sm"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{entry.filename}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <UploadStatusBadge status={entry.status} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => entry.documentId && uploadPoll.dismiss(entry.documentId)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -609,7 +653,7 @@ export default function AdminFilesPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h4 className="font-medium">{file.filename}</h4>
-                              <UploadStatusBadge status={(file.status as UploadStatus) || "indexed"} />
+                              {file.status && <UploadStatusBadge status={file.status} />}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span>{formatFileSize(file.size)}</span>

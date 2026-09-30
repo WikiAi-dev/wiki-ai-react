@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi, metricsApi, reportsApi } from "@/lib/api"
 import { AppHeader } from "@/components/app-header"
@@ -34,6 +34,7 @@ import Link from "next/link"
 import { useTranslation } from "@/src/i18n"
 
 interface FileItem {
+  id: string
   name: string
   type: string
   size?: number
@@ -53,7 +54,6 @@ export default function UserDashboard() {
   const { token, user } = useAuth()
   const { t } = useTranslation()
   const [files, setFiles] = useState<FileItem[]>([])
-  const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -71,17 +71,22 @@ export default function UserDashboard() {
     try {
       const result = await filesApi.list(token)
       if (result.status === "success" && result.response) {
-        const fileItems: FileItem[] = (result.response.documents || []).map((doc: any) => ({
-          name: doc.filename || doc.original_filename || 'Unknown',
-          type: doc.filename?.split('.').pop()?.toLowerCase() || 'unknown',
-          size: doc.size,
-          lastModified: doc.uploaded_at || doc.created_at,
-          tags: doc.tags || [],
-          starred: Math.random() > 0.7, // Simulate some starred files
-        }))
+        const fileItems: FileItem[] = (result.response.documents || []).map((doc: any, index: number) => {
+          // knowledge-service's DocumentResult has no "filename" field - the
+          // name is returned as "title" (see models/dtm/document.go).
+          const name = doc.title || doc.Title || doc.filename || doc.original_filename || 'Unknown'
+          return {
+            id: doc.document_id || doc.DocumentID || doc.id || `${index}`,
+            name,
+            type: name.split('.').pop()?.toLowerCase() || 'unknown',
+            size: doc.size,
+            lastModified: doc.uploaded_at || doc.created_at,
+            tags: doc.tags || [],
+            starred: Math.random() > 0.7, // Simulate some starred files
+          }
+        })
         setFiles(fileItems)
-        setFilteredFiles(fileItems)
-        
+
         // Update stats
         const recentDate = new Date()
         recentDate.setDate(recentDate.getDate() - 7)
@@ -122,6 +127,9 @@ export default function UserDashboard() {
   }
 
   useEffect(() => {
+    // Fetch-on-mount pattern; fetchFiles/fetchStats set files/stats/loading
+    // state from their async responses.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFiles()
     fetchStats()
   }, [token])
@@ -138,7 +146,9 @@ export default function UserDashboard() {
     return () => clearInterval(interval)
   }, [token])
 
-  useEffect(() => {
+  // Derived directly from files/searchQuery/selectedTags during render
+  // instead of a separate state+effect.
+  const filteredFiles = useMemo(() => {
     let filtered = files
 
     if (searchQuery) {
@@ -153,7 +163,7 @@ export default function UserDashboard() {
       )
     }
 
-    setFilteredFiles(filtered)
+    return filtered
   }, [searchQuery, selectedTags, files])
 
   const allTags = Array.from(new Set(files.flatMap(file => file.tags || [])))
@@ -380,7 +390,7 @@ export default function UserDashboard() {
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredFiles.slice(0, 6).map((file) => (
-                      <Card key={file.name} className="hover:shadow-md transition-shadow">
+                      <Card key={file.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-2">
@@ -428,7 +438,7 @@ export default function UserDashboard() {
                   <div className="space-y-2">
                     {filteredFiles.slice(0, 6).map((file) => (
                       <div
-                        key={file.name}
+                        key={file.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">

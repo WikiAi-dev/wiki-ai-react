@@ -50,10 +50,6 @@ export default function CMSDashboard({ token, onLogout }: CMSDashboardProps) {
   const [error, setError] = useState("")
   const [refreshKey, setRefreshKey] = useState(0)
 
-  useEffect(() => {
-    fetchStats()
-  }, [token, refreshKey])
-
   const fetchStats = async () => {
     try {
       const response = await fetch(getCmsEndpointUrl("/content/stats"), {
@@ -75,6 +71,13 @@ export default function CMSDashboard({ token, onLogout }: CMSDashboardProps) {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Fetch-on-mount/refresh pattern; fetchStats sets stats/loading/error
+    // state from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchStats()
+  }, [token, refreshKey])
 
   if (loading) {
     return (

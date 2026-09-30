@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useAdminUsers, useAdminFiles, useAdminReports } from '@/hooks/useAdminData'
@@ -61,28 +61,6 @@ export function AdminDashboard() {
     }
   }, [authLoading, isAuthorizedAdmin, router])
 
-  // Show access denied if not authorized
-  if (!authLoading && !isAuthorizedAdmin) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-6 text-center space-y-4">
-            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6 text-red-600" />
-            </div>
-            <h2 className="text-lg font-semibold">Access Denied</h2>
-            <p className="text-sm text-muted-foreground">
-              Only administrators can access this panel.
-            </p>
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
-              Return to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const {
     users,
     files,
@@ -108,29 +86,52 @@ export function AdminDashboard() {
   const filesData = useAdminFiles(token || undefined, false, { autoRefreshInterval: 30000 })
   const reportsData = useAdminReports(token || undefined, false, { autoRefreshInterval: 30000 })
 
-  // Memoize data to prevent infinite loops
-  const usersDataMemo = useMemo(() => usersData.data, [JSON.stringify(usersData.data)])
-  const filesDataMemo = useMemo(() => filesData.data, [JSON.stringify(filesData.data)])
-  const reportsDataMemo = useMemo(() => reportsData.data, [JSON.stringify(reportsData.data)])
-
-  // Sync fetched data to store
+  // Sync fetched data to store. usersData.data/filesData.data/reportsData.data
+  // are already stable references from useAdminData's own memoization, so
+  // these can depend on them directly without a JSON.stringify workaround.
   useEffect(() => {
-    if (usersDataMemo) {
-      setUsers(usersDataMemo as AdminUser[])
+    if (usersData.data) {
+      setUsers(usersData.data as AdminUser[])
     }
-  }, [usersDataMemo, setUsers])
+  }, [usersData.data, setUsers])
 
   useEffect(() => {
-    if (filesDataMemo) {
-      setFiles(filesDataMemo as AdminFile[])
+    if (filesData.data) {
+      setFiles(filesData.data as AdminFile[])
     }
-  }, [filesDataMemo, setFiles])
+  }, [filesData.data, setFiles])
 
   useEffect(() => {
-    if (reportsDataMemo) {
-      setReports(reportsDataMemo as AdminReport[])
+    if (reportsData.data) {
+      setReports(reportsData.data as AdminReport[])
     }
-  }, [reportsDataMemo, setReports])
+  }, [reportsData.data, setReports])
+
+  // Show access denied if not authorized. This must come after every hook
+  // call above - hooks can't run conditionally, so an early return before
+  // them would make the hook count differ between the "still loading" and
+  // "resolved unauthorized" renders and crash with "Rendered more hooks
+  // than during the previous render".
+  if (!authLoading && !isAuthorizedAdmin) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <Card className="max-w-md w-full">
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6 text-red-600" />
+            </div>
+            <h2 className="text-lg font-semibold">Access Denied</h2>
+            <p className="text-sm text-muted-foreground">
+              Only administrators can access this panel.
+            </p>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              Return to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   // Show loading state
   const isLoading =

@@ -2,12 +2,12 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/src/i18n"
 import { filesApi, apiRequest } from "@/lib/api"
 import { getApiUrl } from "@/lib/config"
-import { useUploadStatusPoll, type UploadStatus } from "@/hooks/use-upload-status-poll"
+import { useUploadStatusPoll, type UploadStatusValue } from "@/hooks/use-upload-status-poll"
 import { UploadStatusBadge } from "@/components/upload-status-badge"
 import { AppHeader } from "@/components/app-header"
 import { Button } from "@/components/ui/button"
@@ -75,6 +75,12 @@ import {
 import { toast } from "sonner"
 
 // Helper function to determine content type from filename
+// knowledge-service's DocumentResult has no "filename" field - a document's
+// name is returned as "title" (see models/dtm/document.go), with
+// metadata.original_filename as a fallback (set by filesApi.upload).
+const getDocName = (doc: any): string =>
+  doc.title || doc.Title || doc.filename || doc.metadata?.original_filename || "Unknown"
+
 const getContentType = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase()
   switch (ext) {
@@ -97,6 +103,9 @@ interface FileItem {
   name: string
   type: string
   size?: number
+  documentId?: string
+  // Real indexing status from knowledge-service (pending/indexing/indexed/failed,
+  // see WAI-52), as already returned by GET /v1/documents in the list response.
   status?: string
 }
 
@@ -216,6 +225,10 @@ function PDFViewer({ filename, content }: { filename: string; content: string })
   useEffect(() => {
     console.log("PDFViewer: Starting to load PDF", { filename, contentLength: content?.length })
 
+    // Resetting loading/error state ahead of the actual side effects below
+    // (base64 decode, Blob creation, URL.createObjectURL), which must run
+    // in an effect since content/filename can change on every prop update.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true)
     setError("")
 
@@ -245,7 +258,7 @@ function PDFViewer({ filename, content }: { filename: string; content: string })
       setError(`Failed to load PDF: ${err instanceof Error ? err.message : 'Unknown error'}`)
       setIsLoading(false)
     }
-  }, [content])
+  }, [content, filename])
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3))
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5))
@@ -403,6 +416,9 @@ function WordViewer({ filename, content }: { filename: string; content: string }
   useEffect(() => {
     console.log("WordViewer: Starting to load Word document", { filename, contentLength: content?.length })
 
+    // Same as PDFViewer above: resetting state ahead of the real side
+    // effects (base64 decode, Blob creation) that must run in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true)
     setError("")
 
@@ -591,11 +607,9 @@ export default function FilesPage() {
   const { t } = useTranslation()
   const { token, isAdmin } = useAuth()
   const [files, setFiles] = useState<FileItem[]>([])
-  const [filteredFiles, setFilteredFiles] = useState<FileItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
-  const { items: uploadItems, addResults: addUploadResults, clearTerminal: clearTerminalUploads } = useUploadStatusPoll(token)
 
   // View/Edit state
   const [selectedFile, setSelectedFile] = useState<FileReaderItem | null>(null)
@@ -620,14 +634,17 @@ export default function FilesPage() {
     try {
       const result = await filesApi.list(token)
       if (result.status === "success" && result.response?.documents) {
-        const fileItems: FileItem[] = (result.response.documents || []).map((doc: any) => ({
-          name: doc.filename || 'Unknown',
-          type: getFileType(doc.filename || 'Unknown'),
-          size: doc.file_size || 0,
-          status: doc.status || doc.Status || "indexed",
-        }))
+        const fileItems: FileItem[] = (result.response.documents || []).map((doc: any) => {
+          const name = getDocName(doc)
+          return {
+            name,
+            type: getFileType(name),
+            size: doc.file_size || 0,
+            documentId: doc.document_id || doc.DocumentID || doc.id,
+            status: doc.status || doc.Status,
+          }
+        })
         setFiles(fileItems)
-        setFilteredFiles(fileItems)
       }
     } catch (error) {
       console.error("Failed to fetch files:", error)
@@ -637,32 +654,23 @@ export default function FilesPage() {
     }
   }, [token])
 
+  // Standard fetch-on-mount pattern (fetchFiles sets loading/files/error
+  // state from the async response), not a case that can be derived during
+  // render.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFiles()
   }, [fetchFiles])
 
-  const uploadItemsRef = useRef(uploadItems)
-  useEffect(() => {
-    const prevTerminal = new Set(
-      uploadItemsRef.current.filter((i) => i.status !== "pending" && i.status !== "indexing").map((i) => i.id)
-    )
-    const newlyTerminal = uploadItems.some(
-      (i) => i.status !== "pending" && i.status !== "indexing" && !prevTerminal.has(i.id)
-    )
-    uploadItemsRef.current = uploadItems
-    if (newlyTerminal) {
-      fetchFiles()
-    }
-  }, [uploadItems, fetchFiles])
-
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = files.filter((file) => file.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      setFilteredFiles(filtered)
-    } else {
-      setFilteredFiles(files)
-    }
+  // Derived directly from files/searchQuery during render instead of a
+  // separate state+effect - filteredFiles was always exactly one of these
+  // two expressions, so there was nothing to synchronize with an effect.
+  const filteredFiles = useMemo(() => {
+    if (!searchQuery) return files
+    return files.filter((file) => file.name.toLowerCase().includes(searchQuery.toLowerCase()))
   }, [searchQuery, files])
+
+  const uploadPoll = useUploadStatusPoll(token)
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.target.files
@@ -671,12 +679,32 @@ export default function FilesPage() {
     setIsUploading(true)
     try {
       const result = await filesApi.upload(token, Array.from(uploadedFiles))
-      addUploadResults(result.results)
-      if (result.status === "success") {
-        toast.success(`${uploadedFiles.length} file(s) queued for indexing`)
-      } else {
-        toast.error(result.message || "Upload failed")
+      const fileResults = result.response?.results ?? []
+      const succeeded = fileResults.filter((r) => r.status === "success")
+      const failed = fileResults.filter((r) => r.status === "error")
+
+      if (fileResults.length > 0) {
+        // Ingest is asynchronous (WAI-52) - a successful response here means
+        // accepted-and-indexing, not finished. Track each accepted file so its
+        // live status (pending -> indexing -> indexed/failed) shows in the
+        // upload strip instead of the UI just going quiet until it's done.
+        uploadPoll.track(
+          fileResults.map((r) => ({
+            filename: r.filename,
+            documentId: r.documentId,
+            status: (r.initialStatus as any) || (r.status === "success" ? "pending" : "error"),
+            message: r.message,
+          })),
+        )
       }
+
+      if (succeeded.length > 0) {
+        toast.success(`${succeeded.length} file(s) accepted and indexing`)
+      }
+      if (failed.length > 0) {
+        toast.error(failed.length === 1 ? failed[0].message || "Upload failed" : `${failed.length} file(s) failed to upload`)
+      }
+
       fetchFiles()
     } catch (error) {
       console.error("Upload error:", error)
@@ -686,6 +714,27 @@ export default function FilesPage() {
       e.target.value = ""
     }
   }
+
+  // Once every tracked upload reaches a terminal state, refresh the
+  // persistent list so its status badges (WAI-55) pick up the final result
+  // without waiting for the next manual/periodic fetchFiles() call.
+  const uploadEntries = uploadPoll.entries
+  const hasRefreshedRef = useRef(true)
+  useEffect(() => {
+    if (uploadEntries.length === 0) {
+      hasRefreshedRef.current = true
+      return
+    }
+    const allTerminal = uploadEntries.every((entry) =>
+      ["indexed", "failed", "duplicate", "error"].includes(entry.status),
+    )
+    if (allTerminal && !hasRefreshedRef.current) {
+      hasRefreshedRef.current = true
+      fetchFiles()
+    } else if (!allTerminal) {
+      hasRefreshedRef.current = false
+    }
+  }, [uploadEntries, fetchFiles])
 
   const handleViewFile = async (filename: string) => {
     if (!token) return
@@ -697,12 +746,12 @@ export default function FilesPage() {
       const result = await filesApi.list(token)
       if (result.status === "success" && result.response?.documents) {
         // Find file in list to get actual file data
-        const fileData = result.response.documents.find((doc: any) => doc.filename === filename)
+        const fileData = result.response.documents.find((doc: any) => getDocName(doc) === filename)
         if (fileData) {
           const fileItem: FileReaderItem = {
-            filename: fileData.filename || filename,
-            size: fileData.file_size || 0,
-            upload_date: fileData.upload_timestamp || new Date().toISOString(),
+            filename: getDocName(fileData),
+            size: (fileData as any).file_size || 0,
+            upload_date: (fileData as any).upload_timestamp || (fileData as any).created_at || new Date().toISOString(),
             content_type: 'application/octet-stream',
             indexed: false
           }
@@ -737,13 +786,13 @@ export default function FilesPage() {
       const result = await filesApi.list(token)
       if (result.status === "success" && result.response?.documents) {
         // Find the file in the list to get actual file data
-        const fileData = result.response.documents.find((doc: any) => doc.filename === filename)
+        const fileData = result.response.documents.find((doc: any) => getDocName(doc) === filename)
         if (fileData) {
           const fileItem: FileReaderItem = {
-            filename: fileData.filename || filename,
-            size: fileData.file_size || 0,
-            upload_date: fileData.upload_timestamp || new Date().toISOString(),
-            content_type: getContentType(fileData.filename || filename),
+            filename: getDocName(fileData),
+            size: (fileData as any).file_size || 0,
+            upload_date: (fileData as any).upload_timestamp || (fileData as any).created_at || new Date().toISOString(),
+            content_type: getContentType(getDocName(fileData)),
             indexed: false
           }
           setSelectedFile(fileItem)
@@ -849,20 +898,36 @@ export default function FilesPage() {
               </Button>
             </div>
           </div>
-          {uploadItems.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {uploadItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-1.5 text-sm">
-                  <span className="text-muted-foreground max-w-[10rem] truncate">{item.fileName}</span>
-                  <UploadStatusBadge status={item.status} />
+        </div>
+
+        {uploadPoll.entries.length > 0 && (
+          <Card>
+            <CardContent className="py-3 space-y-2">
+              {uploadPoll.entries.map((entry) => (
+                <div
+                  key={`${entry.filename}-${entry.documentId ?? "pending"}`}
+                  className="flex items-center justify-between gap-2 text-sm"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {getFileIcon(entry.filename)}
+                    <span className="truncate">{entry.filename}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <UploadStatusBadge status={entry.status} />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => entry.documentId && uploadPoll.dismiss(entry.documentId)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={clearTerminalUploads}>
-                Clear
-              </Button>
-            </div>
-          )}
-        </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="relative w-full sm:max-w-sm flex-1">
@@ -927,12 +992,10 @@ export default function FilesPage() {
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           {getFileIcon(file.name)}
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-sm truncate">{file.name}</p>
-                              <UploadStatusBadge status={(file.status as UploadStatus) || "indexed"} />
-                            </div>
+                            <p className="font-medium text-sm truncate">{file.name}</p>
                             <p className="text-xs text-muted-foreground">{file.type}</p>
                           </div>
+                          {file.status && <UploadStatusBadge status={file.status} className="shrink-0" />}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button
@@ -1044,12 +1107,10 @@ export default function FilesPage() {
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             {getFileIcon(file.name)}
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-sm truncate">{file.name}</p>
-                                <UploadStatusBadge status={(file.status as UploadStatus) || "indexed"} />
-                              </div>
+                              <p className="font-medium text-sm truncate">{file.name}</p>
                               <p className="text-xs text-muted-foreground">{file.type}</p>
                             </div>
+                            {file.status && <UploadStatusBadge status={file.status} className="shrink-0" />}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button

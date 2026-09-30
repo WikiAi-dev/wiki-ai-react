@@ -23,7 +23,8 @@ export function Wordmark({ className }: { className?: string }) {
 const iconButton =
   "inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-export function Nav() {
+/** Site navigation. Pass showCta={false} on the page the call to action leads to. */
+export function Nav({ showCta = true }: { showCta?: boolean }) {
   const { t, locale, setLocale } = useCopy();
   const { resolvedTheme, setTheme } = useTheme();
   const hydrated = useHydrated();
@@ -38,10 +39,10 @@ export function Nav() {
   }, [open]);
 
   const links = [
-    { href: "#systems", label: t("menu.systems") },
-    { href: "#how", label: t("menu.how") },
-    { href: "#pilot", label: t("menu.pilot") },
-    { href: "#faq", label: t("menu.faq") },
+    { href: "/landing#systems", label: t("menu.systems") },
+    { href: "/landing#how", label: t("menu.how") },
+    { href: "/landing#pilot", label: t("menu.pilot") },
+    { href: "/landing#faq", label: t("menu.faq") },
   ];
 
   const isDark = hydrated && resolvedTheme === "dark";
@@ -80,9 +81,11 @@ export function Nav() {
           >
             {t("menu.signIn")}
           </Link>
-          <ButtonLink href="/contact" className="ml-1 hidden h-9 px-4 text-sm sm:inline-flex">
-            {t("menu.cta")}
-          </ButtonLink>
+          {showCta && (
+            <ButtonLink href="/contact" className="ml-1 hidden h-9 px-4 text-sm sm:inline-flex">
+              {t("menu.cta")}
+            </ButtonLink>
+          )}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -117,11 +120,11 @@ export function Nav() {
                   {l.label}
                 </a>
               ))}
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className={cn("mt-3 grid gap-2", showCta && "grid-cols-2")}>
                 <ButtonLink href="/login" variant="secondary">
                   {t("menu.signIn")}
                 </ButtonLink>
-                <ButtonLink href="/contact">{t("menu.cta")}</ButtonLink>
+                {showCta && <ButtonLink href="/contact">{t("menu.cta")}</ButtonLink>}
               </div>
             </Container>
           </motion.div>

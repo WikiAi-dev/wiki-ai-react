@@ -71,15 +71,21 @@ export async function apiRequest<T = unknown>({
 
     const responseClone = response.clone()
     let result: any
-    try {
-      result = await response.json()
-    } catch (jsonError) {
-      const responseText = await responseClone.text()
-      console.error('Failed to parse JSON response:', jsonError)
-      console.error('Response text:', responseText)
-      result = {
-        detail: `Invalid JSON response: ${response.status} ${response.statusText}`,
-        raw_text: responseText,
+    if (response.status === 204) {
+      // No Content - nothing to parse, and calling .json() on an empty
+      // body always throws. Success is determined by response.ok below.
+      result = {}
+    } else {
+      try {
+        result = await response.json()
+      } catch (jsonError) {
+        const responseText = await responseClone.text()
+        console.error('Failed to parse JSON response:', jsonError)
+        console.error('Response text:', responseText)
+        result = {
+          detail: `Invalid JSON response: ${response.status} ${response.statusText}`,
+          raw_text: responseText,
+        }
       }
     }
 
@@ -249,7 +255,10 @@ export const authApi = {
     }),
 
   listMembers: (token: string) =>
-    apiRequest<{ members: Array<{ user_id: string; username: string; role: string }> }>({
+    apiRequest<{
+      items: Array<{ user_id: string; username: string; email?: string; role: string; status: string }>
+      next_cursor: string | null
+    }>({
       url: "/v1/organizations/members",
       token,
     }),
@@ -285,17 +294,21 @@ export const authApi = {
     }),
 }
 
-// Per-file outcome of filesApi.upload() - document_id/status are null when
-// the file never reached the server (client-side binary rejection, read
-// error, or a request-level failure); otherwise status reflects ingest's
-// immediate response ("pending" for a fresh upload, "duplicate" for
-// identical existing content) - actual indexing happens in the background,
-// see filesApi.getStatus/useUploadStatusPoll.
-export interface FileUploadResult {
-  file: File
-  documentId: string | null
-  status: string | null
-  error?: string
+export interface UploadFileResult {
+  filename: string
+  status: "success" | "error"
+  documentId?: string
+  // Backend status right after ingest accepts the file - "pending" for a
+  // fresh async ingest (WAI-52), or "duplicate" if it deduped against an
+  // already-indexed document. Absent when status is "error".
+  initialStatus?: string
+  message?: string
+}
+
+export interface UploadResponse {
+  status: "success" | "error"
+  message?: string
+  response?: { results: UploadFileResult[] }
 }
 
 export const filesApi = {
@@ -307,7 +320,7 @@ export const filesApi = {
     }
 
     return apiRequest<{
-      documents: Array<{ id: number; filename: string; upload_timestamp: string; organization_id: string; file_size: number }>
+      documents: Array<{ document_id: string; title: string; created_at: string; updated_at: string; tenant_id: string; chunk_count: number }>
     }>({
       url: API_CONFIG.ENDPOINTS.FILES_LIST,
       token,
@@ -384,19 +397,16 @@ export const filesApi = {
   // each file's text client-side and reject file types that can't be meaningfully read as text
   // (e.g. PDF/DOCX/images) rather than silently uploading mangled FileReader.readAsText() output.
   //
-  // Ingest is now asynchronous server-side: this call returns almost immediately with
-  // status "pending" per file (or "duplicate" if identical content already exists), not
-  // "indexed" - actual chunking/embedding happens in the background. Callers that want to
-  // show live per-file progress should feed `results` into useUploadStatusPoll and call
-  // filesApi.getStatus() to follow each file to a terminal state.
-  upload: async (token: string, files: File[]): Promise<{
-    status: "success" | "error"
-    message?: string
-    results: FileUploadResult[]
-  }> => {
+  // Ingest is asynchronous (WAI-52): a successful per-file response here means the document was
+  // accepted and is now indexing in the background, not that indexing finished. Each per-file
+  // result carries the document_id + initial status ("pending", or "duplicate" for an
+  // already-indexed dedup hit) so callers can poll filesApi.getStatus() to follow progress
+  // (see hooks/use-upload-status-poll.ts) instead of the old behavior of the whole call just
+  // hanging until every file finished indexing.
+  upload: async (token: string, files: File[]): Promise<UploadResponse> => {
     const tenantId = await resolveTenantId(token)
     if (!tenantId) {
-      return { status: "error" as const, message: "Tenant ID is required for file uploads", results: [] }
+      return { status: "error" as const, message: "Tenant ID is required for file uploads" }
     }
 
     const BINARY_EXTENSIONS = new Set([
@@ -423,19 +433,16 @@ export const filesApi = {
         reader.readAsText(file)
       })
 
-    // Each file is independent - a failure on one (binary rejection, network
-    // error, backend validation) must not abort the rest of the batch, or a
-    // single bad file silently drops every file after it. Collect per-file
-    // outcomes and only report the batch as an error if something failed.
-    const failures: string[] = []
-    let succeeded = 0
-    const results: FileUploadResult[] = []
+    const results: UploadFileResult[] = []
+    let hadError = false
+    let firstErrorMessage: string | undefined
 
     for (const file of files) {
       if (isLikelyBinary(file)) {
-        const error = `looks like a binary file - only plain-text documents (txt, md, csv, json, html, code, srt, etc.) can be uploaded`
-        failures.push(`"${file.name}": ${error}`)
-        results.push({ file, documentId: null, status: null, error })
+        const message = `"${file.name}" looks like a binary file. Only plain-text documents (txt, md, csv, json, html, code, srt, etc.) can be uploaded - the knowledge base stores document content as text.`
+        results.push({ filename: file.name, status: "error", message })
+        hadError = true
+        firstErrorMessage ??= message
         continue
       }
 
@@ -443,12 +450,21 @@ export const filesApi = {
       try {
         content = await readFileText(file)
       } catch (err) {
-        const error = err instanceof Error ? err.message : "failed to read file"
-        failures.push(`"${file.name}": ${error}`)
-        results.push({ file, documentId: null, status: null, error })
+        const message = err instanceof Error ? err.message : `Failed to read file ${file.name}`
+        results.push({ filename: file.name, status: "error", message })
+        hadError = true
+        firstErrorMessage ??= message
         continue
       }
 
+      // Prefer the filename extension over the browser-reported MIME type:
+      // browsers report an empty type for many plain-text formats (.srt,
+      // .log, .yaml, ...), and file.type || "text/plain" was masking that
+      // with a doc_type of "text/plain" - which knowledge-service's
+      // resolveDocType then trusts as explicit, skipping its own
+      // extension-based inference (and, for .srt specifically, skipping the
+      // dedicated subtitle parser entirely).
+      const ext = file.name.split(".").pop()?.toLowerCase()
       const result = await apiRequest<{ document_id: string; status: string }>({
         url: API_CONFIG.ENDPOINTS.FILES_UPLOAD,
         method: "POST",
@@ -457,7 +473,7 @@ export const filesApi = {
           tenant_id: tenantId,
           title: file.name,
           content,
-          doc_type: file.type || "text/plain",
+          doc_type: ext || file.type || "text/plain",
           metadata: {
             original_filename: file.name,
           },
@@ -465,37 +481,37 @@ export const filesApi = {
       })
 
       if (result.status === "error") {
-        failures.push(`"${file.name}": ${result.message}`)
-        results.push({ file, documentId: null, status: null, error: result.message })
-      } else {
-        succeeded++
-        results.push({
-          file,
-          documentId: result.response?.document_id ?? null,
-          status: result.response?.status ?? null,
-        })
+        results.push({ filename: file.name, status: "error", message: result.message })
+        hadError = true
+        firstErrorMessage ??= result.message
+        continue
       }
+
+      results.push({
+        filename: file.name,
+        status: "success",
+        documentId: result.response?.document_id,
+        initialStatus: result.response?.status,
+      })
     }
 
-    if (failures.length > 0) {
-      const prefix = succeeded > 0 ? `${succeeded} of ${files.length} file(s) uploaded. ` : ""
-      return { status: "error" as const, message: `${prefix}Failed: ${failures.join("; ")}`, results }
+    return {
+      status: hadError ? ("error" as const) : ("success" as const),
+      message: hadError ? firstErrorMessage : undefined,
+      response: { results },
     }
-
-    return { status: "success" as const, results }
   },
 
-  // GET /v1/documents/{id}/status - lightweight polling target for async
-  // ingest (WAI-52/53): status + chunk_count only, no content or embedding
-  // data, since this is meant to be called every ~2s per in-flight upload.
+  // GET /v1/documents/{id}/status - lightweight polling endpoint (WAI-53) for an in-flight
+  // upload's indexing progress. Intended to be called every ~2s per pending/indexing document
+  // (see hooks/use-upload-status-poll.ts), so it deliberately never fetches document content or
+  // chunk data.
   getStatus: async (token: string, documentId: string) => {
     const tenantId = await resolveTenantId(token)
     if (!tenantId) {
       return { status: "error" as const, message: "Tenant ID is required for status requests" }
     }
-    return apiRequest<{
-      document: { document_id: string; status: string; chunk_count: number; title?: string; updated_at?: string }
-    }>({
+    return apiRequest<{ document_id: string; status: string; chunk_count: number; updated_at: string }>({
       url: `${API_CONFIG.ENDPOINTS.FILES_LIST}/${encodeURIComponent(documentId)}/status`,
       token,
       params: { tenant_id: tenantId },
@@ -1102,10 +1118,13 @@ export const adminApi = {
       data: userData,
     }),
 
-  // POST /user/edit
+  // POST /user/edit - identity-service's EditUserRequest only supports
+  // user_id (required), username, email, status - no role or password.
+  // Role changes go through authApi.updateMemberRole; there is no
+  // admin-initiated password reset endpoint.
   editUser: (
     token: string,
-    userData: { username: string; role?: string; password?: string; allowed_files?: string[] },
+    userData: { user_id: string; username?: string; email?: string; status?: string },
   ) =>
     apiRequest({
       url: "/v1/user/edit",
@@ -1114,13 +1133,14 @@ export const adminApi = {
       data: userData,
     }),
 
-  // DELETE /user/delete with ?username=...
-  deleteUser: (token: string, username: string) =>
+  // DELETE /user/delete - identity-service reads user_id from the JSON body,
+  // not a query param.
+  deleteUser: (token: string, userId: string) =>
     apiRequest({
       url: "/v1/user/delete",
       method: "DELETE",
       token,
-      params: { username },
+      data: { user_id: userId },
     }),
 
   // Invite management endpoints
@@ -1129,14 +1149,17 @@ export const adminApi = {
     inviteData: { email?: string; role: string; allowed_files?: string[]; expires_in_days?: number; message?: string }
   ) =>
     apiRequest<{
-      invite_id: string
+      invite: {
+        id: string
+        organization_id: string
+        email?: string
+        role: string
+        expires_at: string
+        created_by: string
+        created_at: string
+      }
       token: string
       link: string
-      email?: string
-      role: string
-      expires_at: string
-      created_by: string
-      organization_id?: string
     }>({
       url: "/v1/invites",
       method: "POST",
@@ -1146,19 +1169,18 @@ export const adminApi = {
 
   listInvites: (token: string) =>
     apiRequest<{
-      invites: Array<{
+      items: Array<{
         id: string
-        token: string
-        link: string
+        organization_id: string
         email?: string
         role: string
         expires_at: string
         created_at: string
         created_by: string
-        is_used: boolean
+        used_at?: string
+        revoked_at?: string
       }>
-      count: number
-      listed_by: string
+      next_cursor: string | null
     }>({
       url: "/v1/invites",
       token,
@@ -1167,6 +1189,7 @@ export const adminApi = {
   getInviteInfo: (token: string) =>
     apiRequest<{
       valid: boolean
+      org_name: string
       email?: string
       role: string
       allowed_files: string[]
@@ -2092,14 +2115,16 @@ export const dashboardApi = {
     if (category) params.category = category
     if (difficulty) params.difficulty = difficulty
 
+    // learning-service's GET /v1/admin/quizzes returns {items, next_cursor},
+    // not {quizzes: [...]} - see internal/learning/server.go's listQuizzes.
     return apiRequest<{
-      quizzes: Array<{
+      items: Array<{
         id: string
         title: string
         description: string
         category: string
         difficulty: "easy" | "medium" | "hard"
-        time_limit: number
+        time_limit_minutes: number
         passing_score: number
         questions: Array<{
           id: string
@@ -2114,6 +2139,7 @@ export const dashboardApi = {
         updated_at: string
         organization_id: string
       }>
+      next_cursor: string | null
     }>({
       url: "/v1/admin/quizzes",
       token,
@@ -2128,7 +2154,7 @@ export const dashboardApi = {
       description: string
       category: string
       difficulty: "easy" | "medium" | "hard"
-      time_limit: number
+      time_limit_minutes: number
       passing_score: number
       questions: Array<{
         id: string
@@ -2153,7 +2179,7 @@ export const dashboardApi = {
     description: string
     category: string
     difficulty: "easy" | "medium" | "hard"
-    time_limit: number  
+    time_limit_minutes: number  
     passing_score: number
     questions: Array<{
       id: string
@@ -2214,7 +2240,7 @@ export const dashboardApi = {
     description?: string
     category?: string
     difficulty?: "easy" | "medium" | "hard"
-    time_limit?: number
+    time_limit_minutes?: number
     passing_score?: number
     questions?: Array<{
       id?: string

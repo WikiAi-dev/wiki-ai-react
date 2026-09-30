@@ -72,6 +72,14 @@ export function AppSidebar() {
     { title: t('navigation.catalogs'), url: "/app/catalogs", icon: LayoutDashboard },
   ]
 
+  // "/app" and "/app/admin" are prefixes of every other route here, so a
+  // naive startsWith() would keep Dashboard highlighted on every page.
+  // Only match those two exactly; everything else matches on a segment
+  // boundary so a future nested route (e.g. /app/admin/quizzes/123) still
+  // highlights its parent nav item.
+  const isNavItemActive = (url: string) =>
+    url === "/app" || url === "/app/admin" ? pathname === url : pathname === url || pathname.startsWith(url + "/")
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
@@ -101,7 +109,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {(isAdmin ? adminNavItems : userNavItems).map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url || (isAdmin && pathname.startsWith(item.url))}>
+                  <SidebarMenuButton asChild isActive={isNavItemActive(item.url)}>
                     <Link href={item.url}>
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { useTranslation } from "@/src/i18n"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -54,10 +55,6 @@ export default function BlogPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const postsPerPage = 6
 
-  useEffect(() => {
-    fetchBlogData()
-  }, [searchTerm, selectedCategory, sortBy, currentPage])
-
   const fetchBlogData = async () => {
     setLoading(true)
     try {
@@ -83,6 +80,13 @@ export default function BlogPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Fetch-on-mount/filter-change pattern; fetchBlogData sets
+    // posts/loading state from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchBlogData()
+  }, [searchTerm, selectedCategory, sortBy, currentPage])
 
   const featuredPosts = posts.filter(post => post.featured).slice(0, 3)
   const regularPosts = posts.filter(post => !post.featured)
@@ -158,11 +162,12 @@ export default function BlogPage() {
               {featuredPosts.map((post) => (
                 <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   {post.image_url && (
-                    <div className="aspect-video overflow-hidden">
-                      <img
+                    <div className="relative aspect-video overflow-hidden">
+                      <Image
                         src={post.image_url}
                         alt={post.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                   )}
@@ -254,11 +259,12 @@ export default function BlogPage() {
               {regularPosts.map((post) => (
                 <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   {post.image_url && (
-                    <div className="aspect-video overflow-hidden">
-                      <img
+                    <div className="relative aspect-video overflow-hidden">
+                      <Image
                         src={post.image_url}
                         alt={post.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                   )}

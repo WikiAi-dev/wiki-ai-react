@@ -126,6 +126,9 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isAdmin) {
+      // Fetch-on-condition pattern; fetchData sets dashboard stats state
+      // from the async response.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData()
     }
   }, [isAdmin, selectedPeriod, refreshKey, fetchData])

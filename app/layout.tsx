@@ -24,14 +24,21 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${_geist.className} ${_geistMono.className}`}>
       <head>
         <Script
           src="/pre-hydration.js"
           strategy="beforeInteractive"
         />
       </head>
-      <body className={`${_geist.className} ${_geistMono.className} font-sans antialiased`} suppressHydrationWarning>
+      {/* Both fonts' className are applied on <html> only so their @font-face
+          rules load (font-mono is used deliberately in ~20 places for
+          code/data). Geist Mono's className directly sets font-family, which
+          previously also landed on <body> alongside the font-sans utility —
+          same specificity, so source order silently made Geist Mono the
+          rendered default for the entire app. Applying font-sans directly on
+          body (with no competing className) makes it authoritative again. */}
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <HydrationCleanup />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <AuthProvider>

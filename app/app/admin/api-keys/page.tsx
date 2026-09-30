@@ -180,15 +180,22 @@ export default function ApiKeysPage() {
 
   useEffect(() => {
     if (isAdmin) {
+      // Fetch-on-condition pattern; fetchKeys sets keys/loading state from
+      // the async response. Without this, isLoading never leaves its
+      // initial `true` and the page shows a permanent spinner — fetchKeys
+      // was previously only ever called after a create/delete action, never
+      // on mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchKeys()
     }
   }, [isAdmin, fetchKeys])
 
   useEffect(() => {
-    if (selectedKeyId) {
+    if (isAdmin && selectedKeyId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchKeyDetails(selectedKeyId)
     }
-  }, [selectedKeyId, fetchKeyDetails])
+  }, [isAdmin, selectedKeyId, fetchKeyDetails])
 
   // Countdown timer for API key display
   useEffect(() => {
@@ -438,7 +445,7 @@ export default function ApiKeysPage() {
                   <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                     <p className="text-sm font-medium text-green-900 mb-2">✓ API Key Created Successfully</p>
                     <p className="text-xs text-green-800 mb-3">
-                      Copy this key now. You won't be able to see it again.
+                      Copy this key now. You won&apos;t be able to see it again.
                     </p>
                     <div className="flex items-center gap-2">
                       <Input value={newKey} readOnly className="font-mono text-xs" />

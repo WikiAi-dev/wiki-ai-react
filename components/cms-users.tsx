@@ -98,6 +98,7 @@ export default function CMSUsers({ token }: CMSUsersProps) {
 
   useEffect(() => {
     if (token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchUsers()
     }
   }, [token])

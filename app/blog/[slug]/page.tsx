@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { useTranslation } from "@/src/i18n"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -48,9 +49,17 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
 
   const slug = React.use(params).slug
 
-  useEffect(() => {
-    fetchPostData()
-  }, [slug])
+  const incrementViews = async (postSlug: string) => {
+    try {
+      await landingPagesApi.trackEvent({
+        event_type: "blog_post_view",
+        page: `/blog/${postSlug}`,
+        metadata: { post_slug: postSlug }
+      })
+    } catch (error) {
+      console.error("Error tracking view:", error)
+    }
+  }
 
   const fetchPostData = async () => {
     setLoading(true)
@@ -85,17 +94,12 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
     }
   }
 
-  const incrementViews = async (postSlug: string) => {
-    try {
-      await landingPagesApi.trackEvent({
-        event_type: "blog_post_view",
-        page: `/blog/${postSlug}`,
-        metadata: { post_slug: postSlug }
-      })
-    } catch (error) {
-      console.error("Error tracking view:", error)
-    }
-  }
+  useEffect(() => {
+    // Fetch-on-mount/slug-change pattern; fetchPostData sets post/loading
+    // state from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPostData()
+  }, [slug])
 
   const getCategoryColor = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName)
@@ -148,7 +152,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Post not found</h1>
-          <p className="text-gray-600 mb-8">The blog post you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-8">The blog post you&apos;re looking for doesn&apos;t exist.</p>
           <Link href="/blog">
             <Button>
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -247,11 +251,12 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
 
         {/* Featured Image */}
         {post.image_url && (
-          <div className="mb-8">
-            <img
+          <div className="relative mb-8 w-full h-64">
+            <Image
               src={post.image_url}
               alt={post.title}
-              className="w-full h-64 object-cover rounded-lg"
+              fill
+              className="object-cover rounded-lg"
             />
           </div>
         )}

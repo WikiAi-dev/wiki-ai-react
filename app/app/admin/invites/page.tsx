@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { adminApi } from "@/lib/api"
 import { getActualSiteUrl } from "@/lib/config"
@@ -62,14 +62,18 @@ import { useTranslation } from "@/src/i18n"
 
 interface Invite {
   id: string
-  token: string
-  link: string
+  token?: string
+  // Only ever populated right after creation (issued once by the backend) -
+  // never present when reloaded from the list endpoint, since only a hash
+  // of the token is persisted.
+  link?: string
   email?: string
   role: string
   expires_at: string
   created_at: string
   created_by: string
-  is_used: boolean
+  used_at?: string
+  revoked_at?: string
   organization_id?: string
 }
 
@@ -77,7 +81,6 @@ export default function InvitesPage() {
   const { token, isAdmin, isLoading: authLoading, user: currentUser } = useAuth()
   const { t } = useTranslation()
   const [invites, setInvites] = useState<Invite[]>([])
-  const [filteredInvites, setFilteredInvites] = useState<Invite[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [allFiles, setAllFiles] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -85,7 +88,7 @@ export default function InvitesPage() {
   // Create invite state
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState("user")
+  const [role, setRole] = useState("member")
   const [allowedFiles, setAllowedFiles] = useState<string[]>([])
   const [expiresInDays, setExpiresInDays] = useState(7)
   const [message, setMessage] = useState("")
@@ -104,8 +107,7 @@ export default function InvitesPage() {
       const invitesRes = await adminApi.listInvites(token)
 
       if (invitesRes.status === "success" && invitesRes.response) {
-        setInvites(invitesRes.response.invites || [])
-        setFilteredInvites(invitesRes.response.invites || [])
+        setInvites(invitesRes.response.items || [])
       }
     } catch (error) {
       console.error("Failed to fetch data:", error)
@@ -122,22 +124,23 @@ export default function InvitesPage() {
 
   useEffect(() => {
     if (isAdmin) {
+      // Standard fetch-on-condition pattern; fetchData sets invites/loading
+      // state from the async response.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData()
     }
   }, [isAdmin, fetchData])
 
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = invites.filter(
-        (invite) =>
-          invite.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invite.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          invite.created_by.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      setFilteredInvites(filtered)
-    } else {
-      setFilteredInvites(invites)
-    }
+  // Derived directly from invites/searchQuery during render instead of a
+  // separate state+effect.
+  const filteredInvites = useMemo(() => {
+    if (!searchQuery) return invites
+    return invites.filter(
+      (invite) =>
+        invite.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invite.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        invite.created_by.toLowerCase().includes(searchQuery.toLowerCase())
+    )
   }, [searchQuery, invites])
 
   const handleCreateInvite = async () => {
@@ -161,21 +164,20 @@ export default function InvitesPage() {
         const siteUrl = getActualSiteUrl()
         const inviteLink = `${siteUrl}/invite?token=${result.response.token}`
         const inviteData: Invite = {
-          id: result.response.invite_id,
+          id: result.response.invite.id,
           token: result.response.token,
           link: inviteLink,
-          email: result.response.email,
-          role: result.response.role,
-          expires_at: result.response.expires_at,
-          created_at: new Date().toISOString(), // Use current time as created_at
-          created_by: result.response.created_by,
-          is_used: false,
-          organization_id: result.response.organization_id
+          email: result.response.invite.email,
+          role: result.response.invite.role,
+          expires_at: result.response.invite.expires_at,
+          created_at: result.response.invite.created_at,
+          created_by: result.response.invite.created_by,
+          organization_id: result.response.invite.organization_id,
         }
         setCreatedInvite(inviteData)
         setIsCreateOpen(false)
         setEmail("")
-        setRole("user")
+        setRole("member")
         setAllowedFiles([])
         setExpiresInDays(7)
         setMessage("")
@@ -242,6 +244,13 @@ export default function InvitesPage() {
   const isExpired = (expiresAt: string) => {
     return new Date(expiresAt) < new Date()
   }
+
+  // go-core serializes unset time.Time fields as the Go zero value
+  // ("0001-01-01T00:00:00Z") rather than omitting them or sending null.
+  const isSet = (dateString?: string) => !!dateString && !dateString.startsWith("0001-01-01")
+
+  const isUsed = (invite: Invite) => isSet(invite.used_at)
+  const isRevoked = (invite: Invite) => isSet(invite.revoked_at)
 
   if (authLoading || isLoading) {
     return (
@@ -311,7 +320,7 @@ export default function InvitesPage() {
                         disabled={isCreating}
                         className="w-full h-11 px-4 pr-10 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600"
                       >
-                        <option value="user">👤 User</option>
+                        <option value="member">👤 User</option>
                         <option value="admin">🛡️ Admin</option>
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -425,7 +434,7 @@ export default function InvitesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleCopyLink(createdInvite.link)}
+                      onClick={() => handleCopyLink(createdInvite.link!)}
                       className="w-full"
                     >
                       <Copy className="w-4 h-4 mr-2" />
@@ -508,10 +517,15 @@ export default function InvitesPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {invite.is_used ? (
+                        {isUsed(invite) ? (
                           <>
                             <CheckCircle className="w-4 h-4 text-green-600" />
                             <span className="text-green-600">Used</span>
+                          </>
+                        ) : isRevoked(invite) ? (
+                          <>
+                            <XCircle className="w-4 h-4 text-red-600" />
+                            <span className="text-red-600">Revoked</span>
                           </>
                         ) : isExpired(invite.expires_at) ? (
                           <>
@@ -538,13 +552,15 @@ export default function InvitesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleCopyLink(invite.link)}>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy Link
-                          </DropdownMenuItem>
-                          {!invite.is_used && !isExpired(invite.expires_at) && (
+                          {invite.link ? (
+                            <DropdownMenuItem onClick={() => handleCopyLink(invite.link!)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy Link
+                            </DropdownMenuItem>
+                          ) : null}
+                          {!isUsed(invite) && !isRevoked(invite) && !isExpired(invite.expires_at) && (
                             <>
-                              <DropdownMenuSeparator />
+                              {invite.link && <DropdownMenuSeparator />}
                               <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => setDeleteInviteId(invite.id)}

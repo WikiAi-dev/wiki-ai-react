@@ -258,8 +258,12 @@ export function useWebSocketMessaging(token: string) {
     }
   }, [currentToken])
 
-  // Update currentToken when token prop changes
+  // Update currentToken when token prop changes. Kept as state (not
+  // derived during render) because the reconnect effect above needs to
+  // observe the *previous* token value to close the old connection before
+  // the new one takes effect.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentToken(token)
   }, [token])
 
