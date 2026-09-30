@@ -52,15 +52,14 @@ export function Footer({ compact = false }: { compact?: boolean }) {
         { href: "/landing#systems", label: t("menu.systems") },
         { href: "/landing#how", label: t("menu.how") },
         { href: "/landing#pilot", label: t("menu.pilot") },
-        { href: "/pricing", label: t("footer.pricing") },
+        { href: "/landing#faq", label: t("menu.faq") },
       ],
     },
     {
       title: t("footer.company"),
       links: [
-        { href: "/about", label: t("footer.about") },
-        { href: "/blog", label: t("footer.blog") },
         { href: "/contact", label: t("footer.contact") },
+        { href: "/login", label: t("menu.signIn") },
       ],
     },
   ];
