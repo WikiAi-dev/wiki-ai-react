@@ -833,7 +833,7 @@
         "sourcesLabel": "Your systems",
         "channelsLabel": "Where it answers",
         "docs": "Documents",
-        "telephony": "Telephony",
+        "custom": "Your sources",
         "channelItems": [
           {
             "id": "call",
@@ -1103,6 +1103,43 @@
       "blog": "Blog",
       "contact": "Contact",
       "rights": "All rights reserved."
+    },
+    "contact": {
+      "metaTitle": "WikiAI | Contact",
+      "metaDescription": "Contact WikiAI on Telegram, by email or by phone to plan a pilot for your call center.",
+      "title": "Let's plan a pilot for your call center",
+      "subtitle": "Message or call us. We'll show how WikiAI connects to Bitrix24, 1C and your phone system, and agree on a start date.",
+      "name": "Afanasieff Ivan",
+      "tagline": "Pilots, demos and setup",
+      "labels": {
+        "telegram": "Telegram",
+        "email": "Email",
+        "phone": "Phone"
+      },
+      "open": {
+        "telegram": "Message on Telegram",
+        "email": "Send an email",
+        "phone": "Call"
+      },
+      "primary": "Message on Telegram",
+      "save": "Save contact",
+      "copy": "Copy",
+      "copied": "Copied",
+      "stepsTitle": "What happens next",
+      "steps": [
+        {
+          "title": "We talk",
+          "desc": "We go over your systems, calls and call-center goals."
+        },
+        {
+          "title": "We connect",
+          "desc": "We connect Bitrix24, 1C and your phone system to WikiAI."
+        },
+        {
+          "title": "The pilot starts",
+          "desc": "Two weeks on your real calls. The decision is yours."
+        }
+      ]
     }
   },
   "about": {
@@ -1158,73 +1195,6 @@
       "subtitle": "We're always looking for talented people who share our passion for innovation and excellence.",
       "viewPositions": "View Open Positions",
       "contactUs": "Contact Us"
-    }
-  },
-  "contact": {
-    "hero": {
-      "badge": "Contact Us",
-      "title": "Get in",
-      "titleHighlight": "Touch",
-      "subtitle": "Have questions about WikiAI? We're here to help. Reach out to our team and we'll get back to you as soon as possible."
-    },
-    "options": {
-      "emailSupport": {
-        "title": "Email Support",
-        "description": "Get help with your account, billing, or general questions",
-        "hours": "24/7 Support"
-      },
-      "phoneSupport": {
-        "title": "Phone Support", 
-        "description": "Speak directly with our support team",
-        "hours": "Mon-Fri, 9AM-6PM EST"
-      },
-      "telegramSupport": {
-        "title": "Telegram Support",
-        "description": "Join our Telegram community for quick help",
-        "hours": "Community Support"
-      }
-    },
-    "form": {
-      "title": "Send us a Message",
-      "name": "Name",
-      "namePlaceholder": "John Doe",
-      "email": "Email",
-      "emailPlaceholder": "john@example.com",
-      "company": "Company",
-      "companyPlaceholder": "Acme Corp",
-      "message": "Message",
-      "messagePlaceholder": "Tell us how we can help you...",
-      "sendMessage": "Send Message"
-    },
-    "companyInfo": {
-      "title": "WikiAI Inc.",
-      "globalSupport": {
-        "title": "Global Support",
-        "address": "Serving customers worldwide\n24/7 Email Support"
-      },
-      "phoneSupport": {
-        "title": "Phone Support",
-        "hours": "Mon-Fri, 9AM-6PM EST"
-      },
-      "community": {
-        "title": "Community",
-        "description": "Get help from our community"
-      }
-    },
-    "offices": {
-      "title": "Our Offices",
-      "subtitle": "Find us around the world. We're always happy to connect in person.",
-      "hq": "HQ"
-    },
-    "faq": {
-      "title": "Have Questions?",
-      "subtitle": "Check out our FAQ section for quick answers to common questions.",
-      "viewFaq": "View FAQ"
-    },
-    "success": {
-      "title": "Message Sent!",
-      "subtitle": "Thank you for reaching out. We'll get back to you within 24 hours.",
-      "sendAnother": "Send Another Message"
     }
   },
   "pricing": {
