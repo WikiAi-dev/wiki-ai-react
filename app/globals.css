@@ -1,53 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Aggressively hide browser extension attributes that cause hydration issues */
-[bis_skin_checked] {
-  display: none !important;
-}
-
-[__processed_e5f10ced-41c6-44a1-872f-d8ea8b373b81__] {
-  display: none !important;
-}
-
-[bis_register] {
-  display: none !important;
-}
-
-/* Hide any data-* attributes from browser extensions */
-[data*="processed"] {
-  display: none !important;
-}
-
-[data*="bis_"] {
-  display: none !important;
-}
-
-[data*="extension"] {
-  display: none !important;
-}
-
-/* More aggressive hiding of any attribute containing bis or skin */
-*[bis] {
-  display: none !important;
-}
-
-*[skin_checked] {
-  display: none !important;
-}
-
-*[processed_] {
-  display: none !important;
-}
-
-/* Hide all elements with these attributes during development */
-html body [bis_skin_checked] {
-  display: none !important;
-}
-
-html body [bis] {
-  display: none !important;
-}
+/* Extension attributes (bis_skin_checked etc.) are stripped by public/pre-hydration.js
+   and app/components/hydration-cleanup.tsx. Never hide tagged elements with CSS:
+   extensions tag every <div>, which blanked the page and reset the scroll in Chrome. */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -144,97 +100,99 @@ mark {
   --warning-foreground: oklch(0.12 0 0);
 }
 
-/* Dark theme text color fixes - ensure all text is readable */
-.dark * {
+/* Dark theme text color fixes - ensure all text is readable.
+   The marketing landing page (.wl, app/landing) defines its own theme tokens,
+   so these app-wide overrides skip it. */
+.dark *:not(.wl, .wl *) {
   color: inherit;
 }
 
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500,
-.dark .text-gray-400 {
+.dark .text-gray-900:not(.wl, .wl *),
+.dark .text-gray-800:not(.wl, .wl *),
+.dark .text-gray-700:not(.wl, .wl *),
+.dark .text-gray-600:not(.wl, .wl *),
+.dark .text-gray-500:not(.wl, .wl *),
+.dark .text-gray-400:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark .text-black {
+.dark .text-black:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-slate-500,
-.dark .text-slate-400 {
+.dark .text-slate-900:not(.wl, .wl *),
+.dark .text-slate-800:not(.wl, .wl *),
+.dark .text-slate-700:not(.wl, .wl *),
+.dark .text-slate-600:not(.wl, .wl *),
+.dark .text-slate-500:not(.wl, .wl *),
+.dark .text-slate-400:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark .text-zinc-900,
-.dark .text-zinc-800,
-.dark .text-zinc-700,
-.dark .text-zinc-600,
-.dark .text-zinc-500,
-.dark .text-zinc-400 {
+.dark .text-zinc-900:not(.wl, .wl *),
+.dark .text-zinc-800:not(.wl, .wl *),
+.dark .text-zinc-700:not(.wl, .wl *),
+.dark .text-zinc-600:not(.wl, .wl *),
+.dark .text-zinc-500:not(.wl, .wl *),
+.dark .text-zinc-400:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark .text-neutral-900,
-.dark .text-neutral-800,
-.dark .text-neutral-700,
-.dark .text-neutral-600,
-.dark .text-neutral-500,
-.dark .text-neutral-400 {
+.dark .text-neutral-900:not(.wl, .wl *),
+.dark .text-neutral-800:not(.wl, .wl *),
+.dark .text-neutral-700:not(.wl, .wl *),
+.dark .text-neutral-600:not(.wl, .wl *),
+.dark .text-neutral-500:not(.wl, .wl *),
+.dark .text-neutral-400:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark .text-stone-900,
-.dark .text-stone-800,
-.dark .text-stone-700,
-.dark .text-stone-600,
-.dark .text-stone-500,
-.dark .text-stone-400 {
+.dark .text-stone-900:not(.wl, .wl *),
+.dark .text-stone-800:not(.wl, .wl *),
+.dark .text-stone-700:not(.wl, .wl *),
+.dark .text-stone-600:not(.wl, .wl *),
+.dark .text-stone-500:not(.wl, .wl *),
+.dark .text-stone-400:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
 /* Ensure headings and important text are visible in dark mode */
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark h5,
-.dark h6,
-.dark .font-bold,
-.dark .font-semibold,
-.dark .font-medium {
+.dark h1:not(.wl, .wl *),
+.dark h2:not(.wl, .wl *),
+.dark h3:not(.wl, .wl *),
+.dark h4:not(.wl, .wl *),
+.dark h5:not(.wl, .wl *),
+.dark h6:not(.wl, .wl *),
+.dark .font-bold:not(.wl, .wl *),
+.dark .font-semibold:not(.wl, .wl *),
+.dark .font-medium:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
 /* Ensure paragraph and body text is visible */
-.dark p,
-.dark .text-base,
-.dark .text-sm,
-.dark .text-lg {
+.dark p:not(.wl, .wl *),
+.dark .text-base:not(.wl, .wl *),
+.dark .text-sm:not(.wl, .wl *),
+.dark .text-lg:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
 /* Fix for CMS components specifically */
-.dark .card-title,
-.dark .card-description,
-.dark .text-foreground {
+.dark .card-title:not(.wl, .wl *),
+.dark .card-description:not(.wl, .wl *),
+.dark .text-foreground:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
 /* Ensure input text is visible */
-.dark input,
-.dark textarea,
-.dark select {
+.dark input:not(.wl, .wl *),
+.dark textarea:not(.wl, .wl *),
+.dark select:not(.wl, .wl *) {
   color: oklch(0.93 0 0) !important;
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
+.dark input:not(.wl, .wl *)::placeholder,
+.dark textarea:not(.wl, .wl *)::placeholder {
   color: oklch(0.65 0 0) !important;
 }
 
@@ -290,85 +248,6 @@ mark {
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* ── Landing page scoped tokens ── */
-.landing {
-  --surface: hsl(var(--card));
-  --surface-hi: hsl(var(--accent) / 0.06);
-  --border-subtle: hsl(var(--border));
-  --border-glow: hsl(var(--primary) / 0.35);
-  --text-dim: hsl(var(--muted-foreground));
-  --text-faint: hsl(var(--muted-foreground) / 0.6);
-  --blue-glow: hsl(var(--primary) / 0.15);
-  --blue-soft: hsl(var(--primary) / 0.08);
-  --green-soft: hsl(var(--success) / 0.08);
-  --green-border: hsl(var(--success) / 0.2);
-  --amber-soft: hsl(var(--warning) / 0.08);
-  --amber-border: hsl(var(--warning) / 0.2);
-}
-
-.dark .landing {
-  --surface: hsl(220 20% 6%);
-  --surface-hi: hsl(220 20% 10%);
-  --border-subtle: hsl(220 20% 14%);
-  --border-glow: hsl(217 91% 60% / 0.35);
-  --text-dim: hsl(215 20% 65%);
-  --text-faint: hsl(215 20% 40%);
-  --blue-glow: hsl(217 91% 60% / 0.12);
-  --blue-soft: hsl(217 91% 60% / 0.06);
-  --green-soft: hsl(142 76% 36% / 0.08);
-  --green-border: hsl(142 76% 36% / 0.2);
-  --amber-soft: hsl(38 92% 50% / 0.08);
-  --amber-border: hsl(38 92% 50% / 0.2);
-}
-
-/* Scroll reveal transition */
-.landing .revealable {
-  opacity: 0;
-  transform: translateY(22px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.landing .revealable.revealed {
-  opacity: 1;
-  transform: none;
-}
-
-/* Gradient text utilities */
-.landing .text-gradient-blue {
-  background: linear-gradient(135deg, #60a5fa 0%, #0ea5e9 60%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.landing .text-gradient-shimmer {
-  background: linear-gradient(90deg, #f1f5f9 0%, #60a5fa 30%, #0ea5e9 50%, #60a5fa 70%, #f1f5f9 100%);
-  background-size: 300% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: landing-shimmer 4s linear infinite;
-}
-
-@keyframes landing-shimmer {
-  0% { background-position: -300% center; }
-  100% { background-position: 300% center; }
-}
-@keyframes landing-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-@keyframes landing-pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.45; transform: scale(0.75); }
-}
-@keyframes landing-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-@keyframes landing-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 /* Custom scrollbar for dark theme */
