@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
-import { Check, FileText, PhoneCall } from "lucide-react";
+import { Check, Database, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCopy } from "../_lib/copy";
 import { Reveal, SPRING, TiltCard } from "./motion";
 import { BrandLogo, Container, Lead, SectionTitle, type LogoId } from "./primitives";
 
-type Source = { id: "bitrix24" | "1c" | "docs" | "telephony"; name: string; data: string };
+type Source = { id: "bitrix24" | "1c" | "docs" | "custom"; name: string; data: string };
 type FeedEvent = { system: string; text: string };
 
 const MORE: { id: LogoId; size: string }[] = [
@@ -29,8 +29,9 @@ function SourceMark({ source }: { source: Source }): ReactNode {
     case "1c":
       return <BrandLogo id="1c" className="h-7 sm:h-8" />;
     case "docs":
-    case "telephony": {
-      const Icon = source.id === "docs" ? FileText : PhoneCall;
+    case "custom": {
+      // "custom" stands for any other system the customer connects, as in the hero hub.
+      const Icon = source.id === "docs" ? FileText : Database;
       return (
         <>
           <Icon className="size-5 shrink-0 text-primary sm:size-6" strokeWidth={1.75} aria-hidden />
