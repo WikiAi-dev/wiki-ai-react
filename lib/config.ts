@@ -25,11 +25,6 @@ const getWsUrlFromEnv = (): string => {
   return "ws://localhost:9001";
 };
 
-// Get CMS prefix (now /v1/cms for go-core)
-const getCmsPrefix = (): string => {
-  return process.env.NEXT_PUBLIC_CMS_PREFIX || "/v1/cms";
-};
-
 // Get site URL from environment variables
 const getSiteUrl = (): string => {
   return process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -50,9 +45,6 @@ export const API_CONFIG = {
   // WebSocket URL (from environment or derived)
   WS_URL: getWsUrlFromEnv(),
   
-  // CMS prefix (from environment)
-  CMS_PREFIX: getCmsPrefix(),
-
   // Site URL for generating links (from environment or derived from window in client)
   SITE_URL: getSiteUrl(),
   
@@ -67,7 +59,6 @@ export const API_CONFIG = {
     // Auth endpoints
     LOGIN: "/v1/auth/login",
     REFRESH: "/v1/auth/refresh",
-    CMS_LOGIN: "/v1/auth/cms-login",
     TOKEN_VALIDATE: "/v1/token/validate",
 
     // API Keys endpoints
@@ -93,11 +84,6 @@ export const API_CONFIG = {
     METRICS_VOLUME: "/v1/metrics/volume",
 
     // Organization & management endpoints
-    ORGANIZATIONS_ALL: "/v1/organizations",
-    ORGANIZATIONS_PENDING: "/v1/organizations/pending",
-    ORGANIZATIONS_APPROVE: "/v1/organizations/{id}/approve",
-    ORGANIZATIONS_REJECT: "/v1/organizations/{id}/reject",
-    ORGANIZATIONS_CHANGE_STATUS: "/v1/organizations/{id}",
     ORGANIZATIONS_SWITCH: "/v1/organizations/switch",
     ORGANIZATIONS_MEMBERSHIPS: "/v1/organizations/memberships",
     ORGANIZATIONS_MEMBERS: "/v1/organizations/members",
@@ -119,22 +105,11 @@ export function getWsUrl(endpoint: string = "/ws"): string {
   return `${API_CONFIG.WS_URL}${endpoint}`
 }
 
-// Helper function to get CMS URL
-export function getCmsUrl(endpoint: string): string {
-  return `${API_CONFIG.BASE_URL}${API_CONFIG.CMS_PREFIX}${endpoint}`
-}
-
-// Helper function to get full CMS endpoint URL
-export function getCmsEndpointUrl(endpoint: string): string {
-  return `${API_CONFIG.BASE_URL}${API_CONFIG.CMS_PREFIX}${endpoint}`
-}
-
 // Debug logging (if enabled)
 if (API_CONFIG.DEBUG) {
   console.log("🔧 API Configuration:", {
     BASE_URL: API_CONFIG.BASE_URL,
     WS_URL: API_CONFIG.WS_URL,
-    CMS_PREFIX: API_CONFIG.CMS_PREFIX,
     TIMEOUT: API_CONFIG.TIMEOUT,
     DEBUG: API_CONFIG.DEBUG,
     ENABLE_CORS_FALLBACK: API_CONFIG.ENABLE_CORS_FALLBACK,
