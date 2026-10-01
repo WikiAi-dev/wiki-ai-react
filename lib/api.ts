@@ -151,6 +151,11 @@ export async function apiRequest<T = unknown>({
         } else {
           errorMessage = JSON.stringify(result.detail)
         }
+      } else if (result.error && typeof result.error === 'object' && typeof result.error.message === 'string') {
+        // go-core services answer {"error": {"code", "message"}}.
+        errorMessage = result.error.message
+      } else if (typeof result.error === 'string') {
+        errorMessage = result.error
       } else if (result.message) {
         errorMessage = result.message
       }
@@ -1225,23 +1230,6 @@ export const adminApi = {
       token,
     }),
 
-  getOrganizationStatusByEmail: async (email: string) => {
-    return apiRequest<{
-      organization: {
-        id: string
-        name: string
-        slug: string
-        status: string
-        created_at: string
-        updated_at: string
-        admin_user_id: string
-        admin_email: string
-      }
-    }>({
-      url: `/v1/organizations/status-by-email/${encodeURIComponent(email)}`,
-      method: "GET",
-    })
-  },
 }
 
 // Catalogs endpoints

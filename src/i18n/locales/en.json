@@ -1178,6 +1178,99 @@
           "desc": "Two weeks on your real data. The decision is yours."
         }
       ]
+    },
+    "auth": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "login": {
+        "metaTitle": "WikiAI | Sign in",
+        "title": "Sign in to WikiAI",
+        "subtitle": "Your company's knowledge base: answers with their source, connected to Bitrix24, 1C and your documents.",
+        "points": [
+          "Search across every company source",
+          "Answers that name the document",
+          "Only your staff see your company's data"
+        ],
+        "tabs": {
+          "signIn": "Sign in",
+          "newOrg": "New organization"
+        },
+        "username": "Username",
+        "usernamePlaceholder": "e.g. ivan",
+        "password": "Password",
+        "passwordPlaceholder": "Your password",
+        "submit": "Sign in",
+        "submitting": "Signing in…",
+        "orgName": "Company name",
+        "orgNamePlaceholder": "e.g. Demo Retail",
+        "adminUsername": "Admin username",
+        "adminUsernamePlaceholder": "You'll sign in with it",
+        "adminPassword": "Admin password",
+        "adminPasswordPlaceholder": "At least 8 characters",
+        "createSubmit": "Create organization",
+        "creating": "Creating…",
+        "newOrgHint": "You'll be the organization's owner and can invite your team.",
+        "success": "Signed in",
+        "created": "Organization created",
+        "errors": {
+          "fillLogin": "Enter your username and password",
+          "fillAll": "Fill in all fields",
+          "shortPassword": "The password must be at least 8 characters",
+          "failed": "Couldn't sign in. Check your username and password.",
+          "createFailed": "Couldn't create the organization"
+        }
+      },
+      "invite": {
+        "metaTitle": "WikiAI | Invitation",
+        "title": "You're invited to WikiAI",
+        "subtitle": "Create your account to use your company's knowledge base.",
+        "checking": "Checking the invitation…",
+        "details": "Invitation",
+        "organization": "Organization",
+        "email": "Email",
+        "role": "Role",
+        "roles": {
+          "owner": "Owner",
+          "admin": "Admin",
+          "user": "Member"
+        },
+        "expires": "Valid until",
+        "invitedBy": "Invited by",
+        "username": "Username",
+        "usernamePlaceholder": "You'll sign in with it",
+        "password": "Password",
+        "passwordPlaceholder": "At least 6 characters",
+        "confirm": "Repeat the password",
+        "confirmPlaceholder": "The same password again",
+        "submit": "Create account",
+        "submitting": "Creating account…",
+        "created": "Account created. Opening sign-in.",
+        "invalidTitle": "This invitation isn't available",
+        "invalid": "The link is wrong, or the invitation was revoked or already used. Ask your admin for a new one.",
+        "expiredTitle": "This invitation has expired",
+        "expired": "Ask your company's admin to send a new invitation.",
+        "toLogin": "Go to sign-in",
+        "errors": {
+          "username": "Enter a username",
+          "password": "Enter a password",
+          "shortPassword": "The password must be at least 6 characters",
+          "mismatch": "The passwords don't match",
+          "failed": "Couldn't create the account. Please try again."
+        }
+      },
+      "review": {
+        "metaTitle": "WikiAI | Organization access",
+        "title": "This organization isn't active yet",
+        "subtitle": "Sign-in for this organization's staff is closed for now: access hasn't been opened yet, or it was paused.",
+        "whatNext": "What you can do",
+        "steps": [
+          "If you've just signed up, message us and we'll open access.",
+          "If access was paused, contact your organization's owner or us."
+        ],
+        "contact": "Message us",
+        "back": "Back to sign-in",
+        "account": "Account"
+      }
     }
   }
 }
