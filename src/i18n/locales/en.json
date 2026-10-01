@@ -168,7 +168,41 @@
     "feedbackSubmittedSuccessfully": "Feedback submitted successfully",
     "failedToSubmitFeedback": "Failed to submit feedback",
     "copy": "Copy",
-    "clear": "Clear"
+    "clear": "Clear",
+    "page": {
+      "title": "Ask the knowledge base",
+      "subtitle": "WikiAI finds the answer in your company's documents and shows where it came from.",
+      "placeholder": "Ask a question, e.g. how do I process a return?",
+      "send": "Ask",
+      "tryAsking": "Try asking",
+      "suggestions": [
+        "How do I process a product return?",
+        "What does onboarding cover for a new hire?",
+        "What are our delivery terms?",
+        "How do I request time off?"
+      ],
+      "you": "You",
+      "searching": "Searching the knowledge base…",
+      "writing": "Writing the answer…",
+      "sourcesTitle": "Found in documents",
+      "noSources": "Nothing in the knowledge base matched this question.",
+      "showAll": "Show all ({{count}})",
+      "showLess": "Show less",
+      "openDocument": "Open document",
+      "copy": "Copy",
+      "copied": "Answer copied",
+      "report": "Report a problem",
+      "reportTitle": "What's wrong with this answer?",
+      "reportText": "Describe the problem and your admin will see it on the dashboard.",
+      "reportPlaceholder": "For example: the answer is outdated, the right price is 490",
+      "reportSend": "Send",
+      "reportSent": "Thanks, your feedback was sent",
+      "reportFailed": "Couldn't send feedback",
+      "cancel": "Cancel",
+      "error": "Couldn't get an answer. Check your connection and try again.",
+      "retry": "Try again",
+      "restart": "New conversation"
+    }
   },
   "invites": {
     "title": "Invites",
