@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, ChevronsUpDown, FileText, GraduationCap, Home, Key, ListChecks, LogOut, Mail, Search, Settings, Users } from "lucide-react"
+import { BarChart3, ChevronsUpDown, FileText, Home, Key, LogOut, Mail, Search, Settings, Users } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/src/i18n"
 import { Wordmark } from "@/components/wordmark"
@@ -61,13 +61,6 @@ export function AppSidebar() {
         { title: t("navigation.apiKeys"), url: "/app/admin/api-keys", icon: Key },
       ],
     },
-    {
-      label: t("navigation.groups.learning"),
-      items: [
-        { title: t("navigation.quizManagement"), url: "/app/admin/quizzes", icon: ListChecks },
-        { title: t("navigation.quizzes"), url: "/app/quizzes", icon: GraduationCap },
-      ],
-    },
   ]
 
   const userGroups: NavGroup[] = [
@@ -79,7 +72,6 @@ export function AppSidebar() {
         { title: t("navigation.files"), url: "/app/files", icon: FileText },
       ],
     },
-    { label: t("navigation.groups.learning"), items: [{ title: t("navigation.quizzes"), url: "/app/quizzes", icon: GraduationCap }] },
   ]
 
   // "/app" and "/app/admin" are prefixes of every other route, so they only
