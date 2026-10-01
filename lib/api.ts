@@ -984,60 +984,57 @@ export const queryApi = {
   },
 }
 
+// learning-service lists every report as { items: [{ id, type, issue, created_at }] }
+// and ignores ?type=, so the split into auto/manual happens here.
+interface ReportRecord {
+  id: string
+  type?: string
+  issue?: string
+  created_at?: string
+}
+
+export interface ReportItem {
+  id: string
+  question?: string
+  feedback?: string
+  timestamp: string
+}
+
+async function listReports(token: string, type: "auto" | "manual") {
+  const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type })), {
+    method: "GET",
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${type} reports: ${res.status}`)
+  }
+
+  const data = await res.json()
+  const records: ReportRecord[] = data.items || data.reports || []
+  const reports: ReportItem[] = records
+    .filter((record) => (record.type || "manual") === type)
+    .map((record) => ({
+      id: record.id,
+      question: record.issue,
+      feedback: record.issue,
+      timestamp: record.created_at || "",
+    }))
+  return { status: "success" as const, response: { reports } }
+}
+
 export const reportsApi = {
-  // GET /reports/get/auto
-  getAuto: async (token: string) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    }
+  // Reports raised automatically for questions without an answer.
+  getAuto: (token: string) => listReports(token, "auto"),
 
-    const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type: "auto" })), {
-      method: "GET",
-      headers,
-    })
+  // Problems employees reported from the search page.
+  getManual: (token: string) => listReports(token, "manual"),
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch auto reports: ${res.status}`)
-    }
-
-    const data = await res.json()
-    return {
-      status: "success" as const,
-      response: {
-        reports: data.reports || [],
-      },
-    }
-  },
-
-  // GET /reports/get/manual
-  getManual: async (token: string) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    }
-
-    const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type: "manual" })), {
-      method: "GET",
-      headers,
-    })
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch manual reports: ${res.status}`)
-    }
-
-    const data = await res.json()
-    return {
-      status: "success" as const,
-      response: {
-        reports: data.reports || [],
-      },
-    }
-  },
-
-  // POST /reports/submit/manual with { issue }
+  // POST /v1/reports with { issue }; the type defaults to "manual".
   submitManual: (token: string, issue: string) =>
     apiRequest({
       url: "/v1/reports",
