@@ -527,8 +527,7 @@ export default function SearchPage() {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         content={null}
-        showDownload={true}
-        className="max-w-7xl mx-auto"
+        showDownload
       />
 
       <Dialog

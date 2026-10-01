@@ -384,8 +384,6 @@ export const filesApi = {
     const document = response.response.document
     // knowledge-service stores document content as plain text only (dtm.DocumentResult.Content is
     // a string field) - there is no binary/base64 storage path, so isBinary is always false here.
-    // Callers (file-reader.tsx, admin/files, files page) still branch on isBinary for backward
-    // compatibility but that branch is now effectively dead since nothing sets it true anymore.
     return {
       status: "success" as const,
       response: {
@@ -516,11 +514,16 @@ export const filesApi = {
     if (!tenantId) {
       return { status: "error" as const, message: "Tenant ID is required for status requests" }
     }
-    return apiRequest<{ document_id: string; status: string; chunk_count: number; updated_at: string }>({
+    type DocumentStatus = { document_id: string; status: string; chunk_count: number; updated_at: string }
+    // knowledge-service wraps the record as { document: {...} }.
+    const result = await apiRequest<DocumentStatus | { document: DocumentStatus }>({
       url: `${API_CONFIG.ENDPOINTS.FILES_LIST}/${encodeURIComponent(documentId)}/status`,
       token,
       params: { tenant_id: tenantId },
     })
+    if (result.status !== "success" || !result.response) return result as ApiResponse<DocumentStatus>
+    const response = "document" in result.response ? result.response.document : result.response
+    return { ...result, response }
   },
 
   // PATCH/PUT /v1/documents/{id}
