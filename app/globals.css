@@ -7,193 +7,97 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Highlight styling for search chunks */
-mark {
-  background-color: #fef08a;
-  color: #713f12;
-  padding: 2px 4px;
-  border-radius: 2px;
-  font-weight: 500;
-}
-
-.dark mark {
-  background-color: #713f12;
-  color: #fef08a;
-}
-
+/*
+ * Design tokens for the whole product: the marketing pages and the app share
+ * one cool-neutral palette with a single blue accent. Shapes: panels
+ * rounded-2xl, blocks inside panels rounded-xl, buttons, chips and tabs fully
+ * rounded.
+ */
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.55 0.2 250);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.55 0.15 160);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.55 0.2 250);
-  --chart-1: oklch(0.55 0.2 250);
-  --chart-2: oklch(0.55 0.15 160);
-  --chart-3: oklch(0.65 0.18 80);
-  --chart-4: oklch(0.6 0.2 300);
-  --chart-5: oklch(0.55 0.22 25);
+  --background: oklch(0.985 0.003 255);
+  --foreground: oklch(0.21 0.02 262);
+  --card: oklch(0.995 0.002 255);
+  --card-foreground: oklch(0.21 0.02 262);
+  --popover: oklch(0.995 0.002 255);
+  --popover-foreground: oklch(0.21 0.02 262);
+  --primary: oklch(0.5 0.19 262);
+  --primary-foreground: oklch(0.985 0.003 255);
+  --secondary: oklch(0.955 0.006 255);
+  --secondary-foreground: oklch(0.21 0.02 262);
+  --muted: oklch(0.955 0.006 255);
+  --muted-foreground: oklch(0.47 0.018 260);
+  --accent: oklch(0.945 0.014 262);
+  --accent-foreground: oklch(0.21 0.02 262);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.985 0.003 255);
+  --border: oklch(0.9 0.008 258);
+  --input: oklch(0.88 0.01 258);
+  --ring: oklch(0.5 0.19 262);
+  --chart-1: oklch(0.5 0.19 262);
+  --chart-2: oklch(0.68 0.12 245);
+  --chart-3: oklch(0.8 0.07 240);
+  --chart-4: oklch(0.6 0.12 195);
+  --chart-5: oklch(0.6 0.18 25);
   --radius: 0.5rem;
-  --sidebar: oklch(0.98 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.55 0.2 250);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.55 0.2 250);
-  --success: oklch(0.55 0.15 160);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.75 0.15 80);
-  --warning-foreground: oklch(0.2 0 0);
+  --sidebar: oklch(0.975 0.004 255);
+  --sidebar-foreground: oklch(0.21 0.02 262);
+  --sidebar-primary: oklch(0.5 0.19 262);
+  --sidebar-primary-foreground: oklch(0.985 0.003 255);
+  --sidebar-accent: oklch(0.94 0.018 262);
+  --sidebar-accent-foreground: oklch(0.21 0.02 262);
+  --sidebar-border: oklch(0.9 0.008 258);
+  --sidebar-ring: oklch(0.5 0.19 262);
+  --success: oklch(0.55 0.13 155);
+  --success-foreground: oklch(0.985 0.003 255);
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.25 0.04 70);
 }
 
 .dark {
-  --background: oklch(0.12 0.005 260);
-  --foreground: oklch(0.93 0 0);
-  --card: oklch(0.16 0.005 260);
-  --card-foreground: oklch(0.93 0 0);
-  --popover: oklch(0.16 0.005 260);
-  --popover-foreground: oklch(0.93 0 0);
-  --primary: oklch(0.65 0.2 250);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.22 0.005 260);
-  --secondary-foreground: oklch(0.93 0 0);
-  --muted: oklch(0.22 0.005 260);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.55 0.15 160);
-  --accent-foreground: oklch(0.12 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.93 0 0);
-  --border: oklch(0.26 0.005 260);
-  --input: oklch(0.22 0.005 260);
-  --ring: oklch(0.65 0.2 250);
-  --chart-1: oklch(0.65 0.2 250);
-  --chart-2: oklch(0.6 0.15 160);
-  --chart-3: oklch(0.7 0.18 80);
-  --chart-4: oklch(0.65 0.2 300);
-  --chart-5: oklch(0.6 0.22 25);
-  --sidebar: oklch(0.14 0.005 260);
-  --sidebar-foreground: oklch(0.93 0 0);
-  --sidebar-primary: oklch(0.65 0.2 250);
-  --sidebar-primary-foreground: oklch(0.12 0 0);
-  --sidebar-accent: oklch(0.22 0.005 260);
-  --sidebar-accent-foreground: oklch(0.93 0 0);
-  --sidebar-border: oklch(0.26 0.005 260);
-  --sidebar-ring: oklch(0.65 0.2 250);
-  --success: oklch(0.6 0.15 160);
-  --success-foreground: oklch(0.12 0 0);
-  --warning: oklch(0.8 0.15 80);
-  --warning-foreground: oklch(0.12 0 0);
+  --background: oklch(0.16 0.012 264);
+  --foreground: oklch(0.95 0.005 255);
+  --card: oklch(0.195 0.014 264);
+  --card-foreground: oklch(0.95 0.005 255);
+  --popover: oklch(0.205 0.014 264);
+  --popover-foreground: oklch(0.95 0.005 255);
+  --primary: oklch(0.74 0.13 258);
+  --primary-foreground: oklch(0.17 0.02 264);
+  --secondary: oklch(0.225 0.014 264);
+  --secondary-foreground: oklch(0.95 0.005 255);
+  --muted: oklch(0.225 0.014 264);
+  --muted-foreground: oklch(0.73 0.015 258);
+  --accent: oklch(0.255 0.03 262);
+  --accent-foreground: oklch(0.95 0.005 255);
+  --destructive: oklch(0.66 0.19 25);
+  --destructive-foreground: oklch(0.17 0.02 264);
+  --border: oklch(0.3 0.016 264);
+  --input: oklch(0.32 0.016 264);
+  --ring: oklch(0.74 0.13 258);
+  --chart-1: oklch(0.74 0.13 258);
+  --chart-2: oklch(0.6 0.13 250);
+  --chart-3: oklch(0.45 0.09 255);
+  --chart-4: oklch(0.7 0.11 195);
+  --chart-5: oklch(0.68 0.17 25);
+  --sidebar: oklch(0.18 0.013 264);
+  --sidebar-foreground: oklch(0.95 0.005 255);
+  --sidebar-primary: oklch(0.74 0.13 258);
+  --sidebar-primary-foreground: oklch(0.17 0.02 264);
+  --sidebar-accent: oklch(0.25 0.03 262);
+  --sidebar-accent-foreground: oklch(0.95 0.005 255);
+  --sidebar-border: oklch(0.28 0.016 264);
+  --sidebar-ring: oklch(0.74 0.13 258);
+  --success: oklch(0.72 0.14 155);
+  --success-foreground: oklch(0.17 0.02 264);
+  --warning: oklch(0.82 0.13 80);
+  --warning-foreground: oklch(0.2 0.03 70);
 }
 
-/* Dark theme text color fixes - ensure all text is readable.
-   The marketing landing page (.wl, app/landing) defines its own theme tokens,
-   so these app-wide overrides skip it. */
-.dark *:not(.wl, .wl *) {
+/* Search result highlights */
+mark {
+  background-color: color-mix(in oklab, var(--primary) 18%, transparent);
   color: inherit;
-}
-
-.dark .text-gray-900:not(.wl, .wl *),
-.dark .text-gray-800:not(.wl, .wl *),
-.dark .text-gray-700:not(.wl, .wl *),
-.dark .text-gray-600:not(.wl, .wl *),
-.dark .text-gray-500:not(.wl, .wl *),
-.dark .text-gray-400:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark .text-black:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark .text-slate-900:not(.wl, .wl *),
-.dark .text-slate-800:not(.wl, .wl *),
-.dark .text-slate-700:not(.wl, .wl *),
-.dark .text-slate-600:not(.wl, .wl *),
-.dark .text-slate-500:not(.wl, .wl *),
-.dark .text-slate-400:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark .text-zinc-900:not(.wl, .wl *),
-.dark .text-zinc-800:not(.wl, .wl *),
-.dark .text-zinc-700:not(.wl, .wl *),
-.dark .text-zinc-600:not(.wl, .wl *),
-.dark .text-zinc-500:not(.wl, .wl *),
-.dark .text-zinc-400:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark .text-neutral-900:not(.wl, .wl *),
-.dark .text-neutral-800:not(.wl, .wl *),
-.dark .text-neutral-700:not(.wl, .wl *),
-.dark .text-neutral-600:not(.wl, .wl *),
-.dark .text-neutral-500:not(.wl, .wl *),
-.dark .text-neutral-400:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark .text-stone-900:not(.wl, .wl *),
-.dark .text-stone-800:not(.wl, .wl *),
-.dark .text-stone-700:not(.wl, .wl *),
-.dark .text-stone-600:not(.wl, .wl *),
-.dark .text-stone-500:not(.wl, .wl *),
-.dark .text-stone-400:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-/* Ensure headings and important text are visible in dark mode */
-.dark h1:not(.wl, .wl *),
-.dark h2:not(.wl, .wl *),
-.dark h3:not(.wl, .wl *),
-.dark h4:not(.wl, .wl *),
-.dark h5:not(.wl, .wl *),
-.dark h6:not(.wl, .wl *),
-.dark .font-bold:not(.wl, .wl *),
-.dark .font-semibold:not(.wl, .wl *),
-.dark .font-medium:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-/* Ensure paragraph and body text is visible */
-.dark p:not(.wl, .wl *),
-.dark .text-base:not(.wl, .wl *),
-.dark .text-sm:not(.wl, .wl *),
-.dark .text-lg:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-/* Fix for CMS components specifically */
-.dark .card-title:not(.wl, .wl *),
-.dark .card-description:not(.wl, .wl *),
-.dark .text-foreground:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-/* Ensure input text is visible */
-.dark input:not(.wl, .wl *),
-.dark textarea:not(.wl, .wl *),
-.dark select:not(.wl, .wl *) {
-  color: oklch(0.93 0 0) !important;
-}
-
-.dark input:not(.wl, .wl *)::placeholder,
-.dark textarea:not(.wl, .wl *)::placeholder {
-  color: oklch(0.65 0 0) !important;
+  padding: 0 2px;
+  border-radius: 3px;
 }
 
 @theme inline {
@@ -250,21 +154,21 @@ mark {
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Scrollbars follow the theme */
 .dark ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: oklch(0.16 0.005 260);
+  background: var(--background);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: oklch(0.3 0.005 260);
+  background: var(--border);
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.4 0.005 260);
+  background: var(--muted-foreground);
 }
