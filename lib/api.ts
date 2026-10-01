@@ -1525,12 +1525,15 @@ export const apiKeysApi = {
 
 // Metrics endpoints
 export const metricsApi = {
-  summary: (token: string, since: string = "24h", scope: "user" | "org" | "global" = "org") =>
-    apiRequest<{
+  // analytics-service reports latency as avg_response_time_ms; callers get it
+  // in seconds as avg_response_time.
+  summary: async (token: string, since: string = "24h", scope: "user" | "org" | "global" = "org") => {
+    const result = await apiRequest<{
       total_queries: number
       successful_queries: number
       failed_queries: number
       avg_response_time: number
+      avg_response_time_ms?: number
       period?: string
       scope?: string
       organization_id?: string | null
@@ -1539,7 +1542,12 @@ export const metricsApi = {
       url: "/v1/metrics/summary",
       token,
       params: { since, scope },
-    }),
+    })
+    if (result.response && typeof result.response.avg_response_time_ms === "number") {
+      result.response.avg_response_time = result.response.avg_response_time_ms / 1000
+    }
+    return result
+  },
 
   queries: (
     token: string,
