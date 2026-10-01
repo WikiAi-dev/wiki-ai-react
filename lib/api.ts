@@ -1333,64 +1333,42 @@ export const opencartApi = {
 }
 
 // API Keys endpoints - Enhanced with rate limiting, LLM control, and analytics
+/** An API key as identity-service returns it; the secret itself is never listed. */
+export interface ApiKey {
+  id: string
+  name: string
+  description?: string
+  key_prefix: string
+  permissions: string[]
+  status: string
+  expires_at?: string
+  last_used_at?: string
+  rate_limit_requests?: number
+  rate_limit_period?: string
+  created_at: string
+  created_by?: string
+}
+
 export const apiKeysApi = {
   list: (token: string) =>
-    apiRequest<{ 
-      keys: Array<{ 
-        id: string; 
-        key_id: string; 
-        name: string; 
-        description?: string; 
-        permissions: string[]; 
-        is_active: boolean; 
-        created_at: string; 
-        last_used?: string;
-        status?: string;
-        priority_tier?: string;
-        rate_limit_requests?: number;
-        current_usage?: number;
-        llm_enabled?: boolean;
-        max_tokens_per_day?: number;
-        current_llm_tokens_used?: number;
-        expires_at?: string;
-      }> 
-    }>({
+    apiRequest<{ items: ApiKey[]; next_cursor: string | null }>({
       url: "/v1/api-keys",
       token,
     }),
-
-  create: (token: string, data: { 
-    name: string; 
-    description?: string; 
-    permissions: string[]; 
-    expires_in_days?: number;
-    priority_tier?: string;
-    rate_limit_requests?: number;
-    rate_limit_period?: string;
-    llm_enabled?: boolean;
-    max_tokens_per_day?: number;
-    llm_cost_limit?: number;
-  }) =>
-    apiRequest<{ 
-      key?: string; 
-      key_id: string; 
-      id: string; 
-      full_key: string;
-      tier?: string;
-    }>({
+  // The full key is returned once, here, and never again.
+  create: (token: string, data: { name: string; description?: string; permissions: string[]; expires_in_days?: number }) =>
+    apiRequest<{ api_key: ApiKey; full_key: string }>({
       url: "/v1/api-keys",
       method: "POST",
       token,
       data,
     }),
-
   delete: (token: string, keyId: string) =>
     apiRequest({
       url: `/v1/api-keys/${keyId}`,
       method: "DELETE",
       token,
     }),
-
   get: (token: string, keyId: string) =>
     apiRequest<{
       id: string;
@@ -1416,22 +1394,14 @@ export const apiKeysApi = {
       token,
     }),
 
-  update: (token: string, keyId: string, data: {
-    name?: string;
-    permissions?: string[];
-    rate_limit_requests?: number;
-    llm_enabled?: boolean;
-    max_tokens_per_day?: number;
-    expires_at?: string;
-    priority_tier?: string;
-  }) =>
-    apiRequest({
+  // identity-service's UpdateAPIKeyRequest: name, description, permissions, status.
+  update: (token: string, keyId: string, data: { name?: string; description?: string; permissions?: string[]; status?: string }) =>
+    apiRequest<{ api_key: ApiKey }>({
       url: `/v1/api-keys/${keyId}`,
       method: "PUT",
       token,
       data,
     }),
-
   revoke: (token: string, keyId: string) =>
     apiRequest({
       url: `/v1/api-keys/${keyId}/revoke`,
@@ -1468,22 +1438,23 @@ export const apiKeysApi = {
       params: { days: String(days) },
     }),
 
+  // There is no separate audit table: the "audit log" is the key's recent
+  // request history, newest first.
   getAuditLog: (token: string, keyId: string, limit: number = 50, offset: number = 0) =>
     apiRequest<{
       events: Array<{
-        id: number;
-        event_type: string;
-        changes?: Record<string, any>;
-        changed_by?: string;
-        timestamp: string;
-        reason?: string;
-      }>;
+        endpoint: string
+        method: string
+        status_code: number
+        latency_ms: number
+        tokens_used?: number
+        created_at: string
+      }>
     }>({
       url: `/v1/api-keys/${keyId}/audit-log`,
       token,
       params: { limit: String(limit), offset: String(offset) },
     }),
-
   getLlmControl: (token: string, keyId: string) =>
     apiRequest<{
       llm_enabled: boolean;
