@@ -7,18 +7,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCopy, useDocumentLang, useHydrated } from "../_lib/copy";
+import { Wordmark } from "@/components/wordmark";
 import { ButtonLink, Container } from "./primitives";
 
-export function Wordmark({ className }: { className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-foreground", className)}>
-      <span aria-hidden className="grid size-7 place-items-center rounded-lg bg-primary text-[15px] font-bold text-primary-foreground">
-        W
-      </span>
-      WikiAI
-    </span>
-  );
-}
+export { Wordmark };
 
 const iconButton =
   "inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";

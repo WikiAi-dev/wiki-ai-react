@@ -16,7 +16,24 @@
     "settings": "Настройки",
     "logout": "Выйти",
     "signOut": "Выйти",
-    "toggleTheme": "Переключить тему"
+    "toggleTheme": "Переключить тему",
+    "users": "Пользователи",
+    "invites": "Приглашения",
+    "sources": "Источники",
+    "groups": {
+      "overview": "Обзор",
+      "knowledge": "База знаний",
+      "team": "Команда",
+      "learning": "Обучение"
+    },
+    "roles": {
+      "owner": "Владелец",
+      "admin": "Администратор",
+      "user": "Сотрудник"
+    },
+    "language": "Сменить язык",
+    "toggleSidebar": "Показать или скрыть меню",
+    "account": "Аккаунт"
   },
   "actions": {
     "save": "Сохранить",

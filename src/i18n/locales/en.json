@@ -16,7 +16,24 @@
     "settings": "Settings",
     "logout": "Logout",
     "signOut": "Sign out",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "users": "Users",
+    "invites": "Invites",
+    "sources": "Sources",
+    "groups": {
+      "overview": "Overview",
+      "knowledge": "Knowledge",
+      "team": "Team",
+      "learning": "Learning"
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "user": "Member"
+    },
+    "language": "Switch language",
+    "toggleSidebar": "Show or hide the menu",
+    "account": "Account"
   },
   "actions": {
     "save": "Save",
