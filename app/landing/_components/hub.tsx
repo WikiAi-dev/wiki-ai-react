@@ -2,13 +2,13 @@
 
 import type { CSSProperties, PointerEvent, ReactNode } from "react";
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
-import { Database, FileText, Headset, MessagesSquare, PhoneCall, Search } from "lucide-react";
+import { Bot, Database, FileText, MessagesSquare, PhoneCall, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCopy } from "../_lib/copy";
 import { BrandLogo } from "./primitives";
 
-export type Focus = "connect" | "sync" | "call" | "operator" | "chat" | "search";
-type TileId = "bitrix24" | "1c" | "docs" | "custom" | "call" | "operator" | "chat" | "search";
+export type Focus = "gather" | "connect" | "sync" | "team" | "clients" | "api";
+type TileId = "bitrix24" | "1c" | "docs" | "custom" | "team" | "api" | "chat" | "call";
 type Point = { x: number; y: number };
 
 /*
@@ -28,23 +28,24 @@ const SOURCES: (Point & { id: TileId })[] = [
   { id: "docs", x: 8, y: 10.5 },
   { id: "custom", x: 22, y: 10.5 },
 ];
+// Everyone who gets answers: staff and outside services first, customers (chat and calls) on the last row.
 const CHANNELS: (Point & { id: TileId })[] = [
-  { id: "call", x: 8, y: 29.5 },
-  { id: "operator", x: 22, y: 29.5 },
+  { id: "team", x: 8, y: 29.5 },
+  { id: "api", x: 22, y: 29.5 },
   { id: "chat", x: 8, y: 37 },
-  { id: "search", x: 22, y: 37 },
+  { id: "call", x: 22, y: 37 },
 ];
 
 const ACTIVE: Record<Focus, TileId[]> = {
+  gather: ["bitrix24", "1c", "docs", "custom"],
   connect: ["bitrix24", "1c"],
   sync: ["bitrix24", "1c", "docs", "custom"],
-  call: ["call"],
-  operator: ["operator"],
-  chat: ["chat"],
-  search: ["search"],
+  team: ["team"],
+  clients: ["chat", "call"],
+  api: ["api"],
 };
 
-const CHANNEL_ICONS = { call: PhoneCall, operator: Headset, chat: MessagesSquare, search: Search } as const;
+const CHANNEL_ICONS = { team: Users, api: Bot, chat: MessagesSquare, call: PhoneCall } as const;
 
 function lineStyle(from: Point, to: Point, index: number): CSSProperties {
   const dx = to.x - from.x;

@@ -53,16 +53,6 @@ NEXT_PUBLIC_DEBUG=true
 
 # CORS Fallback (enables mock responses when CORS fails)
 NEXT_PUBLIC_ENABLE_CORS_FALLBACK=true
-
-# ========================================
-# CMS SPECIFIC CONFIGURATION
-# ========================================
-
-# CMS API Prefix (usually /api/cms)
-NEXT_PUBLIC_CMS_PREFIX=/api/cms
-
-# CMS Admin Password (for admin login)
-# User must enter this manually - no default value
 """
                 sh 'cat .env'
             }

@@ -21,8 +21,8 @@ export default function AppLayoutContent({ children }: { children: React.ReactNo
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <Loader2 className="size-6 animate-spin text-primary" aria-label="Loading" />
       </div>
     )
   }

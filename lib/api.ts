@@ -1,4 +1,4 @@
-import { API_CONFIG, getApiUrl, getWsUrl, getCmsEndpointUrl } from "./config"
+import { API_CONFIG, getApiUrl, getWsUrl } from "./config"
 
 // Unified API configuration - all requests use api.wikiai.by
 
@@ -151,6 +151,11 @@ export async function apiRequest<T = unknown>({
         } else {
           errorMessage = JSON.stringify(result.detail)
         }
+      } else if (result.error && typeof result.error === 'object' && typeof result.error.message === 'string') {
+        // go-core services answer {"error": {"code", "message"}}.
+        errorMessage = result.error.message
+      } else if (typeof result.error === 'string') {
+        errorMessage = result.error
       } else if (result.message) {
         errorMessage = result.message
       }
@@ -379,8 +384,6 @@ export const filesApi = {
     const document = response.response.document
     // knowledge-service stores document content as plain text only (dtm.DocumentResult.Content is
     // a string field) - there is no binary/base64 storage path, so isBinary is always false here.
-    // Callers (file-reader.tsx, admin/files, files page) still branch on isBinary for backward
-    // compatibility but that branch is now effectively dead since nothing sets it true anymore.
     return {
       status: "success" as const,
       response: {
@@ -511,11 +514,16 @@ export const filesApi = {
     if (!tenantId) {
       return { status: "error" as const, message: "Tenant ID is required for status requests" }
     }
-    return apiRequest<{ document_id: string; status: string; chunk_count: number; updated_at: string }>({
+    type DocumentStatus = { document_id: string; status: string; chunk_count: number; updated_at: string }
+    // knowledge-service wraps the record as { document: {...} }.
+    const result = await apiRequest<DocumentStatus | { document: DocumentStatus }>({
       url: `${API_CONFIG.ENDPOINTS.FILES_LIST}/${encodeURIComponent(documentId)}/status`,
       token,
       params: { tenant_id: tenantId },
     })
+    if (result.status !== "success" || !result.response) return result as ApiResponse<DocumentStatus>
+    const response = "document" in result.response ? result.response.document : result.response
+    return { ...result, response }
   },
 
   // PATCH/PUT /v1/documents/{id}
@@ -979,60 +987,57 @@ export const queryApi = {
   },
 }
 
+// learning-service lists every report as { items: [{ id, type, issue, created_at }] }
+// and ignores ?type=, so the split into auto/manual happens here.
+interface ReportRecord {
+  id: string
+  type?: string
+  issue?: string
+  created_at?: string
+}
+
+export interface ReportItem {
+  id: string
+  question?: string
+  feedback?: string
+  timestamp: string
+}
+
+async function listReports(token: string, type: "auto" | "manual") {
+  const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type })), {
+    method: "GET",
+    headers: {
+      "ngrok-skip-browser-warning": "true",
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${type} reports: ${res.status}`)
+  }
+
+  const data = await res.json()
+  const records: ReportRecord[] = data.items || data.reports || []
+  const reports: ReportItem[] = records
+    .filter((record) => (record.type || "manual") === type)
+    .map((record) => ({
+      id: record.id,
+      question: record.issue,
+      feedback: record.issue,
+      timestamp: record.created_at || "",
+    }))
+  return { status: "success" as const, response: { reports } }
+}
+
 export const reportsApi = {
-  // GET /reports/get/auto
-  getAuto: async (token: string) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    }
+  // Reports raised automatically for questions without an answer.
+  getAuto: (token: string) => listReports(token, "auto"),
 
-    const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type: "auto" })), {
-      method: "GET",
-      headers,
-    })
+  // Problems employees reported from the search page.
+  getManual: (token: string) => listReports(token, "manual"),
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch auto reports: ${res.status}`)
-    }
-
-    const data = await res.json()
-    return {
-      status: "success" as const,
-      response: {
-        reports: data.reports || [],
-      },
-    }
-  },
-
-  // GET /reports/get/manual
-  getManual: async (token: string) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    }
-
-    const res = await fetch(getApiUrl("/v1/reports?" + new URLSearchParams({ type: "manual" })), {
-      method: "GET",
-      headers,
-    })
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch manual reports: ${res.status}`)
-    }
-
-    const data = await res.json()
-    return {
-      status: "success" as const,
-      response: {
-        reports: data.reports || [],
-      },
-    }
-  },
-
-  // POST /reports/submit/manual with { issue }
+  // POST /v1/reports with { issue }; the type defaults to "manual".
   submitManual: (token: string, issue: string) =>
     apiRequest({
       url: "/v1/reports",
@@ -1225,23 +1230,6 @@ export const adminApi = {
       token,
     }),
 
-  getOrganizationStatusByEmail: async (email: string) => {
-    return apiRequest<{
-      organization: {
-        id: string
-        name: string
-        slug: string
-        status: string
-        created_at: string
-        updated_at: string
-        admin_user_id: string
-        admin_email: string
-      }
-    }>({
-      url: `/v1/organizations/status-by-email/${encodeURIComponent(email)}`,
-      method: "GET",
-    })
-  },
 }
 
 // Catalogs endpoints
@@ -1345,64 +1333,42 @@ export const opencartApi = {
 }
 
 // API Keys endpoints - Enhanced with rate limiting, LLM control, and analytics
+/** An API key as identity-service returns it; the secret itself is never listed. */
+export interface ApiKey {
+  id: string
+  name: string
+  description?: string
+  key_prefix: string
+  permissions: string[]
+  status: string
+  expires_at?: string
+  last_used_at?: string
+  rate_limit_requests?: number
+  rate_limit_period?: string
+  created_at: string
+  created_by?: string
+}
+
 export const apiKeysApi = {
   list: (token: string) =>
-    apiRequest<{ 
-      keys: Array<{ 
-        id: string; 
-        key_id: string; 
-        name: string; 
-        description?: string; 
-        permissions: string[]; 
-        is_active: boolean; 
-        created_at: string; 
-        last_used?: string;
-        status?: string;
-        priority_tier?: string;
-        rate_limit_requests?: number;
-        current_usage?: number;
-        llm_enabled?: boolean;
-        max_tokens_per_day?: number;
-        current_llm_tokens_used?: number;
-        expires_at?: string;
-      }> 
-    }>({
+    apiRequest<{ items: ApiKey[]; next_cursor: string | null }>({
       url: "/v1/api-keys",
       token,
     }),
-
-  create: (token: string, data: { 
-    name: string; 
-    description?: string; 
-    permissions: string[]; 
-    expires_in_days?: number;
-    priority_tier?: string;
-    rate_limit_requests?: number;
-    rate_limit_period?: string;
-    llm_enabled?: boolean;
-    max_tokens_per_day?: number;
-    llm_cost_limit?: number;
-  }) =>
-    apiRequest<{ 
-      key?: string; 
-      key_id: string; 
-      id: string; 
-      full_key: string;
-      tier?: string;
-    }>({
+  // The full key is returned once, here, and never again.
+  create: (token: string, data: { name: string; description?: string; permissions: string[]; expires_in_days?: number }) =>
+    apiRequest<{ api_key: ApiKey; full_key: string }>({
       url: "/v1/api-keys",
       method: "POST",
       token,
       data,
     }),
-
   delete: (token: string, keyId: string) =>
     apiRequest({
       url: `/v1/api-keys/${keyId}`,
       method: "DELETE",
       token,
     }),
-
   get: (token: string, keyId: string) =>
     apiRequest<{
       id: string;
@@ -1428,22 +1394,14 @@ export const apiKeysApi = {
       token,
     }),
 
-  update: (token: string, keyId: string, data: {
-    name?: string;
-    permissions?: string[];
-    rate_limit_requests?: number;
-    llm_enabled?: boolean;
-    max_tokens_per_day?: number;
-    expires_at?: string;
-    priority_tier?: string;
-  }) =>
-    apiRequest({
+  // identity-service's UpdateAPIKeyRequest: name, description, permissions, status.
+  update: (token: string, keyId: string, data: { name?: string; description?: string; permissions?: string[]; status?: string }) =>
+    apiRequest<{ api_key: ApiKey }>({
       url: `/v1/api-keys/${keyId}`,
       method: "PUT",
       token,
       data,
     }),
-
   revoke: (token: string, keyId: string) =>
     apiRequest({
       url: `/v1/api-keys/${keyId}/revoke`,
@@ -1480,22 +1438,23 @@ export const apiKeysApi = {
       params: { days: String(days) },
     }),
 
+  // There is no separate audit table: the "audit log" is the key's recent
+  // request history, newest first.
   getAuditLog: (token: string, keyId: string, limit: number = 50, offset: number = 0) =>
     apiRequest<{
       events: Array<{
-        id: number;
-        event_type: string;
-        changes?: Record<string, any>;
-        changed_by?: string;
-        timestamp: string;
-        reason?: string;
-      }>;
+        endpoint: string
+        method: string
+        status_code: number
+        latency_ms: number
+        tokens_used?: number
+        created_at: string
+      }>
     }>({
       url: `/v1/api-keys/${keyId}/audit-log`,
       token,
       params: { limit: String(limit), offset: String(offset) },
     }),
-
   getLlmControl: (token: string, keyId: string) =>
     apiRequest<{
       llm_enabled: boolean;
@@ -1537,12 +1496,15 @@ export const apiKeysApi = {
 
 // Metrics endpoints
 export const metricsApi = {
-  summary: (token: string, since: string = "24h", scope: "user" | "org" | "global" = "org") =>
-    apiRequest<{
+  // analytics-service reports latency as avg_response_time_ms; callers get it
+  // in seconds as avg_response_time.
+  summary: async (token: string, since: string = "24h", scope: "user" | "org" | "global" = "org") => {
+    const result = await apiRequest<{
       total_queries: number
       successful_queries: number
       failed_queries: number
       avg_response_time: number
+      avg_response_time_ms?: number
       period?: string
       scope?: string
       organization_id?: string | null
@@ -1551,7 +1513,12 @@ export const metricsApi = {
       url: "/v1/metrics/summary",
       token,
       params: { since, scope },
-    }),
+    })
+    if (result.response && typeof result.response.avg_response_time_ms === "number") {
+      result.response.avg_response_time = result.response.avg_response_time_ms / 1000
+    }
+    return result
+  },
 
   queries: (
     token: string,
@@ -1700,341 +1667,6 @@ export const aiAgentApi = {
     }),
 }
 
-// Landing Pages API endpoints
-export const landingPagesApi = {
-  // Blog endpoints
-  getBlogPosts: async (params?: { 
-    category?: string; 
-    featured?: boolean; 
-    limit?: number; 
-    offset?: number; 
-    search?: string 
-  }) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      "Content-Type": "application/json"
-    }
-
-    // Handle absolute URLs (for CMS API - now unified with main API on port 9001)
-    let url = getCmsEndpointUrl("/blog/posts")
-    
-    // Add query params
-    if (params && Object.keys(params).length > 0) {
-      const queryParams = new URLSearchParams()
-      if (params.search) queryParams.append('search', params.search)
-      if (params.category) queryParams.append('category', params.category)
-      if (params.featured) queryParams.append('featured', params.featured.toString())
-      if (params.limit) queryParams.append('limit', params.limit.toString())
-      if (params.offset) queryParams.append('offset', params.offset.toString())
-      url += `?${queryParams.toString()}`
-    }
-
-    try {
-      const response = await fetch(url, { headers })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json() as Array<{
-        id: number
-        title: string
-        slug: string
-        excerpt?: string
-        content: string
-        author: string
-        category: string
-        featured: boolean
-        tags: string[]
-        image_url?: string
-        read_time?: string
-        status: string
-        views: number
-        created_at: string
-        updated_at: string
-      }>
-    } catch (error) {
-      console.error('Error fetching blog posts:', error)
-      return []
-    }
-  },
-
-  getBlogPost: async (slug: string) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      "Content-Type": "application/json"
-    }
-
-    try {
-      const response = await fetch(getCmsEndpointUrl(`/blog/posts/${slug}`), { headers })
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null
-        }
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const data = await response.json()
-
-      if (data?.error?.code === "post_not_found") return null
-
-      return data
-    } catch (error) {
-      console.error('Error fetching blog post:', error)
-      return null
-    }
-  },
-
-  getBlogCategories: async () => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      "Content-Type": "application/json"
-    }
-
-    try {
-      const response = await fetch(getCmsEndpointUrl("/blog/categories"), { headers })
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return await response.json() as Array<{
-        name: string
-        slug: string
-        description: string
-        color: string
-      }>
-    } catch (error) {
-      console.error('Error fetching blog categories:', error)
-      return []
-    }
-  },
-
-  subscribeNewsletter: async (email: string, preferences?: Record<string, any>) => {
-    const headers: Record<string, string> = {
-      "ngrok-skip-browser-warning": "true",
-      "Content-Type": "application/json"
-    }
-
-    try {
-      const response = await fetch(getCmsEndpointUrl("/blog/subscribe"), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ email, preferences }),
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      return await response.json()
-    } catch (error) {
-      console.error('Error subscribing to newsletter:', error)
-      return { status: "error", message: "Failed to subscribe" }
-    }
-  },
-
-  // Contact endpoints
-  submitContact: (data: {
-    name: string
-    email: string
-    company?: string
-    phone?: string
-    message: string
-    inquiry_type?: string
-  }) =>
-    apiRequest({
-      url: getCmsEndpointUrl("/contact/submit"),
-      method: "POST",
-      data,
-    }),
-
-  getContactOptions: () =>
-    apiRequest<{
-      email_support: { title: string; description: string; email: string; hours: string; response_time: string }
-      phone_support: { title: string; description: string; phone: string; hours: string; response_time: string }
-      telegram_support: { title: string; description: string; telegram: string; hours: string; response_time: string }
-    }>({
-      url: getCmsEndpointUrl("/contact/options"),
-    }),
-
-  // Sales endpoints
-  submitDemoRequest: (data: {
-    name: string
-    email: string
-    company: string
-    phone?: string
-    job_title?: string
-    company_size?: string
-    industry?: string
-    preferred_time?: string
-    preferred_date?: string
-    message?: string
-  }) =>
-    apiRequest({
-      url: getCmsEndpointUrl("/sales/demo-request"),
-      method: "POST",
-      data,
-    }),
-
-  submitQuoteRequest: (data: {
-    company_name: string
-    contact_email: string
-    contact_name?: string
-    phone?: string
-    requirements?: string
-    user_count?: number
-    current_solution?: string
-    budget_range?: string
-    timeline?: string
-  }) =>
-    apiRequest({
-      url: getCmsEndpointUrl("/sales/quote-request"),
-      method: "POST",
-      data,
-    }),
-
-  // Status endpoints
-  getServiceStatus: () =>
-    apiRequest<Array<{
-      id: number
-      name: string
-      description: string
-      status: string
-      uptime_percentage: number
-      last_checked: string
-      created_at: string
-      updated_at: string
-    }>>({
-      url: getCmsEndpointUrl("/status/services"),
-    }),
-
-  getSystemOverview: () =>
-    apiRequest<{
-      overall_status: string
-      overall_message: string
-      services: Array<{
-        id: number
-        name: string
-        description: string
-        status: string
-        uptime_percentage: number
-        last_checked: string
-      }>
-      active_incidents: Array<{
-        id: number
-        title: string
-        description: string
-        severity: string
-        status: string
-        start_time: string
-        end_time?: string
-        affected_services: string[]
-      }>
-      last_updated: string
-    }>({
-      url: getCmsEndpointUrl("/status/overview"),
-    }),
-
-  // Help Center endpoints
-  getHelpArticles: (params?: { category?: string; difficulty?: string; limit?: number; offset?: number; search?: string }) =>
-    apiRequest<Array<{
-      id: number
-      title: string
-      slug: string
-      description: string
-      content: string
-      category: string
-      views: number
-      helpful_count: number
-      total_votes: number
-      read_time?: string
-      difficulty: string
-      order_index: number
-      status: string
-      created_at: string
-      updated_at: string
-    }>>({
-      url: getCmsEndpointUrl("/help/articles"),
-      params: params as Record<string, string>,
-    }),
-
-  getHelpCategories: () =>
-    apiRequest<Array<{
-      id: number
-      name: string
-      slug: string
-      description?: string
-      icon?: string
-      order_index: number
-      created_at: string
-    }>>({
-      url: getCmsEndpointUrl("/help/categories"),
-    }),
-
-  markArticleHelpful: (articleId: number, helpful: boolean) =>
-    apiRequest({
-      url: getCmsEndpointUrl(`/help/articles/${articleId}/helpful`),
-      method: "POST",
-      data: { helpful },
-    }),
-
-  // Documentation endpoints
-  getDocumentation: (params?: { category?: string; difficulty?: string; limit?: number; offset?: number; search?: string }) =>
-    apiRequest<Array<{
-      id: number
-      title: string
-      slug: string
-      content: string
-      category: string
-      difficulty: string
-      read_time?: string
-      order_index: number
-      status: string
-      created_at: string
-      updated_at: string
-    }>>({
-      url: getCmsEndpointUrl("/docs"),
-      params: params as Record<string, string>,
-    }),
-
-  getDocumentationCategories: () =>
-    apiRequest<Array<{
-      name: string
-      slug: string
-      description: string
-    }>>({
-      url: getCmsEndpointUrl("/docs/categories"),
-    }),
-
-  // Analytics endpoints
-  trackVisit: (data: {
-    page: string
-    session_id?: string
-    ip_address?: string
-    user_agent?: string
-    referrer?: string
-    utm_source?: string
-    utm_medium?: string
-    utm_campaign?: string
-  }) =>
-    apiRequest({
-      url: getCmsEndpointUrl("/analytics/track-visit"),
-      method: "POST",
-      data,
-    }),
-
-  trackEvent: (data: {
-    event_type: string
-    page?: string
-    user_id?: string
-    session_id?: string
-    metadata?: Record<string, any>
-  }) =>
-    apiRequest({
-      url: getCmsEndpointUrl("/analytics/track-event"),
-      method: "POST",
-      data,
-    }),
-}
-
 // Enhanced dashboard endpoints
 export const dashboardApi = {
   getEmployeeData: (token: string, since: string = "24h") =>
@@ -2109,223 +1741,6 @@ export const dashboardApi = {
       params: { since, scope },
     }),
 
-  // Quiz Management
-  getQuizzes: async (token: string, category?: string, difficulty?: string) => {
-    const params: Record<string, string> = {}
-    if (category) params.category = category
-    if (difficulty) params.difficulty = difficulty
-
-    // learning-service's GET /v1/admin/quizzes returns {items, next_cursor},
-    // not {quizzes: [...]} - see internal/learning/server.go's listQuizzes.
-    return apiRequest<{
-      items: Array<{
-        id: string
-        title: string
-        description: string
-        category: string
-        difficulty: "easy" | "medium" | "hard"
-        time_limit_minutes: number
-        passing_score: number
-        questions: Array<{
-          id: string
-          type: "multiple-choice" | "true-false" | "text"
-          question: string
-          options?: string[]
-          correct_answer: string | number
-          explanation?: string
-          points: number
-        }>
-        created_at: string
-        updated_at: string
-        organization_id: string
-      }>
-      next_cursor: string | null
-    }>({
-      url: "/v1/admin/quizzes",
-      token,
-      params,
-    })
-  },
-
-  getQuiz: async (quizId: string, token: string) => {
-    return apiRequest<{
-      id: string
-      title: string
-      description: string
-      category: string
-      difficulty: "easy" | "medium" | "hard"
-      time_limit_minutes: number
-      passing_score: number
-      questions: Array<{
-        id: string
-        type: "multiple-choice" | "true-false" | "text"
-        question: string
-        options?: string[]
-        correct_answer: string | number
-        explanation?: string
-        points: number
-      }>
-      created_at: string
-      updated_at: string
-      organization_id: string
-    }>({
-      url: `/v1/admin/quizzes/${quizId}`,
-      token,
-    })
-  },
-
-  createQuiz: async (quizData: {
-    title: string
-    description: string
-    category: string
-    difficulty: "easy" | "medium" | "hard"
-    time_limit_minutes: number  
-    passing_score: number
-    questions: Array<{
-      id: string
-      type: "multiple-choice" | "true-false" | "text"
-      question: string
-      options?: string[]
-      correct_answer: string | number
-      explanation?: string
-      points: number
-    }>
-  }, token: string) => {
-    console.log("Creating quiz with data:", quizData)
-    console.log("Using token:", token ? "present" : "missing")
-    
-    // Transform frontend data to backend format
-    const backendQuizData = {
-      ...quizData,
-      questions: quizData.questions.map((q, index) => {
-        const transformed = {
-          id: q.id,
-          type: q.type,
-          question: q.question,
-          options: q.options || [],
-          answer: typeof q.correct_answer === 'number' && q.options ?
-            q.options[q.correct_answer] :
-            q.correct_answer.toString(),
-          explanation: q.explanation,
-          points: q.points
-        }
-        
-        console.log(`Transforming question ${index}:`, {
-          frontend: q,
-          backend: transformed
-        })
-        
-        return transformed
-      })
-    }
-    
-    console.log("Transformed quiz data for backend:", backendQuizData)
-    
-    const result = await apiRequest<{
-      id: string
-      message: string
-    }>({
-      url: "/v1/admin/quizzes",
-      method: "POST",
-      token,
-      data: backendQuizData,
-    })
-    
-    console.log("Quiz creation result:", result)
-    return result
-  },
-
-  updateQuiz: async (quizId: string, quizData: {
-    title?: string
-    description?: string
-    category?: string
-    difficulty?: "easy" | "medium" | "hard"
-    time_limit_minutes?: number
-    passing_score?: number
-    questions?: Array<{
-      id?: string
-      type: "multiple-choice" | "true-false" | "text"
-      question: string
-      options?: string[]
-      correct_answer: string | number
-      explanation?: string
-      points: number
-    }>
-  }, token: string) => {
-    // Transform frontend data to backend format
-    const backendQuizData: any = { ...quizData }
-    
-    if (quizData.questions) {
-      backendQuizData.questions = quizData.questions.map(q => ({
-        id: q.id,
-        type: q.type,
-        question: q.question,
-        options: q.options || [],
-        answer: typeof q.correct_answer === 'number' && q.options ?
-          q.options[q.correct_answer] :
-          q.correct_answer.toString(),
-        explanation: q.explanation,
-        points: q.points
-      }))
-    }
-    
-    return apiRequest<{
-      message: string
-    }>({
-      url: `/v1/admin/quizzes/${quizId}`,
-      method: "PATCH",
-      token,
-      data: backendQuizData,
-    })
-  },
-
-  deleteQuiz: async (quizId: string, token: string) => {
-    return apiRequest<{
-      message: string
-    }>({
-      url: `/v1/admin/quizzes/${quizId}`,
-      method: "DELETE",
-      token,
-    })
-  },
-
-  getQuizStats: async (quizId: string, token: string) => {
-    return apiRequest<{
-      total_submissions: number
-      pass_rate: number
-      avg_score: number
-      avg_time_spent: number
-      recent_submissions: Array<{
-        user_id: string
-        score: number
-        passed: boolean
-        submitted_at: string
-      }>
-    }>({
-      url: `/v1/admin/quizzes/${quizId}/statistics`,
-      token,
-    })
-  },
-
-  getQuizSubmissions: async (quizId: string, token: string, limit: number = 50) => {
-    return apiRequest<{
-      submissions: Array<{
-        id: string
-        user_id: string
-        score: number
-        passed: boolean
-        time_spent: number
-        submitted_at: string
-        answers: Record<string, string | number>
-      }>
-      total: number
-    }>({
-      url: `/v1/admin/quizzes/${quizId}/submissions`,
-      token,
-      params: { limit: limit.toString() },
-    })
-  },
-
   // Invite management methods
   createInvite: async (token: string, data: {
     email?: string
@@ -2399,23 +1814,6 @@ export const dashboardApi = {
     }>({
       url: `/v1/invites/${inviteId}`,
       method: "DELETE",
-      token,
-    })
-  },
-
-  // Quiz generation from documents
-  generateQuizFromDocument: async (filename: string, token: string, regenerate: boolean = false) => {
-    return apiRequest<{
-      quiz: {
-        id: string
-        source_filename: string
-        timestamp: string
-        quiz_json: string
-        logs?: string
-      }
-    }>({
-      url: `/v1/quiz/${encodeURIComponent(filename)}?regenerate=${regenerate}`,
-      method: "POST",
       token,
     })
   },
@@ -2511,50 +1909,6 @@ export const dashboardApi = {
         unread_count: number
       }>({
         url: "/v1/messages/unread-count",
-        method: "GET",
-        token,
-      })
-    },
-
-    approveOrganization: async (orgId: string, token: string) => {
-      return apiRequest<{}>({
-        url: `/v1/organizations/${orgId}/approve`,
-        method: "POST",
-        token,
-      })
-    },
-
-    rejectOrganization: async (orgId: string, token: string, reason?: string) => {
-      return apiRequest<{}>({
-        url: `/v1/organizations/${orgId}/reject`,
-        method: "POST",
-        token,
-        data: reason ? { reason } : undefined,
-      })
-    },
-
-    changeOrganizationStatus: async (orgId: string, token: string, newStatus: string) => {
-      return apiRequest<{}>({
-        url: `/v1/organizations/${orgId}`,
-        method: "PATCH",
-        token,
-        data: { status: newStatus },
-      })
-    },
-
-    getPendingOrganizations: async (token: string) => {
-      return apiRequest<{
-        pending_organizations: Array<{
-          id: string
-          name: string
-          slug: string
-          status: string
-          created_at: string
-          admin_user_id: string
-          description?: string
-        }>
-      }>({
-        url: "/v1/organizations/pending",
         method: "GET",
         token,
       })

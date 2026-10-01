@@ -1,39 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { redirect } from "next/navigation"
+import { AlertTriangle, CircleCheck, Clock, FileText, MessageSquare, MessageSquareText, Users } from "lucide-react"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { useAuth } from "@/lib/auth-context"
 import { metricsApi, reportsApi, filesApi, adminApi } from "@/lib/api"
+import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PageBody, PageHeader } from "@/components/page-header"
+import { StatCard, StatGrid } from "@/components/stat-card"
+import { EmptyState } from "@/components/empty-state"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  BarChart3,
-  Users,
-  FileText,
-  MessageSquare,
-  TrendingUp,
-  Clock,
-  AlertTriangle,
-  CheckCircle,
-  Loader2,
-} from "lucide-react"
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts"
-import { redirect } from "next/navigation"
-import { useTranslation } from "@/src/i18n"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface MetricsSummary {
   total_queries: number
@@ -49,40 +31,118 @@ interface Report {
   timestamp: string
 }
 
+interface VolumePoint {
+  date: string
+  fullDate?: string
+  queries: number
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}/
+
+/**
+ * One point per day for the whole period, so days without queries read as
+ * zero instead of being skipped. Falls back to the raw points when the
+ * service labels days in some other format.
+ */
+function dailySeries(points: VolumePoint[], days: number): VolumePoint[] {
+  const keyed = points.filter((p) => ISO_DAY.test(p.fullDate || p.date))
+  if (points.length > 0 && keyed.length === 0) return points
+  const byDay = new Map(keyed.map((p) => [(p.fullDate || p.date).slice(0, 10), p.queries || 0]))
+  const now = new Date()
+  return Array.from({ length: days }, (_, i) => {
+    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (days - 1 - i)))
+    const date = day.toISOString().slice(0, 10)
+    return { date, queries: byDay.get(date) ?? 0 }
+  })
+}
+
+const PERIODS = [7, 14, 30, 90]
+
+const tooltipStyle = {
+  backgroundColor: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "12px",
+  color: "var(--color-popover-foreground)",
+  fontSize: "13px",
+}
+
+function DashboardSkeleton() {
+  return (
+    <PageBody>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-5 w-full max-w-md" />
+      </div>
+      <StatGrid>
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[132px] rounded-2xl" />
+        ))}
+      </StatGrid>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Skeleton className="h-[380px] rounded-2xl" />
+        <Skeleton className="h-[380px] rounded-2xl" />
+      </div>
+    </PageBody>
+  )
+}
+
+function ReportList({ reports, icon: Icon, text }: { reports: Report[]; icon: typeof AlertTriangle; text: (r: Report) => string }) {
+  const { locale } = useTranslation()
+  return (
+    <ScrollArea className="h-[320px]">
+      <ul className="divide-y divide-border">
+        {reports.map((report) => (
+          <li key={report.id} className="flex items-start gap-3 py-3.5 first:pt-0">
+            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+              <Icon className="size-4" strokeWidth={1.75} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium leading-snug text-foreground text-pretty">{text(report)}</p>
+              <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                {new Date(report.timestamp).toLocaleString(locale === "ru" ? "ru-RU" : "en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </ScrollArea>
+  )
+}
+
 export default function AdminDashboardPage() {
   const { token, isAdmin, isLoading: authLoading } = useAuth()
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null)
   const [autoReports, setAutoReports] = useState<Report[]>([])
   const [manualReports, setManualReports] = useState<Report[]>([])
   const [fileCount, setFileCount] = useState(0)
   const [userCount, setUserCount] = useState(0)
-  const [volumeData, setVolumeData] = useState<any[]>([])
+  const [volumeData, setVolumeData] = useState<VolumePoint[]>([])
   const [selectedPeriod, setSelectedPeriod] = useState(7)
   const [isLoading, setIsLoading] = useState(true)
   const [isVolumeLoading, setIsVolumeLoading] = useState(false)
 
-  // Add a separate state to trigger re-fetch when period changes
-  const [refreshKey, setRefreshKey] = useState(0)
-
   const handlePeriodChange = (newPeriod: number) => {
-    setSelectedPeriod(newPeriod);
-    setRefreshKey(prev => prev + 1); // Force re-fetch
-    setIsVolumeLoading(true); // Show loading state for volume data
+    setSelectedPeriod(newPeriod)
+    setIsVolumeLoading(true)
   }
 
   const fetchData = useCallback(async () => {
     if (!token || !isAdmin) return
 
     try {
-      // Fetch basic admin data and volume data
       const [metricsRes, filesRes, usersRes, volumeRes] = await Promise.all([
         metricsApi.summary(token, "24h", "global"),
         filesApi.list(token),
         adminApi.listAccounts(token),
         metricsApi.volume(token, selectedPeriod, "global"),
       ])
-      
+
       if (metricsRes.status === "success" && metricsRes.response) {
         setMetrics(metricsRes.response)
       }
@@ -95,21 +155,14 @@ export default function AdminDashboardPage() {
       if (volumeRes.status === "success" && volumeRes.response) {
         setVolumeData(volumeRes.response.data || [])
       }
-      setIsVolumeLoading(false);
-      
-      // Only fetch reports if user is admin
-      if (isAdmin) {
-        const [autoRes, manualRes] = await Promise.all([
-          reportsApi.getAuto(token),
-          reportsApi.getManual(token),
-        ])
-        
-        if (autoRes.status === "success" && autoRes.response) {
-          setAutoReports((autoRes.response as any).reports || [])
-        }
-        if (manualRes.status === "success" && manualRes.response) {
-          setManualReports((manualRes.response as any).reports || [])
-        }
+      setIsVolumeLoading(false)
+
+      const [autoRes, manualRes] = await Promise.all([reportsApi.getAuto(token), reportsApi.getManual(token)])
+      if (autoRes.status === "success" && autoRes.response) {
+        setAutoReports((autoRes.response as { reports?: Report[] }).reports || [])
+      }
+      if (manualRes.status === "success" && manualRes.response) {
+        setManualReports((manualRes.response as { reports?: Report[] }).reports || [])
       }
     } catch (error) {
       console.error("Failed to fetch admin data:", error)
@@ -131,26 +184,24 @@ export default function AdminDashboardPage() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchData()
     }
-  }, [isAdmin, selectedPeriod, refreshKey, fetchData])
+  }, [isAdmin, fetchData])
 
-  // Add 30-second polling for real-time updates
+  // Refresh every 30 seconds so the numbers stay current.
   useEffect(() => {
     if (!isAdmin || !token) return
-
-    const interval = setInterval(() => {
-      fetchData()
-    }, 30000) // 30 seconds
-
+    const interval = setInterval(fetchData, 30000)
     return () => clearInterval(interval)
   }, [isAdmin, token, fetchData])
+
+  const series = useMemo(() => dailySeries(volumeData, selectedPeriod), [volumeData, selectedPeriod])
+
+  const header = <AppHeader breadcrumbs={[{ label: t("navigation.dashboard") }]} />
 
   if (authLoading || isLoading) {
     return (
       <>
-        <AppHeader breadcrumbs={[{ label: t('admin.title') }]} />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
+        {header}
+        <DashboardSkeleton />
       </>
     )
   }
@@ -159,324 +210,212 @@ export default function AdminDashboardPage() {
     return null
   }
 
-  const successRate = metrics ? Math.round((metrics.successful_queries / (metrics.total_queries || 1)) * 100) : 0
-  const failureRate = 100 - successRate
+  const dateLocale = locale === "ru" ? "ru-RU" : "en-GB"
+  const formatDay = (value: string) => {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(dateLocale, { day: "numeric", month: "short" })
+  }
 
-  const pieData = [
-    { name: t('admin.successful'), value: metrics?.successful_queries || 0, color: "var(--color-success)" },
-    { name: t('admin.failed'), value: metrics?.failed_queries || 0, color: "var(--color-destructive)" },
-  ]
-
-  // Transform volume data for chart - only show total queries
-  const chartData = volumeData.map(day => ({
-    date: day.date,
-    queries: day.queries,
-  }))
+  const total = metrics?.total_queries || 0
+  const answered = metrics?.successful_queries || 0
+  const unanswered = metrics?.failed_queries || 0
+  const answeredShare = total > 0 ? Math.round((answered / total) * 100) : null
+  const outcomeTotal = answered + unanswered
+  const hasVolume = series.some((point) => point.queries > 0)
 
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: t('admin.adminDashboard') }]} />
-      <main className="flex-1 p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('admin.title')}</h1>
-          <p className="text-muted-foreground">{t('admin.systemAnalyticsAndPerformanceMonitoring')}</p>
-        </div>
+      {header}
+      <PageBody>
+        <PageHeader title={t("admin.overview.title")} description={t("admin.overview.subtitle")} />
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('admin.todaysQueries')}</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics?.total_queries?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">{t('admin.queriesProcessedToday')}</p>
-            </CardContent>
-          </Card>
+        <StatGrid>
+          <StatCard
+            label={t("admin.overview.queries")}
+            value={total.toLocaleString(dateLocale)}
+            hint={t("admin.overview.queriesHint")}
+            icon={MessageSquare}
+          />
+          <StatCard
+            label={t("admin.overview.answered")}
+            value={answeredShare === null ? "—" : `${answeredShare}%`}
+            hint={t("admin.overview.answeredHint")}
+            icon={CircleCheck}
+          />
+          <StatCard
+            label={t("admin.overview.documents")}
+            value={fileCount.toLocaleString(dateLocale)}
+            hint={t("admin.overview.documentsHint")}
+            icon={FileText}
+          />
+          <StatCard
+            label={t("admin.overview.users")}
+            value={userCount.toLocaleString(dateLocale)}
+            hint={t("admin.overview.usersHint")}
+            icon={Users}
+          />
+        </StatGrid>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('admin.successRate')}</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{successRate}%</div>
-              <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-success transition-all" style={{ width: `${successRate}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('admin.avgResponse')}</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metrics?.avg_response_time?.toFixed(2) || 0}s</div>
-              <p className="text-xs text-muted-foreground">{t('admin.averageLatency')}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">{t('admin.activeUsers')}</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{userCount}</div>
-              <p className="text-xs text-muted-foreground">{t('admin.registeredAccounts')}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <Card className="gap-4">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t('admin.queryVolume')}</CardTitle>
-                  <CardDescription>{t('admin.dailyQueryTrendsOverSelectedPeriod')}</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* <span className="text-sm text-muted-foreground">{selectedPeriod} days</span> */}
-                  <Select value={selectedPeriod.toString()} onValueChange={(value) => handlePeriodChange(Number(value))}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder={t('admin.selectPeriod')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">{t('admin.7days')}</SelectItem>
-                      <SelectItem value="14">{t('admin.14days')}</SelectItem>
-                      <SelectItem value="30">{t('admin.30days')}</SelectItem>
-                      <SelectItem value="90">{t('admin.90days')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <CardTitle>{t("admin.overview.volume")}</CardTitle>
+              <CardDescription>{t("admin.overview.volumeHint")}</CardDescription>
+              <CardAction>
+                <Select value={selectedPeriod.toString()} onValueChange={(value) => handlePeriodChange(Number(value))}>
+                  <SelectTrigger className="w-[124px]" aria-label={t("admin.selectPeriod")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERIODS.map((days) => (
+                      <SelectItem key={days} value={days.toString()}>
+                        {t(`admin.${days}days`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardAction>
             </CardHeader>
-            <CardContent>
-              <div className="h-[300px] relative">
-                {isVolumeLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
+            <CardContent className="px-3 sm:px-6">
+              <div className={isVolumeLoading ? "h-[280px] opacity-50 transition-opacity" : "h-[280px] transition-opacity"}>
+                {hasVolume ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+                      <defs>
+                        <linearGradient id="volumeFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.24} />
+                          <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={formatDay}
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        minTickGap={24}
+                        tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fill: "var(--color-muted-foreground)", fontSize: 12 }}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        labelFormatter={(label) => formatDay(String(label))}
+                        formatter={(value) => [value, t("admin.overview.queriesCount")]}
+                        cursor={{ stroke: "var(--color-border)" }}
+                      />
+                      <Area isAnimationActive={false} type="monotone" dataKey="queries" stroke="var(--color-chart-1)" strokeWidth={2} fill="url(#volumeFill)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyState
+                    icon={MessageSquare}
+                    title={t("admin.overview.noQueries")}
+                    description={t("admin.overview.noQueriesHint")}
+                    className="h-full justify-center py-0"
+                  />
                 )}
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="colorQueries" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" className="text-xs" tick={{ fill: "var(--color-muted-foreground)" }} />
-                    <YAxis className="text-xs" tick={{ fill: "var(--color-muted-foreground)" }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--color-popover)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "8px",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="queries"
-                      stroke="var(--color-primary)"
-                      fillOpacity={1}
-                      fill="url(#colorQueries)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="gap-5">
             <CardHeader>
-              <CardTitle>{t('admin.queryDistribution')}</CardTitle>
-              <CardDescription>{t('admin.successVsFailureBreakdown')}</CardDescription>
+              <CardTitle>{t("admin.overview.outcomes")}</CardTitle>
+              <CardDescription>{t("admin.overview.outcomesHint")}</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="h-[300px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "var(--color-popover)",
-                        border: "1px solid var(--color-border)",
-                        borderRadius: "8px",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+            <CardContent className="flex flex-1 flex-col gap-6">
+              <div>
+                <p className="text-4xl font-semibold tracking-tight tabular-nums">{total.toLocaleString(dateLocale)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("admin.overview.queriesCount")}</p>
               </div>
-              <div className="flex justify-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-success" />
-                  <span className="text-sm">Successful ({metrics?.successful_queries || 0})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-destructive" />
-                  <span className="text-sm">Failed ({metrics?.failed_queries || 0})</span>
-                </div>
+              <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                {outcomeTotal > 0 && (
+                  <>
+                    <div className="bg-success transition-[width]" style={{ width: `${(answered / outcomeTotal) * 100}%` }} />
+                    <div className="bg-destructive transition-[width]" style={{ width: `${(unanswered / outcomeTotal) * 100}%` }} />
+                  </>
+                )}
               </div>
+              <dl className="divide-y divide-border text-sm">
+                <div className="flex items-center justify-between gap-4 py-3 first:pt-0">
+                  <dt className="flex items-center gap-2.5 text-muted-foreground">
+                    <span className="size-2.5 rounded-full bg-success" aria-hidden />
+                    {t("admin.overview.withAnswer")}
+                  </dt>
+                  <dd className="font-medium tabular-nums">{answered.toLocaleString(dateLocale)}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4 py-3">
+                  <dt className="flex items-center gap-2.5 text-muted-foreground">
+                    <span className="size-2.5 rounded-full bg-destructive" aria-hidden />
+                    {t("admin.overview.withoutAnswer")}
+                  </dt>
+                  <dd className="font-medium tabular-nums">{unanswered.toLocaleString(dateLocale)}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4 py-3 last:pb-0">
+                  <dt className="flex items-center gap-2.5 text-muted-foreground">
+                    <Clock className="size-3.5" strokeWidth={1.75} aria-hidden />
+                    {t("admin.overview.avgLatency")}
+                  </dt>
+                  <dd className="font-medium tabular-nums">
+                    {(metrics?.avg_response_time || 0).toLocaleString(dateLocale, { maximumFractionDigits: 2 })} {t("admin.overview.seconds")}
+                  </dd>
+                </div>
+              </dl>
             </CardContent>
           </Card>
         </div>
 
-        {/* Reports */}
-        <Card>
+        <Card className="gap-5">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>{t('admin.reports')}</CardTitle>
-                <CardDescription>{t('admin.autoGeneratedAndManualFeedbackReports')}</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="outline">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {t('admin.auto')}: {autoReports.length}
-                </Badge>
-                <Badge variant="outline">
-                  <MessageSquare className="w-3 h-3 mr-1" />
-                  {t('admin.manual')}: {manualReports.length}
-                </Badge>
-              </div>
-            </div>
+            <CardTitle>{t("admin.overview.reportsTitle")}</CardTitle>
+            <CardDescription>{t("admin.overview.reportsHint")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="auto">
+            <Tabs defaultValue="auto" className="gap-5">
               <TabsList>
-                <TabsTrigger value="auto">{t('admin.autoReports')} ({autoReports.length})</TabsTrigger>
-                <TabsTrigger value="manual">{t('admin.manualReports')} ({manualReports.length})</TabsTrigger>
+                <TabsTrigger value="auto">
+                  {t("admin.overview.unansweredTab")}
+                  <span className="tabular-nums opacity-70">{autoReports.length}</span>
+                </TabsTrigger>
+                <TabsTrigger value="manual">
+                  {t("admin.overview.feedbackTab")}
+                  <span className="tabular-nums opacity-70">{manualReports.length}</span>
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="auto" className="mt-4">
-                <ScrollArea className="h-[300px]">
-                  {autoReports.length > 0 ? (
-                    <div className="space-y-3">
-                      {autoReports.map((report) => (
-                        <div key={report.id} className="p-4 rounded-lg border bg-muted/30">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 flex-1">
-                              <AlertTriangle className="w-5 h-5 text-warning mt-0.5" />
-                              <div>
-                                <p className="font-medium">{report.question || t('admin.noQuestionRecorded')}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {new Date(report.timestamp).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge variant="secondary">{t('admin.auto')}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <CheckCircle className="w-12 h-12 mx-auto mb-4 text-success/50" />
-                      <p className="text-muted-foreground">{t('admin.noAutoGeneratedReports')}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{t('admin.allQueriesReceivedAnswers')}</p>
-                    </div>
-                  )}
-                </ScrollArea>
+              <TabsContent value="auto">
+                {autoReports.length > 0 ? (
+                  <ReportList reports={autoReports} icon={AlertTriangle} text={(r) => r.question || t("admin.noQuestionRecorded")} />
+                ) : (
+                  <EmptyState
+                    icon={CircleCheck}
+                    title={t("admin.overview.noUnanswered")}
+                    description={t("admin.overview.noUnansweredHint")}
+                  />
+                )}
               </TabsContent>
 
-              <TabsContent value="manual" className="mt-4">
-                <ScrollArea className="h-[300px]">
-                  {manualReports.length > 0 ? (
-                    <div className="space-y-3">
-                      {manualReports.map((report) => (
-                        <div key={report.id} className="p-4 rounded-lg border bg-muted/30">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 flex-1">
-                              <MessageSquare className="w-5 h-5 text-primary mt-0.5" />
-                              <div>
-                                <p className="font-medium">{report.feedback || t('admin.noFeedbackProvided')}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {new Date(report.timestamp).toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge variant="secondary">{t('admin.manual')}</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">{t('admin.noManualReports')}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{t('admin.usersHaveNotSubmittedFeedback')}</p>
-                    </div>
-                  )}
-                </ScrollArea>
+              <TabsContent value="manual">
+                {manualReports.length > 0 ? (
+                  <ReportList reports={manualReports} icon={MessageSquareText} text={(r) => r.feedback || t("admin.noFeedbackProvided")} />
+                ) : (
+                  <EmptyState
+                    icon={MessageSquareText}
+                    title={t("admin.overview.noFeedback")}
+                    description={t("admin.overview.noFeedbackHint")}
+                  />
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
-
-        {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{fileCount}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.indexedDocuments')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{userCount}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.totalUsers')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-lg bg-chart-3/10 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-chart-3" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{autoReports.length + manualReports.length}</p>
-                  <p className="text-sm text-muted-foreground">{t('admin.totalReports')}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+      </PageBody>
     </>
   )
 }

@@ -5,18 +5,32 @@
     "dashboard": "Dashboard",
     "search": "Search",
     "files": "Files",
-    "quizzes": "Quizzes",
     "admin": "Admin",
     "userManagement": "User Management",
     "apiKeys": "API Keys",
     "fileManagement": "File Management",
-    "quizManagement": "Quiz Management",
     "openCartPlugins": "OpenCart Plugins",
     "catalogs": "Catalogs",
     "settings": "Settings",
     "logout": "Logout",
     "signOut": "Sign out",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "users": "Users",
+    "invites": "Invites",
+    "sources": "Sources",
+    "groups": {
+      "overview": "Overview",
+      "knowledge": "Knowledge",
+      "team": "Team"
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "user": "Member"
+    },
+    "language": "Switch language",
+    "toggleSidebar": "Show or hide the menu",
+    "account": "Account"
   },
   "actions": {
     "save": "Save",
@@ -29,8 +43,6 @@
     "submit": "Submit",
     "loading": "Loading...",
     "confirm": "Confirm",
-    "retakeQuiz": "Retake Quiz",
-    "startQuiz": "Start Quiz",
     "generateWithAI": "Generate with AI",
     "copy": "Copy",
     "clear": "Clear",
@@ -151,7 +163,41 @@
     "feedbackSubmittedSuccessfully": "Feedback submitted successfully",
     "failedToSubmitFeedback": "Failed to submit feedback",
     "copy": "Copy",
-    "clear": "Clear"
+    "clear": "Clear",
+    "page": {
+      "title": "Ask the knowledge base",
+      "subtitle": "WikiAI finds the answer in your company's documents and shows where it came from.",
+      "placeholder": "Ask a question, e.g. how do I process a return?",
+      "send": "Ask",
+      "tryAsking": "Try asking",
+      "suggestions": [
+        "How do I process a product return?",
+        "What does onboarding cover for a new hire?",
+        "What are our delivery terms?",
+        "How do I request time off?"
+      ],
+      "you": "You",
+      "searching": "Searching the knowledge base…",
+      "writing": "Writing the answer…",
+      "sourcesTitle": "Found in documents",
+      "noSources": "Nothing in the knowledge base matched this question.",
+      "showAll": "Show all ({{count}})",
+      "showLess": "Show less",
+      "openDocument": "Open document",
+      "copy": "Copy",
+      "copied": "Answer copied",
+      "report": "Report a problem",
+      "reportTitle": "What's wrong with this answer?",
+      "reportText": "Describe the problem and your admin will see it on the dashboard.",
+      "reportPlaceholder": "For example: the answer is outdated, the right price is 490",
+      "reportSend": "Send",
+      "reportSent": "Thanks, your feedback was sent",
+      "reportFailed": "Couldn't send feedback",
+      "cancel": "Cancel",
+      "error": "Couldn't get an answer. Check your connection and try again.",
+      "retry": "Try again",
+      "restart": "New conversation"
+    }
   },
   "invites": {
     "title": "Invites",
@@ -316,74 +362,6 @@
     "failedToDelete": "Failed to delete API key",
     "copiedToClipboard": "Copied to clipboard"
   },
-  "quizManagement": {
-    "title": "Quiz Management",
-    "createAndManageQuizzesForUsers": "Create and manage quizzes for users",
-    "generateWithAI": "Generate with AI",
-    "createQuiz": "Create Quiz",
-    "createNewQuiz": "Create New Quiz",
-    "createNewQuizForUsersToTestTheirKnowledge": "Create a new quiz for users to test their knowledge",
-    "quizTitle": "Title",
-    "enterQuizTitle": "Enter quiz title",
-    "quizCategory": "Category",
-    "enterCategory": "Enter category",
-    "description": "Description",
-    "enterQuizDescription": "Enter quiz description",
-    "difficulty": "Difficulty",
-    "easy": "Easy",
-    "medium": "Medium",
-    "hard": "Hard",
-    "timeLimitMinutes": "Time Limit (minutes)",
-    "passingScore": "Passing Score (%)",
-    "questions": "Questions",
-    "addQuestion": "Add Question",
-    "question": "Question",
-    "questionType": "Question Type",
-    "multipleChoice": "Multiple Choice",
-    "trueFalse": "True/False",
-    "textAnswer": "Text Answer",
-    "points": "Points",
-    "enterYourQuestion": "Enter your question",
-    "options": "Options",
-    "option": "Option",
-    "correct": "Correct",
-    "correctAnswer": "Correct Answer",
-    "true": "True",
-    "false": "False",
-    "enterTheCorrectAnswer": "Enter the correct answer",
-    "explanationOptional": "Explanation (Optional)",
-    "explainWhyThisIsTheCorrectAnswer": "Explain why this is the correct answer",
-    "totalQuizzes": "Total Quizzes",
-    "activeQuizzes": "Active quizzes",
-    "totalQuestions": "Total Questions",
-    "stats": "Stats",
-    "questionsAcrossAllQuizzes": "Questions across all quizzes",
-    "categories": "Categories",
-    "quizCategories": "Quiz categories",
-    "avgDifficulty": "Avg Difficulty",
-    "averageDifficultyLevel": "Average difficulty level",
-    "edit": "Edit",
-    "editQuiz": "Edit Quiz",
-    "updateQuiz": "Update Quiz",
-    "quizStatistics": "Quiz Statistics",
-    "performanceAnalyticsFor": "Performance analytics for",
-    "totalSubmissions": "Total Submissions",
-    "passRate": "Pass Rate",
-    "avgScore": "Avg Score",
-    "avgTime": "Avg Time",
-    "recentSubmissions": "Recent Submissions",
-    "submissions": "Submissions",
-    "generateQuizFromDocument": "Generate Quiz from Document",
-    "selectADocumentToGenerateAQuizFromUsingAI": "Select a document to generate a quiz from using AI",
-    "selectDocument": "Select Document",
-    "noDocumentsAvailable": "No documents available",
-    "generateQuiz": "Generate Quiz",
-    "close": "Close",
-    "cancel": "Cancel",
-    "questionsCount": "questions",
-    "created": "Created",
-    "toPass": "to pass"
-  },
   "fileManagement": {
     "title": "File Management",
     "uploadViewAndManageAllDocuments": "Upload, view, and manage all documents in the system",
@@ -496,7 +474,82 @@
     "editFile": "Edit: {{filename}}",
     "filesCount": "{{count}} files",
     "typeFiles": "{{type}} Files",
-    "typeFilesCount": "{{count}} {{type}} file(s)"
+    "typeFilesCount": "{{count}} {{type}} file(s)",
+    "library": {
+      "title": "Documents",
+      "subtitle": "Everything WikiAI knows: uploaded files and data from connected systems.",
+      "subtitleAdmin": "Upload documents, follow indexing and keep the knowledge base tidy.",
+      "upload": "Upload",
+      "uploading": "Uploading…",
+      "dropTitle": "Drop files here",
+      "dropText": "or pick them from your computer. Text formats work: TXT, MD, CSV, JSON, HTML, SRT.",
+      "dropActive": "Release to upload",
+      "choose": "Choose files",
+      "uploadsTitle": "Uploads",
+      "dismiss": "Dismiss",
+      "accepted": "{{count}} file(s) accepted, indexing…",
+      "uploadFailed": "Couldn't upload the files",
+      "uploadFailedCount": "{{count}} file(s) failed to upload",
+      "total": "Documents",
+      "totalHint": "In the knowledge base",
+      "indexed": "Searchable",
+      "indexedHint": "Indexed and ready",
+      "processing": "Processing",
+      "processingHint": "Waiting to be indexed",
+      "failed": "Failed",
+      "failedHint": "Need attention",
+      "search": "Find a document",
+      "selectAll": "Select all",
+      "selected": "{{count}} selected",
+      "clearSelection": "Clear selection",
+      "chunks": "Chunks: {{count}}",
+      "updated": "Updated {{date}}",
+      "fromConnector": "Source: {{name}}",
+      "open": "Open",
+      "download": "Download",
+      "edit": "Edit",
+      "reindex": "Reindex",
+      "delete": "Delete",
+      "actions": "Document actions",
+      "loadFailed": "Couldn't load documents",
+      "downloadFailed": "Couldn't download the file",
+      "saved": "Changes saved",
+      "saveFailed": "Couldn't save changes",
+      "deleted": "Document deleted",
+      "deleteFailed": "Couldn't delete the document",
+      "bulkDeleted": "{{count}} documents deleted",
+      "bulkPartial": "Deleted {{done}} of {{total}}",
+      "reindexed": "Document reindexed",
+      "reindexFailed": "Couldn't reindex the document",
+      "editTitle": "Edit document",
+      "editText": "After saving, WikiAI searches the new version.",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete this document?",
+      "deleteText": "“{{name}}” will be removed from the knowledge base and search. This can't be undone.",
+      "deleteManyTitle": "Delete the selected documents?",
+      "deleteManyText": "{{count}} documents will be removed from the knowledge base and search. This can't be undone.",
+      "emptyTitle": "No documents yet",
+      "emptyText": "Upload your first files or connect a system, and WikiAI starts answering from them.",
+      "noMatchTitle": "Nothing found",
+      "noMatchText": "Try a different name.",
+      "status": {
+        "pending": "Queued",
+        "indexing": "Indexing",
+        "indexed": "Ready",
+        "failed": "Failed",
+        "duplicate": "Already indexed"
+      }
+    },
+    "reader": {
+      "description": "The document text WikiAI searches.",
+      "failed": "Could not load the document text.",
+      "empty": "This document is empty.",
+      "download": "Download",
+      "close": "Close",
+      "downloadFailed": "Could not download the file"
+    }
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -586,99 +639,41 @@
     "adminDashboard": "Admin Dashboard",
     "selectPeriod": "Select period",
     "7days": "7 days",
-    "14days": "14 days", 
+    "14days": "14 days",
     "30days": "30 days",
     "90days": "90 days",
-    "pleaseLogInToAccessAdminDashboard": "Please log in to access the admin dashboard."
-  },
-  "quizzes": {
-    "title": "Quizzes",
-    "testYourKnowledgeAndTrackYourProgress": "Test your knowledge and track your progress",
-    "totalQuizzes": "Total Quizzes",
-    "availableQuizzes": "Available quizzes",
-    "quizzesFinished": "Quizzes finished",
-    "quizzesPassed": "Quizzes passed",
-    "averagePerformance": "Average performance",
-    "passRate": "Pass Rate",
-    "avgScore": "Avg Score",
-    "quizCompleted": "Quiz Completed!",
-    "hereAreYourResultsFor": "Here are your results for",
-    "startQuiz": "Start Quiz",
-    "retakeQuiz": "Retake Quiz",
-    "question": "Question",
-    "of": "of",
-    "loadingQuestion": "Loading question...",
-    "points": "points",
-    "submitQuiz": "Submit Quiz",
-    "next": "Next",
-    "previous": "Previous",
-    "you": "You:",
-    "correct": "Correct:",
-    "explanation": "Explanation:",
-    "typeYourAnswerHere": "Type your answer here...",
-    "min": "min",
-    "toPass": "to pass",
-    "failedToFetchQuizzes": "Failed to fetch quizzes",
-    "quizHasNoQuestions": "Quiz has no questions",
-    "congratulationsYouPassedWith": "Congratulations! You passed with",
-    "pointsExclamation": "points!",
-    "quizCompletedYouScored": "Quiz completed. You scored",
-    "pointsTryAgain": "points. Try again!",
-    "failedToSubmitQuiz": "Failed to submit quiz",
-    "passed": "Passed!",
-    "notPassed": "Not Passed",
-    "scoreOutOf": "You scored {{score}} out of {{totalPoints}} points ({{percentage}}%)",
-    "questionReview": "Question Review",
-    "reviewAnswers": "Review your answers and explanations",
-    "backToQuizzes": "Back to Quizzes",
-    "quizManagement": "Quiz Management",
-    "description": "Create and manage quizzes for users",
-    "createQuiz": "Create Quiz",
-    "editQuiz": "Edit Quiz", 
-    "deleteQuiz": "Delete Quiz",
-    "selectDocument": "Select a document",
-    "generateQuiz": "Generate Quiz from Document",
-    "quizTitle": "Title",
-    "quizDescription": "Description",
-    "category": "Category",
-    "difficulty": "Difficulty",
-    "timeLimitMinutes": "Time Limit (minutes)",
-    "passingScorePercent": "Passing Score (%)",
-    "addQuestion": "Add Question",
-    "questionType": "Question Type",
-    "multipleChoice": "Multiple Choice",
-    "trueFalse": "True/False",
-    "questionText": "Question Text",
-    "options": "Options",
-    "correctAnswerSelect": "Correct Answer",
-    "explanationText": "Explanation",
-    "pointsValue": "Points",
-    "quizGenerated": "Quiz generated successfully! Review and save to create.",
-    "aiUnavailable": "AI generation unavailable. Created a sample quiz for you to customize.",
-    "failedGenerate": "Failed to generate quiz from document",
-    "selectFileFirst": "Please select a file first",
-    "quizCreated": "Quiz created successfully",
-    "quizUpdated": "Quiz updated successfully", 
-    "quizDeleted": "Quiz deleted successfully",
-    "failedCreate": "Failed to create quiz",
-    "failedUpdate": "Failed to update quiz",
-    "failedDelete": "Failed to delete quiz",
-    "titleRequired": "Quiz title is required",
-    "questionsRequired": "Quiz must have at least one question",
-    "questionTextRequired": "Question {{index}} text is required",
-    "optionsRequired": "Question {{index}} must have at least 2 options",
-    "correctAnswerRequired": "Question {{index}} must have a correct answer selected",
-    "quizStats": "Quiz Statistics",
-    "totalSubmissions": "Total Submissions",
-    "avgTime": "Avg Time",
-    "recentSubmissions": "Recent Submissions"
-  },
-  "quizTaking": {
-    "questionOf": "Question {{current}} of {{total}}",
-    "progress": "Progress",
-    "timeRemaining": "Time Remaining",
-    "minutes": "minutes",
-    "seconds": "seconds"
+    "pleaseLogInToAccessAdminDashboard": "Please log in to access the admin dashboard.",
+    "overview": {
+      "title": "Overview",
+      "subtitle": "How your team uses the knowledge base: questions, answers and feedback.",
+      "queries": "Queries, last 24h",
+      "queriesHint": "Questions your staff asked in the last 24 hours",
+      "answered": "Answered",
+      "answeredHint": "Share of queries that found an answer",
+      "documents": "Documents",
+      "documentsHint": "In the knowledge base and searchable",
+      "users": "Users",
+      "usersHint": "Accounts in your organization",
+      "volumeHint": "How many questions were asked each day",
+      "noQueries": "No queries in this period yet",
+      "noQueriesHint": "Once your team starts asking questions, the chart appears here.",
+      "outcomes": "Query outcomes",
+      "outcomesHint": "Last 24 hours",
+      "withAnswer": "Answered",
+      "withoutAnswer": "Not answered",
+      "avgLatency": "Average response time",
+      "seconds": "s",
+      "reportsHint": "Unanswered questions and feedback from your team",
+      "queriesCount": "queries",
+      "unansweredTab": "Unanswered",
+      "feedbackTab": "Feedback",
+      "reportsTitle": "Worth a look",
+      "noUnanswered": "No unanswered questions",
+      "noUnansweredHint": "Every question your team asked found an answer in the knowledge base.",
+      "noFeedback": "No feedback yet",
+      "noFeedbackHint": "Feedback your team leaves on answers shows up here.",
+      "volume": "Query volume"
+    }
   },
   "common": {
     "excelSpreadsheet": "Excel Spreadsheet",
@@ -750,7 +745,34 @@
     "totalQueries": "Total Queries",
     "successfulQueries": "Successful Queries",
     "failedQueries": "Failed Queries",
-    "organization": "Organization"
+    "organization": "Organization",
+    "home": {
+      "subtitle": "Find answers in your company's knowledge base and keep up with new documents.",
+      "documents": "Documents",
+      "documentsHint": "In the knowledge base and searchable",
+      "recent": "New this week",
+      "recentHint": "Added in the last 7 days",
+      "queries": "My queries",
+      "queriesHint": "In the last 24 hours",
+      "latency": "Response time",
+      "latencyHint": "Average across your queries",
+      "seconds": "s",
+      "askTitle": "Ask the knowledge base",
+      "askText": "Answers that link to the source documents",
+      "filesTitle": "Documents",
+      "filesText": "Every file WikiAI knows about",
+      "catalogsTitle": "Catalogs",
+      "catalogsText": "Search products and line items",
+      "recentTitle": "Recent documents",
+      "recentText": "Latest additions to the knowledge base",
+      "viewAll": "All documents",
+      "findPlaceholder": "Find a document",
+      "emptyTitle": "No documents yet",
+      "emptyText": "Upload your first files and they become searchable right away.",
+      "noMatchTitle": "Nothing found",
+      "noMatchText": "Try a different file name.",
+      "upload": "Upload documents"
+    }
   },
   "dashboard2": {
     "manageYourDocumentsAndExploreTheKnowledgeBase": "Manage your documents and explore the knowledge base",
@@ -771,21 +793,6 @@
     "uploadDocuments": "Upload Documents"
   },
   "landing": {
-    "nav": {
-      "features": "Features",
-      "howItWorks": "How It Works",
-      "integrations": "Integrations",
-      "pricing": "Pricing",
-      "about": "About",
-      "contact": "Contact",
-      "signIn": "Sign In",
-      "brochure": "Brochure",
-      "account": "Account",
-      "getStarted": "Get Started →",
-      "watchDemo": "▶ Watch Demo",
-      "toggleTheme": "Toggle theme",
-      "language": "Language"
-    },
     "menu": {
       "how": "How it works",
       "systems": "Integrations",
@@ -801,9 +808,13 @@
       "home": "WikiAI home"
     },
     "hero": {
-      "subtitle": "WikiAI connects to Bitrix24, 1C, telephony and your documents. Every answer comes from your own data, always up to date.",
+      "subtitle": "WikiAI brings data from Bitrix24, 1C, documents and your other systems into one knowledge base. Staff, customers and your services get accurate answers with a link to the source.",
       "lead": "The knowledge base that",
       "phrases": [
+        {
+          "text": "gathers all company knowledge",
+          "focus": "gather"
+        },
         {
           "text": "connects to Bitrix24 and 1C",
           "focus": "connect"
@@ -813,138 +824,169 @@
           "focus": "sync"
         },
         {
-          "text": "answers customer calls",
-          "focus": "call"
-        },
-        {
-          "text": "prompts your operators",
-          "focus": "operator"
-        },
-        {
-          "text": "answers shoppers in chat",
-          "focus": "chat"
-        },
-        {
           "text": "helps staff find information",
-          "focus": "search"
+          "focus": "team"
+        },
+        {
+          "text": "answers customers 24/7",
+          "focus": "clients"
+        },
+        {
+          "text": "shares knowledge with AI agents",
+          "focus": "api"
         }
       ],
       "flow": {
         "sourcesLabel": "Your systems",
-        "channelsLabel": "Where it answers",
+        "channelsLabel": "Who gets answers",
         "docs": "Documents",
         "custom": "Your sources",
         "channelItems": [
           {
-            "id": "call",
-            "label": "Calls"
+            "id": "team",
+            "label": "Staff"
           },
           {
-            "id": "operator",
-            "label": "Operators"
+            "id": "api",
+            "label": "API & AI agents"
           },
           {
             "id": "chat",
             "label": "Website chat"
           },
           {
-            "id": "search",
-            "label": "Search"
+            "id": "call",
+            "label": "Calls"
           }
         ]
       }
     },
-    "call": {
-      "incoming": "Incoming call",
-      "live": "On the line",
-      "replay": "Replay",
-      "customer": "Customer",
-      "operator": "Operator",
-      "hint": "WikiAI prompt",
-      "caption": "What the operator sees during a call",
-      "bot": "WikiAI",
-      "handoff": "Call transferred to an operator with the order number",
-      "botLines": [
-        {
-          "type": "customer",
-          "text": "Hi, where is my order 48213?"
-        },
-        {
-          "type": "bot",
-          "text": "Your order is with the courier. Delivery is today between 2 and 6 pm.",
-          "source": "1C, order status"
-        },
-        {
-          "type": "customer",
-          "text": "Can I move the delivery to tomorrow?"
-        },
-        {
-          "type": "bot",
-          "text": "An operator handles rescheduling. I'm putting you through and passing on your order number.",
-          "source": "Delivery rules, section 4"
-        },
-        {
-          "type": "handoff"
-        }
-      ],
-      "operatorLines": [
-        {
-          "type": "customer",
-          "text": "Hi! Is the R7 robot vacuum in stock? I'd like to pick it up today."
-        },
-        {
-          "type": "hint",
-          "title": "In stock",
-          "text": "4 units at the Minsk warehouse. Pickup today after 4 pm.",
-          "source": "1C, warehouse stock"
-        },
-        {
-          "type": "operator",
-          "text": "Yes, it's in stock. You can pick it up today after 4 pm."
-        },
-        {
-          "type": "customer",
-          "text": "And if it doesn't work for me, can I return it?"
-        },
-        {
-          "type": "hint",
-          "title": "Returns",
-          "text": "Within 14 days if the packaging and receipt are kept. Returns are handled at the pickup point.",
-          "source": "Returns procedure, section 3"
-        }
-      ]
-    },
     "pains": {
-      "title": "What slows your call center down",
+      "title": "Where company knowledge gets lost",
       "items": [
         {
-          "title": "Customers wait on hold",
-          "desc": "The operator searches guides, Bitrix24 and 1C while the customer waits or hangs up."
+          "title": "Information is scattered across systems",
+          "desc": "Prices live in 1C, clients in Bitrix24, procedures in folders and chats. To find an answer, people open five apps or interrupt a colleague."
         },
         {
-          "title": "A month to train a new hire",
-          "desc": "A new operator needs a month to learn the procedures, prices and return rules."
+          "title": "Documents go out of date",
+          "desc": "A rule changes in one place, while staff and customers keep getting the old answer."
         },
         {
           "title": "Knowledge leaves with people",
-          "desc": "With high turnover, experienced operators leave and new hires have to build that experience from scratch."
+          "desc": "Experience lives in people's heads. When someone leaves, a new hire needs a month to figure everything out."
         }
       ]
     },
     "how": {
-      "title": "How WikiAI helps",
-      "sip": {
-        "title": "Connects to your phone system over SIP",
-        "desc": "Works with your existing PBX. Numbers, operators and call routing stay as they are.",
-        "flow": [
-          "Customer",
-          "Your PBX",
-          "Operator and WikiAI"
+      "title": "One knowledge base for the whole company",
+      "subtitle": "Staff find answers in seconds, customers get them in chat and by phone, and your services and AI agents get them through the API.",
+      "ask": {
+        "title": "Answers staff in every department",
+        "desc": "Ask in plain words. WikiAI finds the answer in your connected systems and shows where it came from.",
+        "assistant": "WikiAI assistant",
+        "connected": "Bitrix24 · 1C · Documents · Google Drive",
+        "status": "Checked all connected sources",
+        "placeholder": "Ask anything about the company",
+        "replay": "Replay",
+        "tabs": [
+          {
+            "id": "sales",
+            "label": "Sales",
+            "role": "Sales manager",
+            "turns": [
+              {
+                "question": "What discount can we give a wholesale client on coffee machines?",
+                "answer": "7% from 10 units, 12% from 30 units. There are 46 coffee machines in stock, ready to ship tomorrow.",
+                "sources": [
+                  "1C, prices and stock",
+                  "Bitrix24, wholesale terms"
+                ]
+              },
+              {
+                "question": "What if the client picks it up themselves?",
+                "answer": "Then add another 2% for pickup. The Minsk warehouse is open 9:00 to 20:00.",
+                "sources": [
+                  "Wholesale price list, page 2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "support",
+            "label": "Support",
+            "role": "Support agent",
+            "turns": [
+              {
+                "question": "A customer wants to return a vacuum 10 days after buying it. Is that allowed?",
+                "answer": "Yes, returns are accepted within 14 days if the box and receipt are kept. The return is handled at the pickup point.",
+                "sources": [
+                  "Returns policy, section 3"
+                ]
+              },
+              {
+                "question": "What if they lost the receipt?",
+                "answer": "Find the order in 1C by the customer's phone number and print a copy of the receipt. The return goes through with it.",
+                "sources": [
+                  "Returns policy, section 5"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "warehouse",
+            "label": "Warehouse",
+            "role": "Logistics",
+            "turns": [
+              {
+                "question": "Which warehouse has the most R7 robot vacuums?",
+                "answer": "Gomel has 12, Minsk 4 and Brest 2. The next delivery arrives on October 3.",
+                "sources": [
+                  "1C, warehouse stock",
+                  "1C, delivery schedule"
+                ]
+              },
+              {
+                "question": "How long is a transfer from Gomel to Minsk?",
+                "answer": "2 business days. The truck between warehouses leaves on Tuesdays and Fridays.",
+                "sources": [
+                  "Warehouse transfer procedure"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "hr",
+            "label": "HR",
+            "role": "New hire",
+            "turns": [
+              {
+                "question": "How do I request time off?",
+                "answer": "Submit a request in Bitrix24 at least 2 weeks ahead. Your manager approves it within 3 business days.",
+                "sources": [
+                  "Leave policy",
+                  "Bitrix24, Time off workflow"
+                ]
+              },
+              {
+                "question": "Who approves it if my manager is on leave?",
+                "answer": "Their deputy. The request moves to them automatically.",
+                "sources": [
+                  "Leave policy, section 4"
+                ]
+              }
+            ]
+          }
         ]
       },
-      "chat": {
-        "title": "Answers shoppers in chat 24/7",
-        "desc": "The chat on your website answers questions about products, delivery and returns at night and on weekends, when operators are off.",
+      "clients": {
+        "title": "Answers customers 24/7",
+        "desc": "In your website chat, on Telegram and by phone. When a person is needed, it hands the conversation to your team.",
+        "channels": [
+          "Website",
+          "Telegram",
+          "Phone (SIP)"
+        ],
         "widget": "Website chat",
         "status": "Online 24/7",
         "time": "23:40",
@@ -952,17 +994,17 @@
         "answer": "By courier in 1-2 business days for 9 BYN. Delivery is free for orders over 150 BYN.",
         "source": "Delivery terms, section 2"
       },
-      "calls": {
-        "title": "Answers calls and prompts operators",
-        "modes": {
-          "operator": "Operator prompts",
-          "bot": "Voice bot"
-        }
+      "api": {
+        "title": "API for services and AI agents",
+        "desc": "Your website, CRM or AI agent gets WikiAI's answers, with sources, through the API.",
+        "query": "Return policy",
+        "overview": "14 days with a receipt",
+        "source": "Returns policy.pdf"
       }
     },
     "systems": {
       "title": "Connect the systems you already use",
-      "subtitle": "WikiAI pulls data from your systems on its own. Change a price in 1C or a rule in a guide, and the operator sees the new answer right away.",
+      "subtitle": "WikiAI pulls data from your systems on its own. Change a price in 1C or a rule in a procedure, and everyone gets the new answer right away.",
       "more": "Also Google Drive, Confluence, email, Telegram and OpenCart. Other systems and AI agents connect through the API.",
       "feedTitle": "Updates in the last hour",
       "status": "Updated",
@@ -973,19 +1015,23 @@
         },
         {
           "system": "Bitrix24",
-          "text": "New script for returns added"
+          "text": "New sales script added"
         },
         {
           "system": "1C",
           "text": "Minsk warehouse stock updated"
         },
         {
-          "system": "Telephony",
-          "text": "Transcripts of new calls added"
+          "system": "Google Drive",
+          "text": "New price list added"
         },
         {
           "system": "Guides",
           "text": "Regional delivery terms changed"
+        },
+        {
+          "system": "Confluence",
+          "text": "Leave policy updated"
         },
         {
           "system": "Bitrix24",
@@ -996,7 +1042,7 @@
         {
           "id": "bitrix24",
           "name": "Bitrix24",
-          "data": "Deals, clients, sales scripts"
+          "data": "Deals, clients, tasks and workflows"
         },
         {
           "id": "1c",
@@ -1006,12 +1052,12 @@
         {
           "id": "docs",
           "name": "Documents",
-          "data": "Guides, procedures and price lists in PDF, Word and Excel"
+          "data": "Procedures, guides and price lists in PDF, Word and Excel"
         },
         {
-          "id": "telephony",
-          "name": "SIP telephony",
-          "data": "Calls and their transcripts"
+          "id": "custom",
+          "name": "Your sources",
+          "data": "Your website, your own databases and any service through the API"
         }
       ],
       "feedTimes": [
@@ -1025,38 +1071,38 @@
       "title": "What changes for your business",
       "items": [
         {
-          "title": "Shorter calls",
-          "desc": "Operators don't have to put customers on hold to find an answer."
+          "title": "Answers in seconds",
+          "desc": "Staff don't dig through folders or interrupt colleagues: WikiAI answers right away and links to the source."
         },
         {
-          "title": "More orders",
-          "desc": "Customers get an accurate answer right away and order before they change their mind."
+          "title": "Customers don't wait",
+          "desc": "Shoppers get an accurate answer day and night and place the order before they change their mind."
         },
         {
-          "title": "Training in days, not a month",
-          "desc": "New operators take calls sooner, with prompts guiding them through your procedures."
+          "title": "New hires up to speed in days",
+          "desc": "A new hire asks WikiAI instead of hunting for a mentor, and gets up to speed in days, not a month."
         },
         {
           "title": "Knowledge stays in the company",
-          "desc": "Guides, answers and call transcripts are kept in one place and don't leave with your staff."
+          "desc": "Data, procedures and your team's experience live in one place and don't leave with people."
         }
       ]
     },
     "pilot": {
-      "title": "Try it on your own call center for 2 weeks",
+      "title": "Try it on your own data for 2 weeks",
       "subtitle": "No lengthy rollout or approvals. After the pilot, the decision is yours.",
       "steps": [
         {
           "title": "Connect",
-          "desc": "We connect Bitrix24, 1C and your phone system and load your guides and scripts."
+          "desc": "We connect Bitrix24, 1C, documents and your other sources. No developer needed."
         },
         {
           "title": "Run",
-          "desc": "For two weeks, operators take calls with prompts and the chat answers shoppers on your site."
+          "desc": "For two weeks your staff ask WikiAI questions and customers get answers in your website chat."
         },
         {
           "title": "Decide",
-          "desc": "You compare call length and orders, then decide whether to continue."
+          "desc": "You see how much time your team saves and how fast customers get answers, then decide whether to continue."
         }
       ]
     },
@@ -1065,50 +1111,47 @@
       "subtitle": "Anything else? We'll answer it when we discuss the pilot.",
       "items": [
         {
-          "q": "Do we need to change our phone system or numbers?",
-          "a": "No. WikiAI connects to your PBX over SIP. Your numbers and call routing stay the same."
+          "q": "Which systems can we connect?",
+          "a": "Bitrix24, 1C, documents in PDF, Word and Excel, Google Drive, Confluence, email, Telegram and OpenCart. Other systems and AI agents connect through the API."
         },
         {
           "q": "Do we need a developer to set it up?",
-          "a": "No. Bitrix24, 1C and telephony connect through ready-made connectors, and during the pilot we help you set everything up."
+          "a": "No. Systems connect through ready-made connectors, and during the pilot we help you set everything up."
         },
         {
-          "q": "What if a prompt is wrong?",
-          "a": "WikiAI answers only from your documents and data and shows the source of every answer, so the operator can check it on the spot. If there's no reliable answer, WikiAI says so."
+          "q": "How does the data stay up to date?",
+          "a": "Automatically. When prices and stock change in 1C, deals in Bitrix24 or your documents, WikiAI picks up the changes on its own."
         },
         {
-          "q": "How do prices, stock and guides stay up to date?",
-          "a": "Automatically. When data changes in 1C, deals in Bitrix24 or your guides, WikiAI picks up the changes on its own."
+          "q": "What if WikiAI gets an answer wrong?",
+          "a": "WikiAI answers only from your data and shows the source of every answer, so it's easy to check. If there's no reliable answer, WikiAI says so."
         },
         {
-          "q": "Where is our data stored?",
-          "a": "In our cloud or on your own servers. Each company's data is stored separately, with role-based access."
+          "q": "Where is our data stored, and who can see it?",
+          "a": "Each company's data is stored separately, in our cloud or on your own servers. Only your staff can see it, with role-based access."
         },
         {
-          "q": "Can we connect other systems?",
-          "a": "Yes. There are connectors for Google Drive, Confluence, email, Telegram and OpenCart, and any other system or AI agent can get answers from WikiAI through the API."
+          "q": "Can we connect our phone system?",
+          "a": "Yes. WikiAI connects to your PBX over SIP: it answers customers by voice and prompts your team during calls. Your numbers and call routing stay the same."
         }
       ]
     },
     "cta": {
-      "title": "Start a pilot on your own call center",
-      "subtitle": "Two weeks of prompts on your real calls, plus the website chat. Then you decide."
+      "title": "Bring your company's knowledge into one place",
+      "subtitle": "Two weeks on your real data: we connect your systems and your team starts getting answers. Then you decide."
     },
     "footer": {
-      "tagline": "A knowledge base that connects to Bitrix24, 1C and telephony and answers customers and staff.",
+      "tagline": "Your company's knowledge base. It gathers data from Bitrix24, 1C and documents and answers staff, customers and AI agents.",
       "product": "Product",
       "company": "Company",
-      "pricing": "Pricing",
-      "about": "About",
-      "blog": "Blog",
       "contact": "Contact",
       "rights": "All rights reserved."
     },
     "contact": {
       "metaTitle": "WikiAI | Contact",
-      "metaDescription": "Contact WikiAI on Telegram, by email or by phone to plan a pilot for your call center.",
-      "title": "Let's plan a pilot for your call center",
-      "subtitle": "Message or call us. We'll show how WikiAI connects to Bitrix24, 1C and your phone system, and agree on a start date.",
+      "metaDescription": "Contact WikiAI on Telegram, by email or by phone to plan a pilot for your company.",
+      "title": "Let's plan a pilot for your company",
+      "subtitle": "Message or call us. We'll show how WikiAI connects to Bitrix24, 1C and your documents, and agree on a start date.",
       "name": "Afanasieff Ivan",
       "tagline": "Pilots, demos and setup",
       "labels": {
@@ -1129,179 +1172,296 @@
       "steps": [
         {
           "title": "We talk",
-          "desc": "We go over your systems, calls and call-center goals."
+          "desc": "We go over your systems, data and your team's goals."
         },
         {
           "title": "We connect",
-          "desc": "We connect Bitrix24, 1C and your phone system to WikiAI."
+          "desc": "We connect Bitrix24, 1C and your documents to WikiAI."
         },
         {
           "title": "The pilot starts",
-          "desc": "Two weeks on your real calls. The decision is yours."
+          "desc": "Two weeks on your real data. The decision is yours."
         }
       ]
-    }
-  },
-  "about": {
-    "hero": {
-      "badge": "About WikiAI",
-      "title": "Transforming Knowledge into ",
-      "titleHighlight": "Actionable Insights",
-      "subtitle": "We're on a mission to help organizations unlock their collective intelligence through AI-powered knowledge management that's intuitive, powerful, and secure."
     },
-    "stats": {
-      "activeUsers": "Active Users",
-      "enterpriseCustomers": "Enterprise Customers", 
-      "uptime": "Uptime",
-      "customerRating": "Customer Rating"
-    },
-    "mission": {
-      "title": "Our Mission",
-      "subtitle1": "To democratize knowledge management by making it accessible, intelligent, and actionable for every organization.",
-      "subtitle2": "We believe that every team deserves to have their collective knowledge at their fingertips, enhanced by AI that understands context and provides intelligent insights.",
-      "joinJourney": "Join Our Journey",
-      "rating": "4.9/5 rating"
-    },
-    "values": {
-      "title": "Our Values",
-      "subtitle": "The principles that guide everything we do, from product development to customer support.",
-      "innovation": {
-        "title": "Innovation",
-        "description": "Continuously pushing the boundaries of what's possible with AI and knowledge management."
+    "auth": {
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "login": {
+        "metaTitle": "WikiAI | Sign in",
+        "title": "Sign in to WikiAI",
+        "subtitle": "Your company's knowledge base: answers with their source, connected to Bitrix24, 1C and your documents.",
+        "points": [
+          "Search across every company source",
+          "Answers that name the document",
+          "Only your staff see your company's data"
+        ],
+        "tabs": {
+          "signIn": "Sign in",
+          "newOrg": "New organization"
+        },
+        "username": "Username",
+        "usernamePlaceholder": "e.g. ivan",
+        "password": "Password",
+        "passwordPlaceholder": "Your password",
+        "submit": "Sign in",
+        "submitting": "Signing in…",
+        "orgName": "Company name",
+        "orgNamePlaceholder": "e.g. Demo Retail",
+        "adminUsername": "Admin username",
+        "adminUsernamePlaceholder": "You'll sign in with it",
+        "adminPassword": "Admin password",
+        "adminPasswordPlaceholder": "At least 8 characters",
+        "createSubmit": "Create organization",
+        "creating": "Creating…",
+        "newOrgHint": "You'll be the organization's owner and can invite your team.",
+        "success": "Signed in",
+        "created": "Organization created",
+        "errors": {
+          "fillLogin": "Enter your username and password",
+          "fillAll": "Fill in all fields",
+          "shortPassword": "The password must be at least 8 characters",
+          "failed": "Couldn't sign in. Check your username and password.",
+          "createFailed": "Couldn't create the organization"
+        }
       },
-      "customerCentric": {
-        "title": "Customer-Centric", 
-        "description": "Our customers' success is our success. We build solutions that solve real problems."
+      "invite": {
+        "metaTitle": "WikiAI | Invitation",
+        "title": "You're invited to WikiAI",
+        "subtitle": "Create your account to use your company's knowledge base.",
+        "checking": "Checking the invitation…",
+        "details": "Invitation",
+        "organization": "Organization",
+        "email": "Email",
+        "role": "Role",
+        "roles": {
+          "owner": "Owner",
+          "admin": "Admin",
+          "user": "Member"
+        },
+        "expires": "Valid until",
+        "invitedBy": "Invited by",
+        "username": "Username",
+        "usernamePlaceholder": "You'll sign in with it",
+        "password": "Password",
+        "passwordPlaceholder": "At least 6 characters",
+        "confirm": "Repeat the password",
+        "confirmPlaceholder": "The same password again",
+        "submit": "Create account",
+        "submitting": "Creating account…",
+        "created": "Account created. Opening sign-in.",
+        "invalidTitle": "This invitation isn't available",
+        "invalid": "The link is wrong, or the invitation was revoked or already used. Ask your admin for a new one.",
+        "expiredTitle": "This invitation has expired",
+        "expired": "Ask your company's admin to send a new invitation.",
+        "toLogin": "Go to sign-in",
+        "errors": {
+          "username": "Enter a username",
+          "password": "Enter a password",
+          "shortPassword": "The password must be at least 6 characters",
+          "mismatch": "The passwords don't match",
+          "failed": "Couldn't create the account. Please try again."
+        }
       },
-      "passion": {
-        "title": "Passion",
-        "description": "We're passionate about helping teams unlock their collective knowledge."
-      },
-      "excellence": {
-        "title": "Excellence",
-        "description": "Committed to delivering the highest quality products and experiences."
+      "review": {
+        "metaTitle": "WikiAI | Organization access",
+        "title": "This organization isn't active yet",
+        "subtitle": "Sign-in for this organization's staff is closed for now: access hasn't been opened yet, or it was paused.",
+        "whatNext": "What you can do",
+        "steps": [
+          "If you've just signed up, message us and we'll open access.",
+          "If access was paused, contact your organization's owner or us."
+        ],
+        "contact": "Message us",
+        "back": "Back to sign-in",
+        "account": "Account"
       }
-    },
-    "journey": {
-      "title": "Our Journey",
-      "subtitle": "From a simple idea to a platform powering thousands of teams worldwide."
-    },
-    "team": {
-      "title": "Meet Our Team",
-      "subtitle": "A diverse group of passionate individuals committed to revolutionizing knowledge management."
-    },
-    "joinUs": {
-      "title": "Ready to Join Us?",
-      "subtitle": "We're always looking for talented people who share our passion for innovation and excellence.",
-      "viewPositions": "View Open Positions",
-      "contactUs": "Contact Us"
     }
   },
-  "pricing": {
-    "hero": {
-      "badge": "Pricing Plans",
-      "title": "Simple, Transparent ",
-      "titleHighlight": "Pricing",
-      "subtitle": "Choose the perfect plan for your team. Start with a free trial and scale as you grow.",
-      "monthly": "Monthly",
-      "annual": "Annual",
-      "save": "Save 20%"
+  "team": {
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member",
+      "viewer": "Viewer"
     },
-    "plans": {
-      "starter": {
-        "name": "Starter",
-        "description": "Perfect for small teams getting started",
-        "mostPopular": "Most Popular",
-        "buttonText": "Start Free Trial"
+    "roleHints": {
+      "owner": "Full access, including making others owners.",
+      "admin": "Manages documents, the team and API keys.",
+      "member": "Asks questions, uploads and reads documents.",
+      "viewer": "Only asks questions and reads documents."
+    },
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "copy": "Copy",
+    "copied": "Copied",
+    "done": "Done",
+    "you": "You",
+    "search": "Search",
+    "never": "Never",
+    "users": {
+      "title": "Users",
+      "subtitle": "Who works with your organization's knowledge base, and with what access.",
+      "invite": "Invite",
+      "add": "Add manually",
+      "search": "Find by name, email or role",
+      "noEmail": "No email",
+      "statusInactive": "Disabled",
+      "changeRole": "Change role",
+      "remove": "Remove from organization",
+      "roleTitle": "User role",
+      "roleText": "The role decides what {{name}} can do in WikiAI.",
+      "roleSaved": "Role updated",
+      "roleFailed": "Couldn't change the role",
+      "deleteTitle": "Delete this user?",
+      "deleteText": "{{name}} will lose access to the knowledge base. This can't be undone.",
+      "deleted": "User deleted",
+      "deleteFailed": "Couldn't delete the user",
+      "loadFailed": "Couldn't load users",
+      "addTitle": "New user",
+      "addText": "Create the account yourself and hand over the login and password. Sending an invite is usually easier.",
+      "username": "Username",
+      "usernamePlaceholder": "For example, anna.petrova",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "role": "Role",
+      "create": "Create",
+      "creating": "Creating…",
+      "created": "User created",
+      "createFailed": "Couldn't create the user",
+      "errors": {
+        "username": "Enter a username",
+        "password": "The password needs at least 8 characters"
       },
-      "professional": {
-        "name": "Professional", 
-        "description": "Ideal for growing teams and businesses",
-        "buttonText": "Get Started"
+      "emptyTitle": "It's just you so far",
+      "emptyText": "Invite colleagues so they can find answers in the knowledge base too.",
+      "noMatch": "No one matches"
+    },
+    "invites": {
+      "title": "Invites",
+      "subtitle": "Links your colleagues use to create their own account in your organization.",
+      "create": "Create invite",
+      "search": "Find by email or role",
+      "noEmail": "Any email address",
+      "status": {
+        "active": "Active",
+        "used": "Used",
+        "revoked": "Revoked",
+        "expired": "Expired"
       },
-      "enterprise": {
-        "name": "Enterprise",
-        "description": "Complete solution for large organizations", 
-        "buttonText": "Contact Sales"
-      }
+      "expires": "Valid until {{date}}",
+      "expired": "Expired {{date}}",
+      "usedAt": "Accepted {{date}}",
+      "createdBy": "Created by {{name}}",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke this invite?",
+      "revokeText": "The link stops working. Accounts already created with it stay.",
+      "revoked": "Invite revoked",
+      "revokeFailed": "Couldn't revoke the invite",
+      "loadFailed": "Couldn't load invites",
+      "emptyTitle": "No invites yet",
+      "emptyText": "Create a link and send it to a colleague: they pick their own username and password.",
+      "noMatch": "Nothing found",
+      "dialogTitle": "New invite",
+      "dialogText": "The recipient opens the link and creates their account.",
+      "email": "Email",
+      "emailHint": "Optional. If set, only this address can use the link.",
+      "emailPlaceholder": "anna@company.com",
+      "role": "Role",
+      "validFor": "Valid for",
+      "days": {
+        "1": "1 day",
+        "3": "3 days",
+        "7": "1 week",
+        "14": "2 weeks",
+        "30": "1 month"
+      },
+      "message": "Message",
+      "messagePlaceholder": "For example: Hi! All our playbooks are here, come on in.",
+      "send": "Create link",
+      "sending": "Creating…",
+      "failed": "Couldn't create the invite",
+      "readyTitle": "Invite ready",
+      "readyText": "Send the link to the recipient. It works until {{date}}.",
+      "link": "Link",
+      "linkCopied": "Link copied"
     },
-    "features": {
-      "upToUsers": "Up to {{count}} users",
-      "documents": "documents",
-      "basicAiSearch": "Basic AI search",
-      "advancedAiSearch": "Advanced AI search & answers",
-      "emailSupport": "Email support",
-      "prioritySupport": "Priority support",
-      "phoneSupport": "24/7 phone support",
-      "storage": "storage",
-      "standardSecurity": "Standard security",
-      "realTimeCollaboration": "Real-time collaboration",
-      "customIntegrations": "Custom integrations",
-      "advancedAnalytics": "Advanced analytics",
-      "dedicatedAccountManager": "Dedicated account manager",
-      "customAiTraining": "Custom AI training",
-      "slaGuarantee": "SLA guarantee",
-      "unlimitedUsers": "Unlimited users",
-      "unlimitedDocuments": "Unlimited documents",
-      "unlimitedStorage": "Unlimited storage",
-      "advancedSecurity": "Advanced security & compliance",
-      "onpremiseDeployment": "On-premise deployment option"
-    },
-    "comparison": {
-      "title": "Compare Features",
-      "subtitle": "Detailed comparison of all features across our plans.",
-      "feature": "Feature",
-      "users": "Users",
-      "documents": "Documents", 
-      "storage": "Storage",
-      "aiSearch": "AI Search",
-      "support": "Support",
-      "integrations": "Integrations",
-      "analytics": "Analytics",
-      "sla": "SLA"
-    },
-    "faq": {
-      "title": "Frequently Asked Questions",
-      "subtitle": "Got questions? We've got answers.",
-      "question1": "Can I change plans anytime?",
-      "answer1": "Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle.",
-      "question2": "What happens if I exceed my limits?",
-      "answer2": "We'll notify you when you're approaching your limits. You can upgrade your plan or purchase additional storage/users as needed.",
-      "question3": "Do you offer discounts for non-profits?",
-      "answer3": "Yes, we offer a 50% discount for qualified non-profit organizations. Contact our sales team for more information.",
-      "question4": "Is my data secure?",
-      "answer4": "Absolutely. We use enterprise-grade encryption, regular security audits, and comply with GDPR, SOC 2, and other major compliance standards.",
-      "question5": "Can I try before I buy?",
-      "answer5": "Yes! All plans come with a 14-day free trial. No credit card required to start your trial."
-    },
-    "cta": {
-      "title": "Ready to Get Started?",
-      "subtitle": "Join thousands of teams already using WikiAI to transform their knowledge management.",
-      "startFreeTrial": "Start Free Trial",
-      "contactSales": "Contact Sales"
-    }
-  },
-  "blog": {
-    "title": "WikiAI Blog",
-    "description": "Discover the latest insights, tutorials, and updates on AI-powered knowledge management",
-    "searchPlaceholder": "Search articles...",
-    "featured": "Featured Articles",
-    "allCategories": "All Categories",
-    "latest": "Latest",
-    "popular": "Most Popular",
-    "oldest": "Oldest",
-    "articles": "articles",
-    "noArticles": "No articles found",
-    "previous": "Previous",
-    "next": "Next",
-    "newsletter": {
-      "title": "Stay Updated",
-      "description": "Get the latest articles and insights delivered to your inbox",
-      "placeholder": "Enter your email",
-      "subscribe": "Subscribe",
-      "subscribing": "Subscribing...",
-      "success": "Successfully subscribed!",
-      "error": "Failed to subscribe. Please try again."
+    "keys": {
+      "title": "API keys",
+      "subtitle": "Keys that connect WikiAI to your website, chatbot or your own systems.",
+      "create": "Create key",
+      "status": {
+        "active": "Active",
+        "revoked": "Revoked",
+        "expired": "Expired"
+      },
+      "lastUsed": "Last request {{date}}",
+      "neverUsed": "Not used yet",
+      "expires": "Valid until {{date}}",
+      "noExpiry": "No expiry",
+      "details": "Details",
+      "edit": "Edit",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke this key?",
+      "revokeText": "Requests with “{{name}}” stop working right away. The key's record stays.",
+      "revoked": "Key revoked",
+      "revokeFailed": "Couldn't revoke the key",
+      "deleteTitle": "Delete this key?",
+      "deleteText": "“{{name}}” and its history will be removed. This can't be undone.",
+      "deleted": "Key deleted",
+      "deleteFailed": "Couldn't delete the key",
+      "loadFailed": "Couldn't load keys",
+      "emptyTitle": "No keys yet",
+      "emptyText": "Create a key to connect WikiAI to your website, chatbot or your own system.",
+      "dialogTitle": "New API key",
+      "editTitle": "Edit key",
+      "name": "Name",
+      "namePlaceholder": "For example, Website widget",
+      "description": "Description",
+      "descriptionPlaceholder": "Where and why the key is used",
+      "permissions": "What the key can do",
+      "validFor": "Valid for",
+      "days": {
+        "0": "No expiry",
+        "30": "30 days",
+        "90": "90 days",
+        "365": "1 year"
+      },
+      "send": "Create key",
+      "sending": "Creating…",
+      "failed": "Couldn't create the key",
+      "saved": "Key updated",
+      "saveFailed": "Couldn't save the key",
+      "errors": {
+        "name": "Enter a name",
+        "permissions": "Pick at least one action"
+      },
+      "readyTitle": "Copy your key",
+      "readyText": "It's shown only once. If you lose it, create a new one.",
+      "keyCopied": "Key copied",
+      "usageTitle": "Usage, last 7 days",
+      "requests": "Requests",
+      "errorsCount": "Errors",
+      "avgLatency": "Average time",
+      "tokens": "Model tokens",
+      "recentTitle": "Recent requests",
+      "noRequests": "No requests with this key yet.",
+      "created": "Created {{date}}",
+      "perms": {
+        "search": "Search the knowledge base",
+        "generate_ai_response": "Get WikiAI answers",
+        "upload": "Upload documents",
+        "download": "Download documents",
+        "delete_documents": "Delete documents",
+        "manage_api_keys": "Manage API keys",
+        "admin": "Full admin access"
+      },
+      "readyLead": "“{{name}}” is ready.",
+      "noMatch": "Nothing found",
+      "key": "Key",
+      "search": "Find by name or key prefix"
     }
   }
 }

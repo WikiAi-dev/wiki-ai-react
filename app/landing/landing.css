@@ -1,40 +1,18 @@
 /*
- * Theme tokens for the marketing landing page.
- *
- * They are scoped to .wl, so the app's own tokens stay untouched while every
- * Tailwind utility inside the page (bg-background, text-muted-foreground,
- * bg-primary, border-border, ...) resolves to these values.
+ * Landing-only tokens. The palette itself (background, card, muted, border,
+ * primary, ...) is app-wide in app/globals.css; .wl adds what only the
+ * marketing pages use.
  *
  * Shape rule: panels are rounded-2xl, blocks inside panels rounded-xl,
  * buttons, chips and tabs are fully rounded.
  */
 .wl {
-  --background: oklch(0.985 0.003 255);
-  --foreground: oklch(0.21 0.02 262);
-  --card: oklch(0.995 0.002 255);
-  --card-foreground: oklch(0.21 0.02 262);
-  --muted: oklch(0.955 0.006 255);
-  --muted-foreground: oklch(0.47 0.018 260);
-  --border: oklch(0.9 0.008 258);
-  --primary: oklch(0.5 0.19 262);
-  --primary-foreground: oklch(0.985 0.003 255);
-  --ring: oklch(0.5 0.19 262);
   --live: oklch(0.6 0.2 25);
   --wl-shadow: oklch(0.35 0.06 262 / 0.16);
   color-scheme: light;
 }
 
 .dark .wl {
-  --background: oklch(0.16 0.012 264);
-  --foreground: oklch(0.95 0.005 255);
-  --card: oklch(0.195 0.014 264);
-  --card-foreground: oklch(0.95 0.005 255);
-  --muted: oklch(0.225 0.014 264);
-  --muted-foreground: oklch(0.73 0.015 258);
-  --border: oklch(0.3 0.016 264);
-  --primary: oklch(0.74 0.13 258);
-  --primary-foreground: oklch(0.17 0.02 264);
-  --ring: oklch(0.74 0.13 258);
   --live: oklch(0.7 0.18 25);
   --wl-shadow: oklch(0.05 0.02 264 / 0.55);
   color-scheme: dark;
@@ -334,16 +312,16 @@
     animation-delay: var(--wl-delay, 0ms);
   }
 
-  /* Call transcript: hidden until the panel is on screen, then played line by line. */
-  .wl-call:not([data-started="true"]) > li {
+  /* Conversation demos: hidden until the panel is on screen, then played line by line. */
+  .wl-play:not([data-started="true"]) > li {
     opacity: 0;
   }
-  .wl-call[data-started="true"] > li {
+  .wl-play[data-started="true"] > li {
     animation: wl-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--wl-delay, 0ms);
   }
 
-  /* Only used for real live state (an active call). */
+  /* Only used for real live state (the update feed). */
   .wl-live-dot {
     animation: wl-pulse 1.6s ease-in-out infinite;
   }

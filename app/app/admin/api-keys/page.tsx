@@ -1,23 +1,25 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react"
+import { useRouter } from "next/navigation"
+import { Ban, Eye, KeyRound, Loader2, MoreHorizontal, Pencil, Plus, Trash2, TriangleAlert } from "lucide-react"
+import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { apiKeysApi } from "@/lib/api"
+import { apiKeysApi, type ApiKey } from "@/lib/api"
+import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
+import { PageBody, PageHeader } from "@/components/page-header"
+import { EmptyState } from "@/components/empty-state"
+import { ListPanel, ListSkeleton, ListToolbar } from "@/components/list-panel"
+import { CopyField } from "@/components/team/invite-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { 
-  Key, Plus, Copy, Trash2, Loader2, Clock, AlertCircle, TrendingUp, 
-  Settings, FileText, BarChart3, Zap, DollarSign 
-} from "lucide-react"
-import { toast } from "sonner"
-import { redirect } from "next/navigation"
-import { useTranslation } from "@/src/i18n"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -25,7 +27,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   AlertDialog,
@@ -37,1082 +38,599 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
-interface ApiKeyDetails {
-  id: string
-  key_id: string
-  name: string
-  description?: string
-  permissions: string[]
-  created_at: string
-  last_used?: string
-  is_active: boolean
-  expires_at?: string
-  created_by?: string
-  status?: string
-  priority_tier?: string
-  rate_limit_requests?: number
-  current_usage?: number
-  llm_enabled?: boolean
-  max_tokens_per_day?: number
-  current_llm_tokens_used?: number
+/** Permissions in the order the form lists them; anything else the server knows goes last. */
+const PERMISSION_ORDER = ["search", "generate_ai_response", "download", "upload", "delete_documents", "manage_api_keys", "admin"]
+const DEFAULT_PERMISSIONS = ["search", "generate_ai_response"]
+const VALID_FOR = ["0", "30", "90", "365"]
+
+type KeyStatus = "active" | "revoked" | "expired"
+
+// go-core serializes unset time.Time fields as the Go zero value
+// ("0001-01-01T00:00:00Z") rather than omitting them or sending null.
+const isSet = (value?: string) => !!value && !value.startsWith("0001-01-01")
+
+function statusOf(key: ApiKey): KeyStatus {
+  if (key.status !== "active") return "revoked"
+  if (isSet(key.expires_at) && new Date(key.expires_at!) < new Date()) return "expired"
+  return "active"
 }
 
-interface UsageStats {
+interface Usage {
   total_requests: number
   avg_response_time_ms: number
   error_count: number
   total_llm_tokens: number
-  total_request_bytes: number
-  total_response_bytes: number
-  period_days: number
 }
 
-interface AuditEvent {
-  id: number
-  event_type: string
-  changes?: Record<string, any>
-  changed_by?: string
-  timestamp: string
-  reason?: string
+interface RequestEvent {
+  endpoint: string
+  method: string
+  status_code: number
+  latency_ms: number
+  created_at: string
+}
+
+/** Name, description and permission checkboxes, shared by create and edit. */
+function KeyFields({
+  name,
+  description,
+  permissions,
+  available,
+  onName,
+  onDescription,
+  onPermissions,
+  disabled,
+}: {
+  name: string
+  description: string
+  permissions: string[]
+  available: string[]
+  onName: (value: string) => void
+  onDescription: (value: string) => void
+  onPermissions: (value: string[]) => void
+  disabled: boolean
+}) {
+  const { t } = useTranslation()
+  const toggle = (permission: string) =>
+    onPermissions(permissions.includes(permission) ? permissions.filter((p) => p !== permission) : [...permissions, permission])
+  return (
+    <>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="key-name">{t("team.keys.name")}</Label>
+        <Input
+          id="key-name"
+          value={name}
+          onChange={(e) => onName(e.target.value)}
+          placeholder={t("team.keys.namePlaceholder")}
+          autoComplete="off"
+          disabled={disabled}
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="key-description">{t("team.keys.description")}</Label>
+        <Textarea
+          id="key-description"
+          value={description}
+          onChange={(e) => onDescription(e.target.value)}
+          placeholder={t("team.keys.descriptionPlaceholder")}
+          rows={2}
+          disabled={disabled}
+        />
+      </div>
+      <fieldset className="flex flex-col gap-2" disabled={disabled}>
+        <legend className="mb-2 text-sm font-medium leading-none">{t("team.keys.permissions")}</legend>
+        <div className="grid gap-1.5 sm:grid-cols-2">
+          {available.map((permission) => (
+            <label
+              key={permission}
+              className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50 has-[button[data-state=checked]]:border-primary/50 has-[button[data-state=checked]]:bg-primary/[0.06]"
+            >
+              <Checkbox checked={permissions.includes(permission)} onCheckedChange={() => toggle(permission)} />
+              <span className="min-w-0 leading-snug">{permissionLabel(t, permission)}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </>
+  )
+}
+
+function permissionLabel(t: (key: string) => string, permission: string) {
+  const key = `team.keys.perms.${permission}`
+  const label = t(key)
+  return label === key ? permission : label
 }
 
 export default function ApiKeysPage() {
   const { token, isAdmin, isLoading: authLoading } = useAuth()
-  const { t } = useTranslation()
-  
-  // State for key list
-  const [apiKeys, setApiKeys] = useState<ApiKeyDetails[]>([])
+  const { t, locale } = useTranslation()
+  const router = useRouter()
+  const [keys, setKeys] = useState<ApiKey[]>([])
+  const [available, setAvailable] = useState<string[]>(PERMISSION_ORDER)
   const [isLoading, setIsLoading] = useState(true)
-  
-  // State for creation
-  const [newKeyName, setNewKeyName] = useState("")
-  const [newKeyDescription, setNewKeyDescription] = useState("")
-  const [newKeyPermissions, setNewKeyPermissions] = useState<string[]>(["search"])
-  const [newKeyExpiresInDays, setNewKeyExpiresInDays] = useState("")
-  // const [newKeyPriorityTier, setNewKeyPriorityTier] = useState<"free" | "pro" | "business" | "enterprise">("pro")  // Commented out - tier support coming soon
-  const [newKeyRateLimit, setNewKeyRateLimit] = useState("10000")
-  const [newKeyLLMEnabled, setNewKeyLLMEnabled] = useState(true)
-  const [newKey, setNewKey] = useState<string | null>(null)
-  const [keyCountdown, setKeyCountdown] = useState<number>(0)
-  const [isCreating, setIsCreating] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  
-  // State for details/editing
-  const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null)
-  const [selectedKeyDetails, setSelectedKeyDetails] = useState<ApiKeyDetails | null>(null)
-  const [usageStats, setUsageStats] = useState<UsageStats | null>(null)
-  const [auditLog, setAuditLog] = useState<AuditEvent[]>([])
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false)
-  
-  // State for full edit mode
-  const [isEditMode, setIsEditMode] = useState(false)
-  const [editData, setEditData] = useState<any>({})
-  
-  // State for permissions editing
-  const [editingPermissions, setEditingPermissions] = useState<string[]>([])
-  const [isEditingPermissions, setIsEditingPermissions] = useState(false)
-  const [availablePermissions, setAvailablePermissions] = useState<Record<string, string>>({})
-  
-  // State for deletion
-  const [deleteKeyId, setDeleteKeyId] = useState<string | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  
-  // State for updates
-  const [isUpdating, setIsUpdating] = useState(false)
+  const [query, setQuery] = useState("")
 
-  // Commented out - tier support coming soon
-  // const tierDefaults = useMemo(() => ({
-  //   free: { rate_limit: 1000, llm_tokens: 5000, llm_cost: 10 },
-  //   pro: { rate_limit: 50000, llm_tokens: 500000, llm_cost: 500 },
-  //   business: { rate_limit: 500000, llm_tokens: 5000000, llm_cost: 5000 },
-  //   enterprise: { rate_limit: 1000000, llm_tokens: 10000000, llm_cost: 50000 },
-  // }), [])
+  // Create and edit share one form; editing holds the key being changed.
+  const [formMode, setFormMode] = useState<"create" | "edit" | null>(null)
+  const [editing, setEditing] = useState<ApiKey | null>(null)
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [permissions, setPermissions] = useState<string[]>(DEFAULT_PERMISSIONS)
+  const [validFor, setValidFor] = useState("90")
+  const [formError, setFormError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [createdKey, setCreatedKey] = useState<string | null>(null)
+
+  const [detailsKey, setDetailsKey] = useState<ApiKey | null>(null)
+  const [usage, setUsage] = useState<Usage | null>(null)
+  const [requests, setRequests] = useState<RequestEvent[] | null>(null)
+
+  const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null)
+  const [isConfirming, setIsConfirming] = useState(false)
+
+  const dateLocale = locale === "ru" ? "ru-RU" : "en-GB"
+  const formatDate = (value: string) => new Date(value).toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" })
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(dateLocale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 
   const fetchKeys = useCallback(async () => {
     if (!token) return
     try {
       const result = await apiKeysApi.list(token)
-      if (result.status === "success" && result.response) {
-        setApiKeys(result.response.keys || [])
-      }
+      if (result.status === "success" && result.response) setKeys(result.response.items || [])
     } catch (error) {
       console.error("Failed to fetch API keys:", error)
-      toast.error("Failed to fetch API keys")
+      toast.error(t("team.keys.loadFailed"))
     } finally {
       setIsLoading(false)
     }
-  }, [token])
-
-  const fetchKeyDetails = useCallback(async (keyId: string) => {
-    if (!token) return
-    setIsLoadingDetails(true)
-    try {
-      const [detailsResult, statsResult, auditResult] = await Promise.all([
-        apiKeysApi.get(token, keyId),
-        apiKeysApi.getUsageStats(token, keyId, 7),
-        apiKeysApi.getAuditLog(token, keyId, 20),
-      ])
-
-      if (detailsResult.status === "success" && detailsResult.response) {
-        setSelectedKeyDetails(detailsResult.response as ApiKeyDetails)
-      }
-      if (statsResult.status === "success" && statsResult.response) {
-        setUsageStats(statsResult.response)
-      }
-      if (auditResult.status === "success" && auditResult.response) {
-        setAuditLog(auditResult.response.events || [])
-      }
-    } catch (error) {
-      console.error("Failed to fetch key details:", error)
-      toast.error("Failed to fetch key details")
-    } finally {
-      setIsLoadingDetails(false)
-    }
-  }, [token])
+  }, [token, t])
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      redirect("/app")
-    }
-  }, [authLoading, isAdmin])
+    if (!authLoading && !isAdmin) router.replace("/app")
+  }, [authLoading, isAdmin, router])
 
   useEffect(() => {
-    if (isAdmin) {
-      // Fetch-on-condition pattern; fetchKeys sets keys/loading state from
-      // the async response. Without this, isLoading never leaves its
-      // initial `true` and the page shows a permanent spinner — fetchKeys
-      // was previously only ever called after a create/delete action, never
-      // on mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchKeys()
-    }
-  }, [isAdmin, fetchKeys])
-
-  useEffect(() => {
-    if (isAdmin && selectedKeyId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchKeyDetails(selectedKeyId)
-    }
-  }, [isAdmin, selectedKeyId, fetchKeyDetails])
-
-  // Countdown timer for API key display
-  useEffect(() => {
-    if (keyCountdown <= 0) return
-
-    const timer = setInterval(() => {
-      setKeyCountdown((prev) => {
-        if (prev <= 1) {
-          closeDialog()
-          return 0
-        }
-        return prev - 1
+    if (!isAdmin || !token) return
+    // Fetch-on-condition pattern; fetchKeys sets the list from the async response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchKeys()
+    apiKeysApi
+      .getPermissions(token)
+      .then((result) => {
+        const known = Object.keys(result.response?.permissions || {})
+        if (known.length === 0) return
+        const rank = (p: string) => (PERMISSION_ORDER.includes(p) ? PERMISSION_ORDER.indexOf(p) : PERMISSION_ORDER.length)
+        setAvailable([...known].sort((a, b) => rank(a) - rank(b)))
       })
-    }, 1000)
+      .catch(() => {
+        // Keep the built-in list.
+      })
+  }, [isAdmin, token, fetchKeys])
 
-    return () => clearInterval(timer)
-  }, [keyCountdown])
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return keys
+    return keys.filter(
+      (key) =>
+        key.name.toLowerCase().includes(q) || key.description?.toLowerCase().includes(q) || key.key_prefix.toLowerCase().includes(q),
+    )
+  }, [keys, query])
 
-  // Commented out - tier support coming soon
-  // const handleTierChange = (tier: "free" | "pro" | "business" | "enterprise") => {
-  //   setNewKeyPriorityTier(tier)
-  //   const defaults = tierDefaults[tier]
-  //   setNewKeyRateLimit(defaults.rate_limit.toString())
-  // }
+  const openCreate = () => {
+    setFormMode("create")
+    setEditing(null)
+    setName("")
+    setDescription("")
+    setPermissions(DEFAULT_PERMISSIONS)
+    setValidFor("90")
+    setFormError("")
+    setCreatedKey(null)
+  }
 
-  const handleCreateKey = async () => {
-    if (!token || !newKeyName.trim()) return
+  const openEdit = (key: ApiKey) => {
+    setFormMode("edit")
+    setEditing(key)
+    setName(key.name)
+    setDescription(key.description || "")
+    setPermissions(key.permissions)
+    setFormError("")
+  }
 
-    setIsCreating(true)
+  const closeForm = () => {
+    if (isSubmitting) return
+    setFormMode(null)
+    setCreatedKey(null)
+  }
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!token) return
+    const problem = !name.trim() ? t("team.keys.errors.name") : permissions.length === 0 ? t("team.keys.errors.permissions") : ""
+    setFormError(problem)
+    if (problem) return
+    setIsSubmitting(true)
     try {
-      const requestData: any = {
-        name: newKeyName.trim(),
-        permissions: newKeyPermissions.length > 0 ? newKeyPermissions : ["search"],
-        // priority_tier: newKeyPriorityTier,  // Commented out - tier support coming soon
-        rate_limit_requests: parseInt(newKeyRateLimit),
-        llm_enabled: newKeyLLMEnabled,
-      }
-
-      if (newKeyDescription.trim()) {
-        requestData.description = newKeyDescription.trim()
-      }
-
-      if (newKeyExpiresInDays.trim() && !isNaN(Number(newKeyExpiresInDays))) {
-        requestData.expires_in_days = Number(newKeyExpiresInDays)
-      }
-
-      const result = await apiKeysApi.create(token, requestData)
-
-      if (result.status === "success" && result.response) {
-        setNewKey(result.response.key || result.response.full_key)
-        setKeyCountdown(15)  // Start 15-second countdown
-        toast.success("API key created successfully")
-        setTimeout(() => {
-          fetchKeys()
-        }, 1000)
+      if (formMode === "edit" && editing) {
+        const result = await apiKeysApi.update(token, editing.id, {
+          name: name.trim(),
+          description: description.trim(),
+          permissions,
+        })
+        if (result.status !== "success") throw new Error(result.message)
+        toast.success(t("team.keys.saved"))
+        setFormMode(null)
       } else {
-        toast.error(result.message || "Failed to create API key")
+        const days = Number(validFor)
+        const result = await apiKeysApi.create(token, {
+          name: name.trim(),
+          description: description.trim() || undefined,
+          permissions,
+          expires_in_days: days > 0 ? days : undefined,
+        })
+        if (result.status !== "success" || !result.response?.full_key) throw new Error(result.message)
+        setCreatedKey(result.response.full_key)
       }
+      fetchKeys()
     } catch (error) {
-      console.error("Create key error:", error)
-      toast.error("Failed to create API key")
+      console.error("API key save error:", error)
+      setFormError(formMode === "edit" ? t("team.keys.saveFailed") : t("team.keys.failed"))
     } finally {
-      setIsCreating(false)
+      setIsSubmitting(false)
     }
   }
 
-  const handleDeleteKey = async () => {
-    if (!token || !deleteKeyId) return
-    setIsDeleting(true)
-    
+  const openDetails = async (key: ApiKey) => {
+    setDetailsKey(key)
+    setUsage(null)
+    setRequests(null)
+    if (!token) return
+    const [usageRes, logRes] = await Promise.all([
+      apiKeysApi.getUsageStats(token, key.id, 7).catch(() => null),
+      apiKeysApi.getAuditLog(token, key.id, 10).catch(() => null),
+    ])
+    setUsage(usageRes?.status === "success" && usageRes.response ? usageRes.response : { total_requests: 0, avg_response_time_ms: 0, error_count: 0, total_llm_tokens: 0 })
+    setRequests(logRes?.status === "success" && logRes.response ? logRes.response.events || [] : [])
+  }
+
+  const confirmRevoke = async () => {
+    if (!token || !revokeTarget) return
+    setIsConfirming(true)
     try {
-      const result = await apiKeysApi.delete(token, deleteKeyId)
-      
-      if (result && (result.status === "success" || result.success)) {
-        toast.success("API key deleted successfully")
-        setDeleteKeyId(null)
-        setSelectedKeyId(null)
-        fetchKeys()
-      } else {
-        toast.error(result?.message || "Failed to delete API key")
-      }
+      const result = await apiKeysApi.revoke(token, revokeTarget.id)
+      if (result.status !== "success") throw new Error(result.message)
+      toast.success(t("team.keys.revoked"))
+      setRevokeTarget(null)
+      fetchKeys()
+    } catch (error) {
+      console.error("Revoke key error:", error)
+      toast.error(t("team.keys.revokeFailed"))
+    } finally {
+      setIsConfirming(false)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!token || !deleteTarget) return
+    setIsConfirming(true)
+    try {
+      const result = await apiKeysApi.delete(token, deleteTarget.id)
+      if (result.status !== "success") throw new Error(result.message)
+      toast.success(t("team.keys.deleted"))
+      setDeleteTarget(null)
+      fetchKeys()
     } catch (error) {
       console.error("Delete key error:", error)
-      toast.error("Failed to delete API key")
+      toast.error(t("team.keys.deleteFailed"))
     } finally {
-      setIsDeleting(false)
+      setIsConfirming(false)
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success("Copied to clipboard")
-  }
+  if (!authLoading && !isAdmin) return null
 
-  const closeDialog = () => {
-    setIsDialogOpen(false)
-    setNewKeyName("")
-    setNewKeyDescription("")
-    setNewKeyPermissions(["search"])
-    setNewKeyExpiresInDays("")
-    // setNewKeyPriorityTier("pro")  // Commented out - tier support coming soon
-    setNewKeyRateLimit("50000")
-    setNewKeyLLMEnabled(true)
-    setNewKey(null)
-  }
-
-  const handleEditPermissions = (keyId: string) => {
-    if (!selectedKeyDetails) return
-    setEditingPermissions([...selectedKeyDetails.permissions])
-    setIsEditingPermissions(true)
-  }
-
-  const handleSavePermissions = async () => {
-    if (!token || !selectedKeyId || !selectedKeyDetails) return
-    setIsUpdating(true)
-    
-    try {
-      const result = await apiKeysApi.update(token, selectedKeyId, {
-        permissions: editingPermissions,
-      })
-      
-      if (result.status === "success") {
-        toast.success("Permissions updated successfully")
-        setIsEditingPermissions(false)
-        setSelectedKeyDetails({
-          ...selectedKeyDetails,
-          permissions: editingPermissions,
-        })
-      } else {
-        toast.error(result.message || "Failed to update permissions")
-      }
-    } catch (error) {
-      console.error("Update permissions error:", error)
-      toast.error("Failed to update permissions")
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const togglePermission = (permission: string) => {
-    setEditingPermissions((prev) =>
-      prev.includes(permission)
-        ? prev.filter((p) => p !== permission)
-        : [...prev, permission]
-    )
-  }
-
-  const handleEditMode = () => {
-    if (!selectedKeyDetails) return
-    setEditData({
-      name: selectedKeyDetails.name || "",
-      description: selectedKeyDetails.description || "",
-      rate_limit_requests: selectedKeyDetails.rate_limit_requests || 0,
-      rate_limit_period: selectedKeyDetails.rate_limit_period || "minute",
-      expires_at: selectedKeyDetails.expires_at || "",
-      llm_enabled: selectedKeyDetails.llm_enabled || false,
-      max_tokens_per_day: selectedKeyDetails.max_tokens_per_day || 0,
-      llm_cost_limit: selectedKeyDetails.llm_cost_limit || 0,
-      // priority_tier: selectedKeyDetails.priority_tier || "standard",  // Commented out - tier support coming soon
-    })
-    setIsEditMode(true)
-  }
-
-  const handleCancelEdit = () => {
-    setIsEditMode(false)
-    setEditData({})
-  }
-
-  const handleSaveEdit = async () => {
-    if (!token || !selectedKeyId || !selectedKeyDetails) return
-    setIsUpdating(true)
-    
-    try {
-      const result = await apiKeysApi.update(token, selectedKeyId, editData)
-      
-      if (result.status === "success") {
-        toast.success("API key updated successfully")
-        setIsEditMode(false)
-        setSelectedKeyDetails({
-          ...selectedKeyDetails,
-          ...editData,
-        })
-      } else {
-        toast.error(result.message || "Failed to update API key")
-      }
-    } catch (error) {
-      console.error("Update key error:", error)
-      toast.error("Failed to update API key")
-    } finally {
-      setIsUpdating(false)
-    }
-  }
-
-  const getUsagePercent = (current: number = 0, limit: number = 1) => {
-    return Math.min(100, Math.round((current / limit) * 100))
-  }
-
-  const getStatusBadge = (status?: string, isActive?: boolean) => {
-    if (status === "revoked" || !isActive) {
-      return <Badge variant="destructive">Revoked</Badge>
-    }
-    if (status === "expired") {
-      return <Badge variant="secondary">Expired</Badge>
-    }
-    return <Badge className="bg-green-500">Active</Badge>
-  }
-
-  if (authLoading || isLoading) {
-    return (
-      <>
-        <AppHeader breadcrumbs={[{ label: "Admin", href: "/app/admin" }, { label: "API Keys" }]} />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
-      </>
-    )
-  }
-
-  if (!isAdmin) {
-    return null
-  }
+  const createButton = (
+    <Button onClick={openCreate}>
+      <Plus />
+      {t("team.keys.create")}
+    </Button>
+  )
 
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: "Admin", href: "/app/admin" }, { label: "API Keys" }]} />
-      <main className="flex-1 p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">API Keys Management</h1>
-            <p className="text-muted-foreground">Create and manage API keys with advanced features</p>
-          </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create API Key
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
+      <AppHeader breadcrumbs={[{ label: t("navigation.apiKeys") }]} />
+      <PageBody>
+        <PageHeader title={t("team.keys.title")} description={t("team.keys.subtitle")} actions={createButton} />
+
+        <ListPanel>
+          <ListToolbar query={query} onQueryChange={setQuery} placeholder={t("team.keys.search")}>
+            {!isLoading && (filtered.length === keys.length ? keys.length : `${filtered.length} / ${keys.length}`)}
+          </ListToolbar>
+          {isLoading ? (
+            <ListSkeleton rows={3} />
+          ) : keys.length === 0 ? (
+            <EmptyState
+              icon={KeyRound}
+              title={t("team.keys.emptyTitle")}
+              description={t("team.keys.emptyText")}
+              action={createButton}
+              className="m-4 sm:m-5"
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState icon={KeyRound} title={t("team.keys.noMatch")} className="m-4 sm:m-5" />
+          ) : (
+            <ul className="divide-y divide-border">
+              {filtered.map((key) => {
+                const status = statusOf(key)
+                const meta = [
+                  isSet(key.last_used_at) ? t("team.keys.lastUsed", { date: formatDate(key.last_used_at!) }) : t("team.keys.neverUsed"),
+                  isSet(key.expires_at) ? t("team.keys.expires", { date: formatDate(key.expires_at!) }) : t("team.keys.noExpiry"),
+                ]
+                return (
+                  <li key={key.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+                      <KeyRound className="size-4" strokeWidth={1.75} aria-hidden />
+                    </span>
+                    <button type="button" onClick={() => openDetails(key)} className="min-w-0 flex-1 text-left focus-visible:outline-none">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-sm font-medium text-foreground hover:text-primary">{key.name}</span>
+                        <code className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground max-sm:hidden">
+                          {key.key_prefix}…
+                        </code>
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                        {[key.description, ...meta].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                    <div className="hidden max-w-[16rem] flex-wrap justify-end gap-1 lg:flex">
+                      {key.permissions.slice(0, 2).map((permission) => (
+                        <Badge key={permission} variant="secondary">
+                          {permissionLabel(t, permission)}
+                        </Badge>
+                      ))}
+                      {key.permissions.length > 2 && <Badge variant="outline">+{key.permissions.length - 2}</Badge>}
+                    </div>
+                    <Badge variant={status === "active" ? "success" : "outline"}>{t(`team.keys.status.${status}`)}</Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon-sm" aria-label={key.name}>
+                          <MoreHorizontal />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openDetails(key)}>
+                          <Eye />
+                          {t("team.keys.details")}
+                        </DropdownMenuItem>
+                        {status === "active" && (
+                          <>
+                            <DropdownMenuItem onClick={() => openEdit(key)}>
+                              <Pencil />
+                              {t("team.keys.edit")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setRevokeTarget(key)}>
+                              <Ban />
+                              {t("team.keys.revoke")}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(key)}>
+                          <Trash2 />
+                          {t("team.delete")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </ListPanel>
+      </PageBody>
+
+      <Dialog open={formMode !== null} onOpenChange={(open) => (open ? undefined : closeForm())}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+          {createdKey ? (
+            <>
               <DialogHeader>
-                <DialogTitle>Create API Key</DialogTitle>
-                <DialogDescription>Configure a new API key for programmatic access</DialogDescription>
+                <DialogTitle>{t("team.keys.readyTitle")}</DialogTitle>
+                <DialogDescription>{t("team.keys.readyLead", { name })}</DialogDescription>
+              </DialogHeader>
+              <p className="flex items-start gap-2.5 rounded-xl bg-warning/15 px-3.5 py-2.5 text-sm text-foreground">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning-foreground dark:text-warning" aria-hidden />
+                {t("team.keys.readyText")}
+              </p>
+              <CopyField value={createdKey} label={t("team.keys.key")} copiedText={t("team.keys.keyCopied")} />
+              <DialogFooter>
+                <Button onClick={closeForm}>{t("team.done")}</Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <form onSubmit={submit} className="flex flex-col gap-5">
+              <DialogHeader>
+                <DialogTitle>{formMode === "edit" ? t("team.keys.editTitle") : t("team.keys.dialogTitle")}</DialogTitle>
+                <DialogDescription>{t("team.keys.subtitle")}</DialogDescription>
+              </DialogHeader>
+              <KeyFields
+                name={name}
+                description={description}
+                permissions={permissions}
+                available={available}
+                onName={setName}
+                onDescription={setDescription}
+                onPermissions={setPermissions}
+                disabled={isSubmitting}
+              />
+              {formMode === "create" && (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="key-valid-for">{t("team.keys.validFor")}</Label>
+                  <Select value={validFor} onValueChange={setValidFor} disabled={isSubmitting}>
+                    <SelectTrigger id="key-valid-for" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALID_FOR.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {t(`team.keys.days.${value}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formError && (
+                <p role="alert" className="text-sm text-destructive">
+                  {formError}
+                </p>
+              )}
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeForm} disabled={isSubmitting}>
+                  {t("team.cancel")}
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="animate-spin" />}
+                  {formMode === "edit"
+                    ? isSubmitting
+                      ? t("team.saving")
+                      : t("team.save")
+                    : isSubmitting
+                      ? t("team.keys.sending")
+                      : t("team.keys.send")}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={detailsKey !== null}
+        onOpenChange={(open) => {
+          if (!open) setDetailsKey(null)
+        }}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          {detailsKey && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex min-w-0 items-center gap-2 pr-8">
+                  <span className="truncate">{detailsKey.name}</span>
+                  <Badge variant={statusOf(detailsKey) === "active" ? "success" : "outline"}>
+                    {t(`team.keys.status.${statusOf(detailsKey)}`)}
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  <code className="font-mono text-xs">{detailsKey.key_prefix}…</code>
+                  {" · "}
+                  {t("team.keys.created", { date: formatDate(detailsKey.created_at) })}
+                  {" · "}
+                  {isSet(detailsKey.expires_at) ? t("team.keys.expires", { date: formatDate(detailsKey.expires_at!) }) : t("team.keys.noExpiry")}
+                </DialogDescription>
               </DialogHeader>
 
-              {newKey ? (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                    <p className="text-sm font-medium text-green-900 mb-2">✓ API Key Created Successfully</p>
-                    <p className="text-xs text-green-800 mb-3">
-                      Copy this key now. You won&apos;t be able to see it again.
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Input value={newKey} readOnly className="font-mono text-xs" />
-                      <Button size="icon" variant="outline" onClick={() => copyToClipboard(newKey)}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
+              <section>
+                <h3 className="text-sm font-semibold tracking-tight">{t("team.keys.usageTitle")}</h3>
+                <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    [t("team.keys.requests"), usage?.total_requests.toLocaleString(dateLocale)],
+                    [t("team.keys.errorsCount"), usage?.error_count.toLocaleString(dateLocale)],
+                    [t("team.keys.avgLatency"), usage ? `${Math.round(usage.avg_response_time_ms).toLocaleString(dateLocale)} ms` : undefined],
+                    [t("team.keys.tokens"), usage?.total_llm_tokens.toLocaleString(dateLocale)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-border px-3 py-2.5">
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 text-lg font-semibold tabular-nums">{value ?? <Skeleton className="h-6 w-10" />}</dd>
                     </div>
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg text-center">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Auto-closing in <span className="font-bold text-primary">{keyCountdown}</span>s
-                    </p>
-                    <div className="w-full bg-background rounded-full h-1 mt-2">
-                      <div 
-                        className="bg-primary h-1 rounded-full transition-all" 
-                        style={{ width: `${(keyCountdown / 15) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={closeDialog}>Done</Button>
-                  </DialogFooter>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    {/* Basic Info */}
-                    <div className="space-y-2">
-                      <Label htmlFor="keyName" className="text-sm font-medium">Key Name *</Label>
-                      <Input
-                        id="keyName"
-                        placeholder="e.g., Production API, Mobile App"
-                        value={newKeyName}
-                        onChange={(e) => setNewKeyName(e.target.value)}
-                      />
-                    </div>
+                  ))}
+                </dl>
+              </section>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="keyDescription" className="text-sm font-medium">Description</Label>
-                      <textarea
-                        id="keyDescription"
-                        className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        placeholder="Optional: describe what this key is for"
-                        value={newKeyDescription}
-                        onChange={(e) => setNewKeyDescription(e.target.value)}
-                      />
-                    </div>
-                    {/* Tier selection commented out - coming soon */}
-                    {/* <div className="space-y-2">
-                      <Label className="text-sm font-medium">Tier</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["free", "pro", "business", "enterprise"] as const).map((tier) => (
-                          <button
-                            key={tier}
-                            onClick={() => handleTierChange(tier)}
-                            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                              newKeyPriorityTier === tier
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
-                            }`}
-                          >
-                            {tier.charAt(0).toUpperCase() + tier.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div> */}
-
-                    {/* Permissions */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Permissions</Label>
-                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                        {["search", "upload", "download", "delete_documents", "view_reports", "generate_ai_response"].map((permission) => (
-                          <label key={permission} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={newKeyPermissions.includes(permission)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setNewKeyPermissions([...newKeyPermissions, permission])
-                                } else {
-                                  setNewKeyPermissions(newKeyPermissions.filter(p => p !== permission))
-                                }
-                              }}
-                              className="rounded w-4 h-4"
-                            />
-                            <span>{permission.replace("_", " ")}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Expiration */}
-                    <div className="space-y-2">
-                      <Label htmlFor="expiresInDays" className="text-sm font-medium">Expires In (days)</Label>
-                      <Input
-                        id="expiresInDays"
-                        type="number"
-                        placeholder="Leave blank for no expiration"
-                        value={newKeyExpiresInDays}
-                        onChange={(e) => setNewKeyExpiresInDays(e.target.value)}
-                        min="1"
-                      />
-                    </div>
-
-                    {/* LLM Toggle */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium flex items-center gap-2">
-                        <Zap className="w-4 h-4" />
-                        Enable AI Features
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={newKeyLLMEnabled}
-                          onChange={(e) => setNewKeyLLMEnabled(e.target.checked)}
-                          className="w-4 h-4 rounded"
-                        />
-                        <span className="text-sm text-muted-foreground">Allow this key to use AI features</span>
-                      </div>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-                    <Button onClick={handleCreateKey} disabled={!newKeyName.trim() || isCreating}>
-                      {isCreating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create Key
-                        </>
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Keys List */}
-          <Card className="lg:col-span-1">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Keys ({apiKeys.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {apiKeys.length > 0 ? (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {apiKeys.map((key) => (
-                    <button
-                      key={key.key_id}
-                      onClick={() => setSelectedKeyId(key.key_id)}
-                      className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${
-                        selectedKeyId === key.key_id
-                          ? "border-primary bg-primary/5"
-                          : "border-muted hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{key.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{key.key_id.slice(0, 8)}...</p>
-                        </div>
-                        {getStatusBadge(key.status, key.is_active)}
-                      </div>
-                    </button>
+              <section>
+                <h3 className="text-sm font-semibold tracking-tight">{t("team.keys.permissions")}</h3>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {detailsKey.permissions.map((permission) => (
+                    <Badge key={permission} variant="secondary">
+                      {permissionLabel(t, permission)}
+                    </Badge>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Key className="w-12 h-12 mx-auto mb-2 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">No API keys yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </section>
 
-          {/* Details View */}
-          {selectedKeyId && selectedKeyDetails ? (
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3 border-b">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{selectedKeyDetails.name}</CardTitle>
-                    <CardDescription>{selectedKeyDetails.description}</CardDescription>
+              <section>
+                <h3 className="text-sm font-semibold tracking-tight">{t("team.keys.recentTitle")}</h3>
+                {requests === null ? (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-2/3" />
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteKeyId(selectedKeyDetails.key_id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-                    <TabsTrigger value="quota" className="text-xs">Quota</TabsTrigger>
-                    <TabsTrigger value="llm" className="text-xs">AI</TabsTrigger>
-                    <TabsTrigger value="audit" className="text-xs">Audit</TabsTrigger>
-                  </TabsList>
-
-                  {/* Overview Tab */}
-                  <TabsContent value="overview" className="space-y-4">
-                    {!isEditMode ? (
-                      <>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-medium">Key Details</h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleEditMode}
-                          >
-                            Edit
-                          </Button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Status</p>
-                            <p className="text-sm font-medium">{getStatusBadge(selectedKeyDetails.status, selectedKeyDetails.is_active)}</p>
-                          </div>
-                          {/* Tier display commented out - coming soon */}
-                          {/* <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Tier</p>
-                            <p className="text-sm font-medium">{selectedKeyDetails.priority_tier || "Standard"}</p>
-                          </div> */}
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Created</p>
-                            <p className="text-sm">{new Date(selectedKeyDetails.created_at).toLocaleDateString()}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Last Used</p>
-                            <p className="text-sm">{selectedKeyDetails.last_used ? new Date(selectedKeyDetails.last_used).toLocaleDateString() : "Never"}</p>
-                          </div>
-                        </div>
-
-                        {selectedKeyDetails.expires_at && (
-                          <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-                            <p className="text-xs text-yellow-900">
-                              Expires: {new Date(selectedKeyDetails.expires_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="pt-4 border-t">
-                          <div className="space-y-3">
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Name</p>
-                              <p className="text-sm font-medium">{selectedKeyDetails.name}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Description</p>
-                              <p className="text-sm">{selectedKeyDetails.description || "No description"}</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Rate Limit (Requests)</p>
-                                <p className="text-sm font-medium">{selectedKeyDetails.rate_limit_requests}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Rate Limit (Period)</p>
-                                <p className="text-sm font-medium capitalize">{selectedKeyDetails.rate_limit_period || "minute"}</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">AI Enabled</p>
-                                <p className="text-sm font-medium">{selectedKeyDetails.llm_enabled ? "Yes" : "No"}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground mb-1">Max Tokens/Day</p>
-                                <p className="text-sm font-medium">{selectedKeyDetails.max_tokens_per_day || 0}</p>
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">AI Cost Limit</p>
-                              <p className="text-sm font-medium">${selectedKeyDetails.llm_cost_limit || 0}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 pt-4 border-t">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium">Permissions</p>
-                            {!isEditingPermissions && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditPermissions(selectedKeyDetails.key_id)}
-                              >
-                                Edit
-                              </Button>
-                            )}
-                          </div>
-                          
-                          {!isEditingPermissions ? (
-                            <div className="flex flex-wrap gap-2">
-                              {selectedKeyDetails.permissions.map((p) => (
-                                <Badge key={p} variant="secondary" className="text-xs">{p.replace("_", " ")}</Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="space-y-3 p-3 rounded-lg border bg-muted/50">
-                              <div className="grid grid-cols-2 gap-2">
-                                {Object.keys({
-                                  search: "Search",
-                                  upload: "Upload",
-                                  download: "Download",
-                                  delete_documents: "Delete",
-                                  parse_users: "View Users",
-                                  edit_users: "Edit Users",
-                                  view_reports: "Reports",
-                                  generate_ai_response: "AI Response",
-                                  use_advanced_llm: "Advanced AI",
-                                  moderate_content: "Moderation",
-                                  export_data: "Export",
-                                  admin: "Admin"
-                                }).map((perm) => (
-                                  <label key={perm} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={editingPermissions.includes(perm)}
-                                      onChange={() => togglePermission(perm)}
-                                      className="w-4 h-4"
-                                    />
-                                    <span className="text-sm">{perm.replace("_", " ")}</span>
-                                  </label>
-                                ))}
-                              </div>
-                              <div className="flex gap-2 pt-2 border-t">
-                                <Button
-                                  size="sm"
-                                  onClick={handleSavePermissions}
-                                  disabled={isUpdating}
-                                >
-                                  {isUpdating ? "Saving..." : "Save"}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setIsEditingPermissions(false)}
-                                  disabled={isUpdating}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-medium">Edit Details</h4>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Name</label>
-                            <Input
-                              value={editData.name}
-                              onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                              placeholder="Key name"
-                              className="text-sm"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Description</label>
-                            <Input
-                              value={editData.description}
-                              onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                              placeholder="Optional description"
-                              className="text-sm"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground block mb-1">Rate Limit (Requests)</label>
-                              <Input
-                                type="number"
-                                value={editData.rate_limit_requests}
-                                onChange={(e) => setEditData({ ...editData, rate_limit_requests: parseInt(e.target.value) || 0 })}
-                                placeholder="10000"
-                                className="text-sm"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground block mb-1">Rate Limit (Period)</label>
-                              <select
-                                value={editData.rate_limit_period}
-                                onChange={(e) => setEditData({ ...editData, rate_limit_period: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border rounded-md bg-white"
-                              >
-                                <option value="minute">Minute</option>
-                                <option value="hour">Hour</option>
-                                <option value="day">Day</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* Tier editing commented out - coming soon */}
-                          {/* <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground block mb-1">Priority Tier</label>
-                              <select
-                                value={editData.priority_tier}
-                                onChange={(e) => setEditData({ ...editData, priority_tier: e.target.value })}
-                                className="w-full px-3 py-2 text-sm border rounded-md bg-white"
-                              >
-                                <option value="free">Free</option>
-                                <option value="standard">Standard</option>
-                                <option value="premium">Premium</option>
-                                <option value="enterprise">Enterprise</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground block mb-1">Expires At</label>
-                              <Input
-                                type="date"
-                                value={editData.expires_at ? editData.expires_at.split("T")[0] : ""}
-                                onChange={(e) => setEditData({ ...editData, expires_at: e.target.value })}
-                                className="text-sm"
-                              />
-                            </div>
-                          </div> */}
-                          
-                          <div>
-                            <label className="text-xs text-muted-foreground block mb-1">Expires At</label>
-                            <Input
-                              type="date"
-                              value={editData.expires_at ? editData.expires_at.split("T")[0] : ""}
-                              onChange={(e) => setEditData({ ...editData, expires_at: e.target.value })}
-                              className="text-sm"
-                            />
-                          </div>
-
-                          <div className="p-3 rounded-lg border bg-muted/50 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <label className="text-sm font-medium">AI Features Enabled</label>
-                              <input
-                                type="checkbox"
-                                checked={editData.llm_enabled}
-                                onChange={(e) => setEditData({ ...editData, llm_enabled: e.target.checked })}
-                                className="w-4 h-4"
-                              />
-                            </div>
-
-                            {editData.llm_enabled && (
-                              <>
-                                <div>
-                                  <label className="text-xs text-muted-foreground block mb-1">Max Tokens per Day</label>
-                                  <Input
-                                    type="number"
-                                    value={editData.max_tokens_per_day}
-                                    onChange={(e) => setEditData({ ...editData, max_tokens_per_day: parseInt(e.target.value) || 0 })}
-                                    placeholder="0 for unlimited"
-                                    className="text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground block mb-1">Cost Limit ($)</label>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={editData.llm_cost_limit}
-                                    onChange={(e) => setEditData({ ...editData, llm_cost_limit: parseFloat(e.target.value) || 0 })}
-                                    placeholder="0 for unlimited"
-                                    className="text-sm"
-                                  />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 pt-4 border-t">
-                          <Button
-                            size="sm"
-                            onClick={handleSaveEdit}
-                            disabled={isUpdating}
-                          >
-                            {isUpdating ? "Saving..." : "Save Changes"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleCancelEdit}
-                            disabled={isUpdating}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* Quota Tab */}
-                  <TabsContent value="quota" className="space-y-4">
-                    {usageStats && (
-                      <>
-                        <div className="space-y-3">
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <TrendingUp className="w-4 h-4" />
-                                <span className="text-sm font-medium">Requests</span>
-                              </div>
-                              <span className="text-sm font-bold">
-                                {selectedKeyDetails.current_usage || 0} / {selectedKeyDetails.rate_limit_requests || 10000}
-                              </span>
-                            </div>
-                            <Progress 
-                              value={getUsagePercent(selectedKeyDetails.current_usage, selectedKeyDetails.rate_limit_requests)} 
-                              className="h-2"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {getUsagePercent(selectedKeyDetails.current_usage, selectedKeyDetails.rate_limit_requests)}% used
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/50">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Total Requests (7d)</p>
-                            <p className="text-lg font-bold">{usageStats.total_requests}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Avg Response</p>
-                            <p className="text-lg font-bold">{usageStats.avg_response_time_ms.toFixed(0)}ms</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Errors</p>
-                            <p className="text-lg font-bold text-red-600">{usageStats.error_count}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Data Transferred</p>
-                            <p className="text-lg font-bold">{((usageStats.total_request_bytes + usageStats.total_response_bytes) / 1024 / 1024) | 0}MB</p>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </TabsContent>
-
-                  {/* AI Tab */}
-                  <TabsContent value="llm" className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
-                        <Zap className="w-4 h-4 text-blue-600" />
-                        <div>
-                          <p className="text-sm font-medium text-blue-900">AI Features {selectedKeyDetails.llm_enabled ? "Enabled" : "Disabled"}</p>
-                          <p className="text-xs text-blue-800">{selectedKeyDetails.llm_enabled ? "This key can use AI features" : "This key cannot use AI features"}</p>
-                        </div>
-                      </div>
-
-                      {selectedKeyDetails.llm_enabled && (
-                        <>
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">LLM Tokens</span>
-                              <span className="text-sm font-bold">
-                                {selectedKeyDetails.current_llm_tokens_used || 0} / {selectedKeyDetails.max_tokens_per_day || 1000000}
-                              </span>
-                            </div>
-                            <Progress 
-                              value={getUsagePercent(selectedKeyDetails.current_llm_tokens_used, selectedKeyDetails.max_tokens_per_day)} 
-                              className="h-2"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {getUsagePercent(selectedKeyDetails.current_llm_tokens_used, selectedKeyDetails.max_tokens_per_day)}% used
-                            </p>
-                          </div>
-
-                          {usageStats && (
-                            <div className="p-3 rounded-lg bg-muted/50">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <DollarSign className="w-4 h-4" />
-                                  <span className="text-sm text-muted-foreground">Tokens (7 days)</span>
-                                </div>
-                                <span className="text-sm font-bold">{usageStats.total_llm_tokens.toLocaleString()}</span>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </TabsContent>
-
-                  {/* Audit Tab */}
-                  <TabsContent value="audit" className="space-y-3">
-                    {auditLog.length > 0 ? (
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {auditLog.map((event) => (
-                          <div key={event.id} className="p-2 rounded-lg bg-muted/50 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">{event.event_type}</span>
-                              <span className="text-muted-foreground">{new Date(event.timestamp).toLocaleDateString()}</span>
-                            </div>
-                            {event.changed_by && (
-                              <p className="text-muted-foreground">By: {event.changed_by}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No audit events yet</p>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="lg:col-span-2">
-              <CardContent className="pt-12">
-                <div className="text-center">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-                  <p className="text-muted-foreground">Select a key to view details</p>
-                </div>
-              </CardContent>
-            </Card>
+                ) : requests.length === 0 ? (
+                  <p className="mt-2 text-sm text-muted-foreground">{t("team.keys.noRequests")}</p>
+                ) : (
+                  <ul className="mt-2 divide-y divide-border rounded-xl border border-border">
+                    {requests.map((event, i) => (
+                      <li key={`${event.created_at}-${i}`} className="flex items-center gap-3 px-3 py-2 text-xs">
+                        <span className="w-12 shrink-0 font-mono text-muted-foreground">{event.method}</span>
+                        <span className="min-w-0 flex-1 truncate font-mono">{event.endpoint}</span>
+                        <Badge variant={event.status_code >= 400 ? "destructive" : "secondary"} className="font-mono">
+                          {event.status_code}
+                        </Badge>
+                        <span className="w-24 shrink-0 text-right tabular-nums text-muted-foreground max-sm:hidden">
+                          {formatDateTime(event.created_at)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
           )}
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deleteKeyId} onOpenChange={(open) => {
-          if (!open) setDeleteKeyId(null)
-        }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete API Key</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this API key? Any applications using this key will lose access immediately.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction asChild>
-                <Button
-                  onClick={handleDeleteKey}
-                  disabled={isDeleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    "Delete Key"
-                  )}
-                </Button>
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </main>
+      <AlertDialog
+        open={revokeTarget !== null || deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (open || isConfirming) return
+          setRevokeTarget(null)
+          setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{revokeTarget ? t("team.keys.revokeTitle") : t("team.keys.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {revokeTarget
+                ? t("team.keys.revokeText", { name: revokeTarget.name })
+                : t("team.keys.deleteText", { name: deleteTarget?.name ?? "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConfirming}>{t("team.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                if (revokeTarget) confirmRevoke()
+                else confirmDelete()
+              }}
+              disabled={isConfirming}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {isConfirming && <Loader2 className="animate-spin" />}
+              {revokeTarget ? t("team.keys.revoke") : t("team.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

@@ -2,13 +2,13 @@
 
 import { useRef } from "react";
 import { useInView } from "framer-motion";
-import { CircleCheckBig, Headset, Plug, type LucideIcon } from "lucide-react";
+import { CircleCheckBig, Plug, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCopy, useHydrated } from "../_lib/copy";
 import { Reveal } from "./motion";
 import { ButtonLink, Container, Lead, SectionTitle } from "./primitives";
 
-const ICONS: LucideIcon[] = [Plug, Headset, CircleCheckBig];
+const ICONS: LucideIcon[] = [Plug, Users, CircleCheckBig];
 
 export function Pilot() {
   const { t, get } = useCopy();

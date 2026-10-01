@@ -1,11 +1,11 @@
 "use client";
 
-import { DoorOpen, GraduationCap, Hourglass, type LucideIcon } from "lucide-react";
+import { DoorOpen, FileClock, Layers, type LucideIcon } from "lucide-react";
 import { useCopy } from "../_lib/copy";
 import { Reveal } from "./motion";
 import { Container, SectionTitle } from "./primitives";
 
-const ICONS: LucideIcon[] = [Hourglass, GraduationCap, DoorOpen];
+const ICONS: LucideIcon[] = [Layers, FileClock, DoorOpen];
 
 export function Pains() {
   const { t, get } = useCopy();
