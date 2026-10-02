@@ -13,10 +13,14 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "WikiAi - RAG Knowledge Base",
-  description: "Knowledge Base Query and Management System with RAG",
-  generator: "v0.app",
+  title: "WikiAI — база знаний компании",
+  description:
+    "WikiAI собирает данные из Битрикс24, 1С, документов и других систем в одну базу знаний и отвечает сотрудникам со ссылкой на источник.",
 }
+
+// Vercel Analytics only exists on Vercel; self-hosted builds would request a
+// script that 404s on every page.
+const onVercel = Boolean(process.env.VERCEL)
 
 export default function RootLayout({
   children,
@@ -24,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${_geist.className} ${_geistMono.className}`}>
+    <html lang="ru" suppressHydrationWarning className={`${_geist.className} ${_geistMono.className}`}>
       <head>
         <Script
           src="/pre-hydration.js"
@@ -46,7 +50,7 @@ export default function RootLayout({
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
-        <Analytics />
+        {onVercel && <Analytics />}
       </body>
     </html>
   )
