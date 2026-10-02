@@ -4,10 +4,14 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { authApi, apiRequest } from "./api"
 import { API_CONFIG } from "./config"
 
+/** identity-service roles; "user" is what older tokens call a member. */
+export type Role = "owner" | "admin" | "member" | "viewer" | "user"
+
 interface User {
   username: string
-  role: "admin" | "user" | "owner"
+  role: Role
   organization: string
+  permissions?: string[]
 }
 
 interface AuthContextType {
@@ -49,17 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const validateAndSetToken = useCallback(async (storedToken: string) => {
     const result = await authApi.validateToken(storedToken)
-    console.log("[v0] Token validation result:", result)
     if (result.status === "success" && (result.response?.valid || (result as any).valid)) {
       const data = result.response || result
       setToken(storedToken)
-      // /v1/token/validate only returns organization_id, not a name, so a
-      // re-validation (this runs on every mount, not just login) would
-      // otherwise blank out the organization name that login() populated.
+      // /v1/token/validate has no organization name; /v1/me has the full
+      // profile, so prefer it and fall back to the token's claims.
+      const profile = await authApi.me(storedToken).catch(() => null)
+      const me = profile?.status === "success" ? profile.response : undefined
       setUser((prev) => ({
-        username: (data as any).username || "User",
-        role: ((data as any).role as User["role"]) || "user",
-        organization: (data as any).organization_name || (data as any).organization || prev?.organization || "",
+        username: me?.user?.username || (data as any).username || "User",
+        role: ((me?.user?.role || (data as any).role) as Role) || "user",
+        organization: me?.organization?.name || (data as any).organization_name || prev?.organization || "",
+        permissions: me?.permissions || prev?.permissions,
       }))
       return true
     }
@@ -82,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data.username || data.role) {
       return {
         username: data.username || "User",
-        role: (data.role as "admin" | "owner" | "user") || "user",
+        role: (data.role as Role) || "user",
         organization: normalizeOrganization(data.organization_name || data.organization),
       }
     }
@@ -90,9 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const login = async (username: string, password: string) => {
-    console.log("[v0] Attempting login for:", username)
     const result = await authApi.login(username, password)
-    console.log("[v0] Login result:", result)
 
     // Handle both Go backend format ({access_token, user, organization, memberships})
     // and legacy format ({status: "success", token: "..."})
@@ -106,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const membership = (result as any).memberships?.[0]
         setUser({
           username: userData.username || "User",
-          role: (membership?.role || userData.role || "user") as "admin" | "user" | "owner",
+          role: (membership?.role || userData.role || "user") as Role,
           organization: (result as any).organization?.name || "",
         })
         return { success: true }
@@ -189,16 +192,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   )
 }
-
-export const PERMISSIONS = {
-  VIEW_FILES: 'view_files',
-  MANAGE_USERS: 'manage_users',
-  MANAGE_ORGANIZATIONS: 'manage_organizations',
-  VIEW_ANALYTICS: 'view_analytics',
-  MANAGE_PLUGINS: 'manage_plugins',
-  ADMIN_ACCESS: 'admin_access'
-} as const
-
 export function useAuth() {
   const context = useContext(AuthContext)
   if (!context) {

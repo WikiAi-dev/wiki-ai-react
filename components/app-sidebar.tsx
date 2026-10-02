@@ -81,7 +81,8 @@ export function AppSidebar() {
       ? pathname === url || (url === "/app" && pathname.startsWith("/app/dashboard"))
       : pathname === url || pathname.startsWith(url + "/")
 
-  const roleKey = user?.role === "owner" || user?.role === "admin" ? user.role : "user"
+  // Older tokens call members "user".
+  const roleKey = !user?.role || user.role === "user" ? "member" : user.role
   const initial = user?.username?.charAt(0).toUpperCase() || "?"
 
   return (
@@ -129,7 +130,7 @@ export function AppSidebar() {
                   </span>
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className="truncate text-sm font-medium text-sidebar-foreground">{user?.username}</span>
-                    <span className="truncate text-xs text-muted-foreground">{t(`navigation.roles.${roleKey}`)}</span>
+                    <span className="truncate text-xs text-muted-foreground">{t(`team.roles.${roleKey}`)}</span>
                   </span>
                   <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
                 </SidebarMenuButton>

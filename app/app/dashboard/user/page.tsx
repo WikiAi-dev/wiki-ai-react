@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import Link from "next/link"
-import { ArrowRight, CalendarPlus, Clock, FileText, LayoutGrid, MessageSquare, Search, Upload } from "lucide-react"
+import { ArrowRight, CalendarPlus, Clock, FileText, MessageSquare, Search, Upload } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
@@ -199,7 +199,7 @@ export default function UserDashboard() {
           />
         </StatGrid>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <QuickAction
             href="/app/search"
             icon={Search}
@@ -211,12 +211,6 @@ export default function UserDashboard() {
             icon={FileText}
             title={t("userDashboard.home.filesTitle")}
             text={t("userDashboard.home.filesText")}
-          />
-          <QuickAction
-            href="/app/catalogs"
-            icon={LayoutGrid}
-            title={t("userDashboard.home.catalogsTitle")}
-            text={t("userDashboard.home.catalogsText")}
           />
         </div>
 
