@@ -312,6 +312,19 @@
     animation-delay: var(--wl-delay, 0ms);
   }
 
+  /* Sections rise in, slightly tilted, the first time they scroll into view (Reveal). */
+  .wl-reveal {
+    transform-origin: 50% 100%;
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--wl-delay, 0ms);
+  }
+  .wl-reveal:not([data-shown="true"]) {
+    opacity: 0;
+    transform: perspective(1200px) translateY(28px) rotateX(10deg);
+  }
+
   /* Conversation demos: hidden until the panel is on screen, then played line by line. */
   .wl-play:not([data-started="true"]) > li {
     opacity: 0;
