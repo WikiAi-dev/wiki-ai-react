@@ -1,223 +1,172 @@
 "use client"
 
-import { useState } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { AppHeader } from "@/components/app-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { User, Building, Shield, Bell, Moon, Globe, Loader2, Languages } from "lucide-react"
-import { toast } from "sonner"
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
+import { Building2, LogOut, Monitor, Moon, Shield, Sun } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { authApi } from "@/lib/api"
 import { useTranslation } from "@/src/i18n"
+import { AppHeader } from "@/components/app-header"
+import { PageBody, PageHeader } from "@/components/page-header"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { SegmentedControl } from "@/components/ui/segmented-control"
+import { Skeleton } from "@/components/ui/skeleton"
+
+type Theme = "light" | "dark" | "system"
+type Locale = "ru" | "en"
+
+const PERMISSION_ORDER = ["search", "generate_ai_response", "download", "upload", "delete_documents", "manage_api_keys", "admin"]
+
+const subscribeNoop = () => () => {}
+
+/** A titled panel of settings rows. */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+      <h2 className="border-b border-border px-5 py-3.5 text-sm font-semibold tracking-tight">{title}</h2>
+      <div className="divide-y divide-border">{children}</div>
+    </section>
+  )
+}
+
+/** One setting: what it is on the left, the control on the right. */
+function Row({ title, text, children }: { title: string; text?: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {text && <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground text-pretty">{text}</p>}
+      </div>
+      <div className="w-full shrink-0 sm:w-auto">{children}</div>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, token, logout } = useAuth()
   const { theme, setTheme } = useTheme()
-  const { t, locale, changeLanguage, availableLanguages } = useTranslation()
-  const [notifications, setNotifications] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const { t, locale, changeLanguage } = useTranslation()
+  const router = useRouter()
+  const [permissions, setPermissions] = useState<string[] | null>(user?.permissions ?? null)
+  // The theme is only known on the client; render no selection until then.
+  const mounted = useSyncExternalStore(subscribeNoop, () => true, () => false)
 
-  const handleSave = async () => {
-    setIsSaving(true)
-    // Simulate save
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsSaving(false)
-    toast.success(t('settings.settingsSavedSuccessfully'))
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    authApi
+      .me(token)
+      .then((result) => {
+        if (!cancelled && result.status === "success") setPermissions(result.response?.permissions ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setPermissions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  const roleKey = !user?.role || user.role === "user" ? "member" : user.role
+  const isAdminRole = roleKey === "owner" || roleKey === "admin"
+  const sortedPermissions = [...(permissions ?? [])].sort((a, b) => {
+    const rank = (p: string) => (PERMISSION_ORDER.includes(p) ? PERMISSION_ORDER.indexOf(p) : PERMISSION_ORDER.length)
+    return rank(a) - rank(b)
+  })
+  const permissionLabel = (permission: string) => {
+    const key = `team.keys.perms.${permission}`
+    const label = t(key)
+    return label === key ? permission : label
+  }
+
+  const signOut = () => {
+    logout()
+    router.push("/login")
   }
 
   return (
     <>
-      <AppHeader breadcrumbs={[{ label: t('settings.title') }]} />
-      <main className="flex-1 p-6 space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t('settings.title')}</h1>
-          <p className="text-muted-foreground">{t('settings.description')}</p>
-        </div>
+      <AppHeader breadcrumbs={[{ label: t("settings.title") }]} />
+      <PageBody className="max-w-3xl">
+        <PageHeader title={t("settings.title")} description={t("settings.subtitle")} />
 
-        {/* Account Info */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle>{t('settings.accountInformation')}</CardTitle>
-                <CardDescription>{t('settings.accountDescription')}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{t('settings.username')}</Label>
-                <Input value={user?.username || ""} disabled />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('settings.role')}</Label>
-                <div className="flex items-center gap-2 h-10">
-                  <Badge variant={isAdmin ? "default" : "secondary"} className="capitalize">
-                    {isAdmin ? (
-                      <>
-                        <Shield className="w-3 h-3 mr-1" />
-                        Admin
-                      </>
-                    ) : (
-                      <>
-                        <User className="w-3 h-3 mr-1" />
-                        User
-                      </>
-                    )}
-                  </Badge>
-                </div>
+        <Section title={t("settings.profile")}>
+          <div className="flex items-center gap-4 px-5 py-5">
+            <span
+              aria-hidden
+              className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10 text-lg font-semibold uppercase text-primary"
+            >
+              {user?.username?.charAt(0) || "?"}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold tracking-tight text-foreground">{user?.username}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <Badge variant={isAdminRole ? "default" : "secondary"}>
+                  {isAdminRole && <Shield />}
+                  {t(`team.roles.${roleKey}`)}
+                </Badge>
+                {user?.organization && (
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <Building2 className="size-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
+                    <span className="truncate">{user.organization}</span>
+                  </span>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('settings.organization')}</Label>
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-muted-foreground" />
-                <span>{user?.organization || t('settings.noOrganization')}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Appearance */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-                <Moon className="w-6 h-6 text-accent" />
-              </div>
-              <div>
-                <CardTitle>{t('settings.appearance')}</CardTitle>
-                <CardDescription>{t('settings.appearanceDescription')}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base">{t('settings.darkMode')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.darkModeDescription')}</p>
-              </div>
-              <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base">{t('settings.systemTheme')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.systemThemeDescription')}</p>
-              </div>
-              <Switch
-                checked={theme === "system"}
-                onCheckedChange={(checked) => setTheme(checked ? "system" : "dark")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notifications */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-chart-3/10 flex items-center justify-center">
-                <Bell className="w-6 h-6 text-chart-3" />
-              </div>
-              <div>
-                <CardTitle>{t('settings.notifications')}</CardTitle>
-                <CardDescription>{t('settings.notificationsDescription')}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base">{t('settings.emailNotifications')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.emailNotificationsDescription')}</p>
-              </div>
-              <Switch checked={notifications} onCheckedChange={setNotifications} />
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base">{t('settings.reportAlerts')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.reportAlertsDescription')}</p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Language */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-chart-4/10 flex items-center justify-center">
-                <Globe className="w-6 h-6 text-chart-4" />
-              </div>
-              <div>
-                <CardTitle>{t('settings.languageAndRegion')}</CardTitle>
-                <CardDescription>{t('settings.languageDescription')}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label>{t('settings.language')}</Label>
-              <Select value={locale} onValueChange={changeLanguage}>
-                <SelectTrigger className="w-full">
-                  <div className="flex items-center gap-2">
-                    <Languages className="w-4 h-4" />
-                    <SelectValue placeholder={t('settings.selectLanguage')} />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(availableLanguages).map(([code, language]) => (
-                    <SelectItem key={code} value={code}>
-                      <div className="flex items-center gap-2">
-                        <span>{language.name}</span>
-                        {locale === code && (
-                          <Badge variant="secondary" className="text-xs">
-                            {t('settings.current')}
-                          </Badge>
-                        )}
-                      </div>
-                    </SelectItem>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-sm font-medium text-foreground">{t("settings.permissions")}</p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {permissions === null
+                ? [0, 1, 2].map((i) => <Skeleton key={i} className="h-5 w-28 rounded-full" />)
+                : sortedPermissions.map((permission) => (
+                    <Badge key={permission} variant="secondary">
+                      {permissionLabel(permission)}
+                    </Badge>
                   ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {t('settings.languageChangeNote')}
-              </p>
             </div>
-          </CardContent>
-          <CardFooter className="border-t pt-6">
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {t('settings.saving')}
-                </>
-              ) : (
-                t('settings.saveChanges')
-              )}
+          </div>
+        </Section>
+
+        <Section title={t("settings.appearance")}>
+          <Row title={t("settings.theme")} text={t("settings.themeText")}>
+            <SegmentedControl<Theme>
+              className="w-full sm:w-auto"
+              label={t("settings.theme")}
+              value={mounted ? ((theme as Theme | undefined) ?? "system") : undefined}
+              onChange={setTheme}
+              options={[
+                { value: "light", label: t("settings.themes.light"), icon: <Sun /> },
+                { value: "dark", label: t("settings.themes.dark"), icon: <Moon /> },
+                { value: "system", label: t("settings.themes.system"), icon: <Monitor /> },
+              ]}
+            />
+          </Row>
+          <Row title={t("settings.language")} text={t("settings.languageText")}>
+            <SegmentedControl<Locale>
+              className="w-full sm:w-auto"
+              label={t("settings.language")}
+              value={mounted ? (locale as Locale) : undefined}
+              onChange={changeLanguage}
+              options={[
+                { value: "ru", label: "Русский" },
+                { value: "en", label: "English" },
+              ]}
+            />
+          </Row>
+        </Section>
+
+        <Section title={t("settings.session")}>
+          <Row title={t("settings.signOut")} text={t("settings.signOutText")}>
+            <Button variant="outline" onClick={signOut}>
+              <LogOut />
+              {t("settings.signOut")}
             </Button>
-          </CardFooter>
-        </Card>
-      </main>
+          </Row>
+        </Section>
+      </PageBody>
     </>
   )
 }
