@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/app-header"
 import { PageBody, PageHeader } from "@/components/page-header"
 import { StatCard, StatGrid } from "@/components/stat-card"
 import { EmptyState } from "@/components/empty-state"
+import { ActivityFeed } from "@/components/connections/activity-feed"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -213,6 +214,8 @@ export default function UserDashboard() {
             text={t("userDashboard.home.filesText")}
           />
         </div>
+
+        <ActivityFeed canConnect={false} />
 
         <Card className="gap-5">
           <CardHeader>
