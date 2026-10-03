@@ -11,6 +11,7 @@ import { AppHeader } from "@/components/app-header"
 import { PageBody, PageHeader } from "@/components/page-header"
 import { StatCard, StatGrid } from "@/components/stat-card"
 import { EmptyState } from "@/components/empty-state"
+import { ActivityFeed } from "@/components/connections/activity-feed"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -370,6 +371,8 @@ export default function AdminDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <ActivityFeed canConnect />
 
         <Card className="gap-5">
           <CardHeader>

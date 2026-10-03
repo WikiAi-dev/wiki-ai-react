@@ -22,7 +22,7 @@ export function ListToolbar({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-border p-4 sm:px-5">
-      <div className="relative min-w-0 flex-1 sm:max-w-sm">
+      <div className="relative min-w-48 flex-1 sm:max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
