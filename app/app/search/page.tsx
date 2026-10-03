@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { UnifiedFileReader } from "@/components/ui/file-reader"
+import { ProviderMark, SourceBadge } from "@/components/connections/shared"
+import { documentSource, type DocumentSource } from "@/lib/connections"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,8 @@ interface Source {
   documentId?: string
   title: string
   content: string
+  /** Set when the document was synced from Bitrix24 or another connected system. */
+  origin: DocumentSource | null
 }
 
 type TurnStatus = "searching" | "writing" | "done" | "error"
@@ -65,11 +69,16 @@ function isTokenExpiringSoon(token: string, bufferMs = 10000): boolean {
 
 function toSource(chunk: any, index: number): Source {
   const metadata = chunk?.metadata || {}
+  const origin = documentSource(metadata)
+  const fileName: string = metadata.original_filename || metadata.title || chunk?.source || `#${index + 1}`
   return {
     id: chunk?.chunk_id || `chunk-${index}`,
     documentId: chunk?.document_id || metadata.document_id,
-    title: metadata.original_filename || metadata.title || chunk?.source || `#${index + 1}`,
+    // Synced records are stored as "<title>.md" with unsafe characters
+    // replaced; their real title is in metadata.title.
+    title: origin ? metadata.title || fileName.replace(/\.md$/i, "") : fileName,
     content: plainText(chunk?.content ?? ""),
+    origin,
   }
 }
 
@@ -168,11 +177,18 @@ function SourceList({ sources, onOpen }: { sources: Source[]; onOpen: (source: S
               aria-label={`${t("search.page.openDocument")}: ${source.title}`}
               className="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none disabled:pointer-events-none sm:px-5"
             >
-              <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-                <FileText className="size-4" strokeWidth={1.75} aria-hidden />
-              </span>
+              {source.origin ? (
+                <ProviderMark provider={source.origin.provider} title={source.origin.providerTitle} className="mt-0.5 size-8 text-[9px]" />
+              ) : (
+                <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+                  <FileText className="size-4" strokeWidth={1.75} aria-hidden />
+                </span>
+              )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-foreground">{source.title}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm font-medium text-foreground">{source.title}</span>
+                  {source.origin && <SourceBadge providerTitle={source.origin.providerTitle} />}
+                </span>
                 {source.content && (
                   <span className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{source.content}</span>
                 )}
@@ -259,6 +275,7 @@ function TurnView({
                 >
                   <FileText className="size-3.5 shrink-0" strokeWidth={1.75} aria-hidden />
                   <span className="truncate">{source.title}</span>
+                  {source.origin && <span className="shrink-0 opacity-80">· {source.origin.providerTitle}</span>}
                 </button>
               ))}
             </div>
@@ -425,7 +442,7 @@ export default function SearchPage() {
     if (!source.documentId) return
     setViewerFile({
       id: source.documentId,
-      filename: source.title,
+      filename: source.origin ? `${source.title}.md` : source.title,
       size: 0,
       upload_date: new Date().toISOString(),
       content_type: "", // the reader works it out from the file name
