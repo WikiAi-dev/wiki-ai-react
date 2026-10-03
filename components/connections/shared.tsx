@@ -80,3 +80,13 @@ export function useProviderText() {
     setupStep: (spec: ProviderSpec, index: number, fallback: string) => tr(`connections.providers.${spec.id}.webhookSetup.${index}`, fallback),
   }
 }
+
+/** "Авто · Bitrix24": marks something synced from a connected system. */
+export function SourceBadge({ providerTitle, className }: { providerTitle: string; className?: string }) {
+  const { t } = useTranslation()
+  return (
+    <Badge variant="secondary" className={cn("shrink-0", className)}>
+      {t("connections.data.auto")} · {providerTitle}
+    </Badge>
+  )
+}
