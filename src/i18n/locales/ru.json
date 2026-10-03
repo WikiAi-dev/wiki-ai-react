@@ -423,7 +423,6 @@
       "clearSelection": "Снять выделение",
       "chunks": "Фрагментов: {{count}}",
       "updated": "Обновлён {{date}}",
-      "fromConnector": "Источник: {{name}}",
       "open": "Открыть",
       "download": "Скачать",
       "edit": "Редактировать",
@@ -459,7 +458,15 @@
         "indexed": "Готов",
         "failed": "Ошибка",
         "duplicate": "Уже в базе"
-      }
+      },
+      "origin": {
+        "label": "Откуда документы",
+        "all": "Все",
+        "uploaded": "Загруженные",
+        "connected": "Из подключений · {{count}}"
+      },
+      "changedAtSource": "Изменено в источнике {{date}}",
+      "openOriginal": "Открыть в {{platform}}"
     },
     "reader": {
       "description": "Текст документа, по которому ищет WikiAI.",

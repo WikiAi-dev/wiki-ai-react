@@ -13,6 +13,8 @@ import { PageBody, PageHeader } from "@/components/page-header"
 import { StatCard, StatGrid } from "@/components/stat-card"
 import { EmptyState } from "@/components/empty-state"
 import { ActivityFeed } from "@/components/connections/activity-feed"
+import { ProviderMark, SourceBadge, useProviderText } from "@/components/connections/shared"
+import { documentSource, type DocumentSource } from "@/lib/connections"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +26,8 @@ interface FileItem {
   type: string
   size?: number
   lastModified?: string
+  /** Set for documents synced from Bitrix24 and other connected systems. */
+  source: DocumentSource | null
 }
 
 interface QuickStats {
@@ -59,6 +63,7 @@ function QuickAction({ href, icon: Icon, title, text }: { href: string; icon: Lu
 export default function UserDashboard() {
   const { token, user } = useAuth()
   const { t, locale } = useTranslation()
+  const providerText = useProviderText()
   const [files, setFiles] = useState<FileItem[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -85,6 +90,7 @@ export default function UserDashboard() {
             type: name.split(".").pop()?.toLowerCase() || "unknown",
             size: doc.size,
             lastModified: doc.uploaded_at || doc.created_at,
+            source: documentSource(doc.metadata),
           }
         })
         setFiles(fileItems)
@@ -276,17 +282,37 @@ export default function UserDashboard() {
             ) : (
               <ul className="divide-y divide-border">
                 {recentFiles.map((file) => {
-                  const meta = [formatDate(file.lastModified), formatFileSize(file.size)].filter(Boolean).join(" · ")
+                  const src = file.source
+                  const meta = (
+                    src
+                      ? [src.kind ? providerText.kind(src.provider, src.kind, src.kindTitle) : null, src.connectionName || null, formatDate(file.lastModified)]
+                      : [formatDate(file.lastModified), formatFileSize(file.size)]
+                  )
+                    .filter(Boolean)
+                    .join(" · ")
                   return (
                     <li key={file.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-                        <FileText className="size-4" strokeWidth={1.75} aria-hidden />
-                      </span>
+                      {src ? (
+                        <ProviderMark provider={src.provider} title={src.providerTitle} className="size-9 text-[10px]" />
+                      ) : (
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+                          <FileText className="size-4" strokeWidth={1.75} aria-hidden />
+                        </span>
+                      )}
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
-                        {meta && <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{meta}</p>}
+                        <p className="flex min-w-0 items-center gap-2">
+                          {src?.url ? (
+                            <a href={src.url} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-medium text-foreground hover:text-primary">
+                              {file.name}
+                            </a>
+                          ) : (
+                            <span className="truncate text-sm font-medium text-foreground">{file.name}</span>
+                          )}
+                          {src && <SourceBadge providerTitle={src.providerTitle} />}
+                        </p>
+                        {meta && <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">{meta}</p>}
                       </div>
-                      {file.type !== "unknown" && file.type !== file.name.toLowerCase() && (
+                      {!src && file.type !== "unknown" && file.type !== file.name.toLowerCase() && (
                         <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                           {file.type}
                         </span>

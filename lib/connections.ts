@@ -223,3 +223,46 @@ export function fullTime(value: string | null | undefined, locale: string): stri
     minute: "2-digit",
   })
 }
+
+/** Where a knowledge-base document came from, when connector-service synced it. */
+export interface DocumentSource {
+  provider: string
+  providerTitle: string
+  kind: string
+  kindTitle: string
+  connectionName: string
+  url: string
+  updatedAt: string | null
+}
+
+const PROVIDER_TITLES: Record<string, string> = {
+  bitrix24: "Bitrix24",
+  jira: "Jira",
+  confluence: "Confluence",
+  onec: "1C",
+  rest: "REST API",
+  push: "API",
+  opencart: "OpenCart",
+}
+
+/**
+ * Reads the metadata connector-service stores with each document it writes
+ * (source=connector, provider, kind, source_url…). Older documents from
+ * go-core's connectors carry connector_type/connector_name instead.
+ */
+export function documentSource(metadata: unknown): DocumentSource | null {
+  if (!metadata || typeof metadata !== "object") return null
+  const m = metadata as Record<string, unknown>
+  if (m.source !== "connector") return null
+  const s = (key: string) => (typeof m[key] === "string" ? (m[key] as string) : "")
+  const provider = s("provider") || s("connector_type")
+  return {
+    provider,
+    providerTitle: s("provider_title") || PROVIDER_TITLES[provider] || provider,
+    kind: s("kind"),
+    kindTitle: s("kind_title") || s("kind"),
+    connectionName: s("connection_name") || s("connector_name"),
+    url: s("source_url"),
+    updatedAt: s("source_updated_at") || null,
+  }
+}
