@@ -441,7 +441,6 @@
       "clearSelection": "Clear selection",
       "chunks": "Chunks: {{count}}",
       "updated": "Updated {{date}}",
-      "fromConnector": "Source: {{name}}",
       "open": "Open",
       "download": "Download",
       "edit": "Edit",
@@ -477,7 +476,15 @@
         "indexed": "Ready",
         "failed": "Failed",
         "duplicate": "Already indexed"
-      }
+      },
+      "origin": {
+        "label": "Where documents come from",
+        "all": "All",
+        "uploaded": "Uploaded",
+        "connected": "From connections · {{count}}"
+      },
+      "changedAtSource": "Changed at source {{date}}",
+      "openOriginal": "Open in {{platform}}"
     },
     "reader": {
       "description": "The document text WikiAI searches.",
