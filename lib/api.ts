@@ -14,6 +14,10 @@ interface ApiResponse<T = unknown> {
   status: "success" | "error"
   message?: string
   response?: T
+  /** Per-field problems, when the service reports them (go-core shape). */
+  fields?: Record<string, string>
+  /** HTTP status of a failed request. */
+  httpStatus?: number
 }
 
 interface LoginResponse {
@@ -161,10 +165,16 @@ export async function apiRequest<T = unknown>({
       }
       
       console.error(`API Error ${response.status}:`, errorMessage)
-      
+
+      const fields =
+        result.error && typeof result.error === "object" && result.error.fields && typeof result.error.fields === "object"
+          ? (result.error.fields as Record<string, string>)
+          : undefined
       return {
         status: "error",
         message: errorMessage,
+        fields,
+        httpStatus: response.status,
       }
     }
 
