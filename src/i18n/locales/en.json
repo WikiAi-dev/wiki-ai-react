@@ -23,7 +23,8 @@
     },
     "language": "Switch language",
     "toggleSidebar": "Show or hide the menu",
-    "account": "Account"
+    "account": "Account",
+    "connections": "Connections"
   },
   "actions": {
     "save": "Save",
@@ -1394,6 +1395,160 @@
       "noMatch": "Nothing found",
       "key": "Key",
       "search": "Find by name or key prefix"
+    }
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "Bitrix24, Jira and other systems your team works in. Their records are indexed automatically and kept up to date.",
+    "tabs": {
+      "connections": "Connections",
+      "data": "Data"
+    },
+    "add": "Add connection",
+    "stats": {
+      "connections": "Connections",
+      "connectionsHint": "{{errors}} need attention",
+      "connectionsOk": "All syncing normally",
+      "records": "Records",
+      "recordsHint": "Indexed from connected systems",
+      "latest": "Latest change",
+      "latestHint": "In a connected system",
+      "today": "Updates today",
+      "todayHint": "Added, changed or removed"
+    },
+    "state": {
+      "ok": "Synced",
+      "syncing": "Syncing",
+      "pending": "Waiting for first sync",
+      "error": "Error",
+      "paused": "Paused"
+    },
+    "card": {
+      "records": "Records",
+      "sourceUpdated": "Changed at source",
+      "lastSync": "Last sync",
+      "never": "Not yet",
+      "every": "Every {{minutes}} min",
+      "syncNow": "Sync now",
+      "fullSync": "Full sync",
+      "settings": "Settings",
+      "webhook": "Instant updates",
+      "pause": "Pause",
+      "resume": "Resume",
+      "delete": "Delete",
+      "history": "Sync history",
+      "webhookOn": "Instant updates on",
+      "more": "More actions"
+    },
+    "empty": {
+      "title": "No connections yet",
+      "description": "Connect Bitrix24 or another system: deals, contacts and tasks become searchable here and update by themselves.",
+      "memberDescription": "Ask an admin to connect Bitrix24 or another system your team uses."
+    },
+    "toast": {
+      "syncQueued": "Sync started",
+      "created": "Connection added. The first sync has started.",
+      "saved": "Settings saved",
+      "deleted": "Connection deleted",
+      "paused": "Connection paused",
+      "resumed": "Connection resumed",
+      "failed": "Something went wrong"
+    },
+    "form": {
+      "addTitle": "Add a connection",
+      "editTitle": "Connection settings",
+      "choose": "Choose a platform",
+      "chooseHint": "Records sync on a schedule; platforms with webhooks also send changes within seconds.",
+      "name": "Name",
+      "namePlaceholder": "For example, Sales CRM",
+      "kinds": "What to sync",
+      "schedule": "Check for changes",
+      "scheduleOptions": {
+        "5": "Every 5 minutes",
+        "15": "Every 15 minutes",
+        "60": "Every hour",
+        "360": "Every 6 hours",
+        "1440": "Once a day"
+      },
+      "secretSet": "Saved. Leave empty to keep it.",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "save": "Save",
+      "saving": "Saving…",
+      "create": "Connect",
+      "back": "Back",
+      "cancel": "Cancel",
+      "testOk": "Connected",
+      "testFailed": "Couldn't connect",
+      "webhookHint": "Instant updates can be turned on after saving."
+    },
+    "webhook": {
+      "title": "Instant updates",
+      "description": "The platform calls this address whenever a record changes, so the change shows up here within seconds instead of at the next scheduled sync.",
+      "create": "Create address",
+      "rotate": "Create a new address",
+      "rotateHint": "The current address stops working.",
+      "disable": "Turn off",
+      "url": "Handler address",
+      "copy": "Copy",
+      "copied": "Copied",
+      "shownOnce": "Copy it now: for security the full address is shown only once.",
+      "setup": "Set up in the platform",
+      "enabled": "On. The address key starts with {{prefix}}…",
+      "disabled": "Off. Changes arrive with scheduled syncs.",
+      "relative": "The service has no public address yet (CONNECTOR_PUBLIC_URL), so platforms can't reach it from the internet. Scheduled syncs still work."
+    },
+    "delete": {
+      "title": "Delete “{{name}}”?",
+      "description": "Syncing stops and this connection's list of records is removed.",
+      "purge": "Also remove its documents from the knowledge base",
+      "confirm": "Delete",
+      "purgeQueued": "{{count}} documents will be removed from the knowledge base"
+    },
+    "history": {
+      "title": "Sync history",
+      "empty": "No syncs yet",
+      "mode": {
+        "full": "Full sync",
+        "incremental": "Changes",
+        "refs": "Webhook update"
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "succeeded": "Done",
+        "partial": "Done with errors",
+        "failed": "Failed"
+      },
+      "stats": "{{created}} new · {{updated}} changed · {{deleted}} removed · {{unchanged}} unchanged"
+    },
+    "data": {
+      "search": "Search by title",
+      "allPlatforms": "All platforms",
+      "allKinds": "All types",
+      "allConnections": "All connections",
+      "auto": "Auto",
+      "sourceUpdated": "Changed at source",
+      "synced": "Synced",
+      "openOriginal": "Open in {{platform}}",
+      "readText": "Indexed text",
+      "loadMore": "Show more",
+      "empty": "No records yet",
+      "emptyHint": "Records appear here after the first sync.",
+      "noMatches": "Nothing matches these filters"
+    },
+    "feed": {
+      "title": "Updates from connected systems",
+      "description": "Changes in Bitrix24 and other systems, as they are indexed.",
+      "empty": "No updates yet",
+      "emptyHint": "Connect a system and its changes will show up here.",
+      "connect": "Connect a system",
+      "viewAll": "All connected data",
+      "action": {
+        "created": "Added in {{platform}}",
+        "updated": "Updated in {{platform}}",
+        "deleted": "Removed in {{platform}}"
+      }
     }
   }
 }
