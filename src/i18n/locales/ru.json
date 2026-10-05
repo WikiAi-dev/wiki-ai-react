@@ -9,8 +9,6 @@
     "userManagement": "Управление пользователями",
     "apiKeys": "API ключи",
     "fileManagement": "Управление файлами",
-    "openCartPlugins": "Плагины OpenCart",
-    "catalogs": "Каталоги",
     "settings": "Настройки",
     "logout": "Выйти",
     "signOut": "Выйти",
@@ -23,14 +21,10 @@
       "knowledge": "База знаний",
       "team": "Команда"
     },
-    "roles": {
-      "owner": "Владелец",
-      "admin": "Администратор",
-      "user": "Сотрудник"
-    },
     "language": "Сменить язык",
     "toggleSidebar": "Показать или скрыть меню",
-    "account": "Аккаунт"
+    "account": "Аккаунт",
+    "connections": "Подключения"
   },
   "actions": {
     "save": "Сохранить",
@@ -109,70 +103,6 @@
     "failedToRevokeInvite": "Не удалось отозвать приглашение"
   },
   "search": {
-    "title": "Поиск",
-    "askAQuestionAboutYourKnowledgeBase": "Задайте вопрос о вашей базе знаний...",
-    "searchYourKnowledgeBase": "Поиск в вашей базе знаний",
-    "askQuestionsAboutYourDocuments": "Задавайте вопросы о ваших документах и получайте ответы от AI со ссылками на источники",
-    "tryAsking": "Попробуйте спросить:",
-    "aiResponsesWillAppearHere": "Ответы AI появятся здесь",
-    "searching": "Поиск...",
-    "settings": "Настройки",
-    "all": "Все",
-    "documents": "Документы",
-    "products": "Товары",
-    "sources": "Источники",
-    "foundRelevantSources": "Найдено {{count}} релевантных источников:",
-    "generatingAiOverview": "Генерация AI обзора...",
-    "aiResponse": "AI Ответ",
-    "aiOverview": "AI Обзор",
-    "aiRanked": "AI-Ранжировано",
-    "allSources": "Все источники",
-    "aiAgentSearch": "AI-агент Поиск",
-    "comingSoon": "Скоро",
-    "searchSettings": "Настройки поиска",
-    "configureYourSearchPreferencesAndScope": "Настройте параметры и область поиска",
-    "searchScope": "Область поиска",
-    "allDocumentsAndProducts": "Все (Документы и товары)",
-    "searchBothKnowledgeBaseDocumentsAndOpenCartProducts": "Искать в документах базы знаний и товарах OpenCart",
-    "documentsOnly": "Только документы",
-    "searchOnlyKnowledgeBaseDocuments": "Искать только в документах базы знаний",
-    "documentsPluginNotEnabled": "Плагин документов не включен",
-    "productsOnly": "Только товары",
-    "searchOnlyOpenCartProducts": "Искать только в товарах OpenCart",
-    "openCartPluginNotEnabled": "Плагин OpenCart не включен",
-    "selectCatalogsToSearch": "Выберите каталоги для поиска",
-    "loadingCatalogs": "Загрузка каталогов...",
-    "noCatalogsAvailable": "Нет доступных каталогов. Создайте один в плагине OpenCart.",
-    "shop": "Магазин",
-    "displayOptions": "Параметры отображения",
-    "showAiOverview": "Показать обзор ИИ",
-    "displayAiGeneratedSummaryOfSearchResults": "Отображать сгенерированный ИИ обзор результатов поиска",
-    "done": "Готово",
-    "reportAnIssue": "Сообщить о проблеме",
-    "helpUsImproveByDescribingWhatWasWrongWithThisResponse": "Помогите нам улучшить, описав, что не так с этим ответом.",
-    "describeTheIssue": "Опишите проблему...",
-    "submitFeedback": "Отправить отзыв",
-    "responseCopiedToClipboard": "Ответ скопирован в буфер обмена",
-    "documentPreviewNotAvailable": "Предпросмотр документа недоступен в результатах поиска",
-    "pleaseOpenThisFileFromTheFilesPageForFullViewing": "Пожалуйста, откройте этот файл со страницы Файлы для полного просмотра",
-    "wordDocumentPreviewNotAvailable": "Предпросмотр документа Word недоступен в результатах поиска",
-    "loadingDocument": "Загрузка документа...",
-    "documentPreviewWithSearchHighlighting": "Предпросмотр документа с подсветкой поиска",
-    "close": "Закрыть",
-    "loadingDocument2": "Загрузка документа...",
-    "pdfPreviewNotAvailable": "Предпросмотр PDF недоступен в результатах поиска",
-    "wordDocumentPreviewNotAvailable2": "Предпросмотр документа Word недоступен в результатах поиска",
-    "pleaseOpenThisFileFromTheFilesPageForFullViewing2": "Пожалуйста, откройте этот файл со страницы Файлы для полного просмотра",
-    "searchingAcrossYourKnowledgeBase": "Поиск в вашей базе знаний...",
-    "sorryIEncounteredAnErrorWhileSearchingPleaseTryAgain": "Извините, я столкнулся с ошибкой при поиске. Попробуйте еще раз.",
-    "whatProductsDoWeHaveInStock": "Какие товары у нас есть в наличии?",
-    "howDoIConfigureTheSystemSettings": "Как настроить параметры системы?",
-    "whatAreTheMainFeaturesOfThePlatform": "Каковы основные функции платформы?",
-    "showMeRecentOrderStatistics": "Покажите недавнюю статистику заказов",
-    "feedbackSubmittedSuccessfully": "Отзыв успешно отправлен",
-    "failedToSubmitFeedback": "Не удалось отправить отзыв",
-    "copy": "Копировать",
-    "clear": "Очистить",
     "page": {
       "title": "Спросите базу знаний",
       "subtitle": "WikiAI найдёт ответ в документах компании и покажет, откуда он взят.",
@@ -493,7 +423,6 @@
       "clearSelection": "Снять выделение",
       "chunks": "Фрагментов: {{count}}",
       "updated": "Обновлён {{date}}",
-      "fromConnector": "Источник: {{name}}",
       "open": "Открыть",
       "download": "Скачать",
       "edit": "Редактировать",
@@ -529,7 +458,15 @@
         "indexed": "Готов",
         "failed": "Ошибка",
         "duplicate": "Уже в базе"
-      }
+      },
+      "origin": {
+        "label": "Откуда документы",
+        "all": "Все",
+        "uploaded": "Загруженные",
+        "connected": "Из подключений · {{count}}"
+      },
+      "changedAtSource": "Изменено в источнике {{date}}",
+      "openOriginal": "Открыть в {{platform}}"
     },
     "reader": {
       "description": "Текст документа, по которому ищет WikiAI.",
@@ -670,34 +607,25 @@
   },
   "settings": {
     "title": "Настройки",
-    "description": "Управление вашей учетной записью и настройками приложения",
-    "accountInformation": "Информация об учетной записи",
-    "accountDescription": "Данные вашей учетной записи",
-    "username": "Имя пользователя",
+    "subtitle": "Ваш профиль, оформление и язык интерфейса.",
+    "profile": "Профиль",
+    "username": "Логин",
     "role": "Роль",
     "organization": "Организация",
-    "noOrganization": "Нет организации",
-    "appearance": "Внешний вид",
-    "appearanceDescription": "Настройте внешний вид приложения",
-    "darkMode": "Темный режим",
-    "darkModeDescription": "Включите темный режим для приложения",
-    "systemTheme": "Системная тема",
-    "systemThemeDescription": "Следуйте настройкам темы вашей системы",
-    "notifications": "Уведомления",
-    "notificationsDescription": "Управление настройками уведомлений",
-    "emailNotifications": "Email уведомления",
-    "emailNotificationsDescription": "Получайте обновления по email о событиях системы",
-    "reportAlerts": "Оповещения о отчетах",
-    "reportAlertsDescription": "Получайте уведомления о создании новых отчетов",
-    "languageAndRegion": "Язык и регион",
-    "languageDescription": "Установите предпочитаемый язык",
+    "permissions": "Что вам доступно",
+    "appearance": "Оформление",
+    "theme": "Тема",
+    "themeText": "Меняется сразу и запоминается в этом браузере.",
+    "themes": {
+      "light": "Светлая",
+      "dark": "Тёмная",
+      "system": "Как в системе"
+    },
     "language": "Язык",
-    "selectLanguage": "Выберите язык",
-    "current": "Текущий",
-    "languageChangeNote": "Изменения языка будут применены немедленно во всем приложении.",
-    "saveChanges": "Сохранить изменения",
-    "saving": "Сохранение...",
-    "settingsSavedSuccessfully": "Настройки успешно сохранены"
+    "languageText": "Язык интерфейса. WikiAI отвечает на том языке, на котором задан вопрос.",
+    "session": "Сеанс",
+    "signOut": "Выйти",
+    "signOutText": "Завершить сеанс на этом устройстве."
   },
   "userDashboard": {
     "welcomeBack": "С возвращением, {{username}}",
@@ -707,7 +635,6 @@
     "queryYourDocuments": "Запросите ваши документы",
     "manageFiles": "Управление файлами",
     "documentsIndexed": "{{count}} документов проиндексировано",
-    "catalogs": "Каталоги",
     "productSearch": "Поиск товаров",
     "myQueries": "Мои запросы",
     "personalQueries": "Личные запросы",
@@ -743,8 +670,6 @@
       "askText": "Ответ со ссылками на исходные документы",
       "filesTitle": "Документы",
       "filesText": "Все файлы, которые знает WikiAI",
-      "catalogsTitle": "Каталоги",
-      "catalogsText": "Поиск по товарам и позициям",
       "recentTitle": "Последние документы",
       "recentText": "Недавно добавленные в базу знаний",
       "viewAll": "Все документы",
@@ -1257,6 +1182,14 @@
         "contact": "Написать нам",
         "back": "Вернуться ко входу",
         "account": "Аккаунт"
+      },
+      "notFound": {
+        "metaTitle": "WikiAI | Страница не найдена",
+        "code": "Ошибка 404",
+        "title": "Такой страницы нет",
+        "subtitle": "Возможно, ссылка устарела или в адресе опечатка. Начните с главной или вернитесь в приложение.",
+        "home": "На главную",
+        "app": "В приложение"
       }
     }
   },
@@ -1444,6 +1377,197 @@
       "noMatch": "Ничего не нашлось",
       "key": "Ключ",
       "search": "Найти по названию или началу ключа"
+    }
+  },
+  "connections": {
+    "title": "Подключения",
+    "subtitle": "Bitrix24, Jira и другие системы, в которых работает команда. Их записи индексируются автоматически и обновляются сами.",
+    "tabs": {
+      "connections": "Подключения",
+      "data": "Данные"
+    },
+    "add": "Добавить подключение",
+    "stats": {
+      "connections": "Подключения",
+      "connectionsHint": "Требуют внимания: {{errors}}",
+      "connectionsOk": "Все синхронизируются",
+      "records": "Записи",
+      "recordsHint": "Проиндексировано из подключённых систем",
+      "latest": "Последнее изменение",
+      "latestHint": "В подключённой системе",
+      "today": "Обновлений за сутки",
+      "todayHint": "Добавлено, изменено или удалено"
+    },
+    "state": {
+      "ok": "Синхронизировано",
+      "syncing": "Синхронизация",
+      "pending": "Ждёт первой синхронизации",
+      "error": "Ошибка",
+      "paused": "Приостановлено"
+    },
+    "card": {
+      "records": "Записей",
+      "sourceUpdated": "Изменено в источнике",
+      "lastSync": "Синхронизация",
+      "never": "Ещё не было",
+      "every": "Каждые {{minutes}} мин",
+      "syncNow": "Синхронизировать",
+      "fullSync": "Полная синхронизация",
+      "settings": "Настройки",
+      "webhook": "Мгновенные обновления",
+      "pause": "Приостановить",
+      "resume": "Возобновить",
+      "delete": "Удалить",
+      "history": "История синхронизаций",
+      "webhookOn": "Мгновенные обновления включены",
+      "more": "Ещё действия"
+    },
+    "empty": {
+      "title": "Подключений пока нет",
+      "description": "Подключите Bitrix24 или другую систему: сделки, контакты и задачи появятся в поиске и будут обновляться сами.",
+      "memberDescription": "Попросите администратора подключить Bitrix24 или другую систему, в которой работает команда."
+    },
+    "toast": {
+      "syncQueued": "Синхронизация запущена",
+      "created": "Подключение добавлено. Первая синхронизация запущена.",
+      "saved": "Настройки сохранены",
+      "deleted": "Подключение удалено",
+      "paused": "Подключение приостановлено",
+      "resumed": "Подключение возобновлено",
+      "failed": "Что-то пошло не так"
+    },
+    "form": {
+      "addTitle": "Новое подключение",
+      "editTitle": "Настройки подключения",
+      "choose": "Выберите платформу",
+      "chooseHint": "Записи синхронизируются по расписанию; платформы с вебхуками присылают изменения за секунды.",
+      "name": "Название",
+      "namePlaceholder": "Например, CRM отдела продаж",
+      "kinds": "Что синхронизировать",
+      "schedule": "Проверять изменения",
+      "scheduleOptions": {
+        "5": "Каждые 5 минут",
+        "15": "Каждые 15 минут",
+        "60": "Каждый час",
+        "360": "Каждые 6 часов",
+        "1440": "Раз в день"
+      },
+      "secretSet": "Сохранено. Оставьте пустым, чтобы не менять.",
+      "test": "Проверить подключение",
+      "testing": "Проверяем…",
+      "save": "Сохранить",
+      "saving": "Сохраняем…",
+      "create": "Подключить",
+      "back": "Назад",
+      "cancel": "Отмена",
+      "testOk": "Подключение работает",
+      "testFailed": "Не удалось подключиться",
+      "webhookHint": "Мгновенные обновления можно включить после сохранения."
+    },
+    "webhook": {
+      "title": "Мгновенные обновления",
+      "description": "Платформа вызывает этот адрес при каждом изменении записи, и изменение появляется здесь за секунды, а не при следующей синхронизации по расписанию.",
+      "create": "Создать адрес",
+      "rotate": "Создать новый адрес",
+      "rotateHint": "Текущий адрес перестанет работать.",
+      "disable": "Отключить",
+      "url": "Адрес обработчика",
+      "copy": "Копировать",
+      "copied": "Скопировано",
+      "shownOnce": "Скопируйте сейчас: из соображений безопасности полный адрес показывается один раз.",
+      "setup": "Настройка в платформе",
+      "enabled": "Включено. Ключ адреса начинается с {{prefix}}…",
+      "disabled": "Отключено. Изменения приходят с синхронизацией по расписанию.",
+      "relative": "У сервиса пока нет публичного адреса (CONNECTOR_PUBLIC_URL), и платформы не достучатся до него из интернета. Синхронизация по расписанию работает."
+    },
+    "delete": {
+      "title": "Удалить «{{name}}»?",
+      "description": "Синхронизация остановится, а список записей этого подключения будет удалён.",
+      "purge": "Удалить и его документы из базы знаний",
+      "confirm": "Удалить",
+      "purgeQueued": "Из базы знаний будет удалено документов: {{count}}"
+    },
+    "history": {
+      "title": "История синхронизаций",
+      "empty": "Синхронизаций ещё не было",
+      "mode": {
+        "full": "Полная",
+        "incremental": "Изменения",
+        "refs": "По вебхуку"
+      },
+      "status": {
+        "queued": "В очереди",
+        "running": "Выполняется",
+        "succeeded": "Готово",
+        "partial": "Готово с ошибками",
+        "failed": "Ошибка"
+      },
+      "stats": "{{created}} новых · {{updated}} изменено · {{deleted}} удалено · {{unchanged}} без изменений"
+    },
+    "data": {
+      "search": "Поиск по названию",
+      "allPlatforms": "Все платформы",
+      "allKinds": "Все типы",
+      "allConnections": "Все подключения",
+      "auto": "Авто",
+      "sourceUpdated": "Изменено в источнике",
+      "synced": "Синхронизировано",
+      "openOriginal": "Открыть в {{platform}}",
+      "readText": "Проиндексированный текст",
+      "loadMore": "Показать ещё",
+      "empty": "Записей пока нет",
+      "emptyHint": "Записи появятся после первой синхронизации.",
+      "noMatches": "Ничего не найдено по этим фильтрам"
+    },
+    "feed": {
+      "title": "Обновления из подключённых систем",
+      "description": "Изменения в Bitrix24 и других системах по мере индексации.",
+      "empty": "Обновлений пока нет",
+      "emptyHint": "Подключите систему, и её изменения появятся здесь.",
+      "connect": "Подключить систему",
+      "viewAll": "Все данные подключений",
+      "action": {
+        "created": "Добавлено в {{platform}}",
+        "updated": "Обновлено в {{platform}}",
+        "deleted": "Удалено в {{platform}}"
+      }
+    },
+    "providers": {
+      "bitrix24": {
+        "description": "Лиды, сделки, контакты и компании CRM, задачи и товары. Изменения приходят за секунды через исходящий вебхук или со следующей синхронизацией.",
+        "kinds": {
+          "lead": "Лиды",
+          "deal": "Сделки",
+          "contact": "Контакты",
+          "company": "Компании",
+          "task": "Задачи",
+          "product": "Товары"
+        },
+        "fields": {
+          "webhook_url": {
+            "label": "Адрес входящего вебхука",
+            "help": "Битрикс24 → Разработчикам → Другое → Входящий вебхук. Дайте права CRM, Задачи и Торговый каталог (crm, task, catalog) и вставьте адрес сюда."
+          },
+          "application_token": {
+            "label": "Токен исходящего вебхука",
+            "help": "Необязательно. Показывается при создании исходящего вебхука; с ним сервис принимает события только от вашего портала."
+          },
+          "rate": {
+            "label": "Тариф Битрикс24",
+            "help": "Битрикс24 ограничивает частоту запросов к API; сервис укладывается в лимит вашего тарифа.",
+            "options": {
+              "2": "Стандартный или Профессиональный (2 запроса в секунду)",
+              "5": "Энтерпрайз (5 запросов в секунду)"
+            }
+          }
+        },
+        "webhookSetup": [
+          "В Битрикс24 откройте Разработчикам → Другое → Исходящий вебхук.",
+          "Вставьте адрес обработчика, показанный ниже.",
+          "Выберите события: ONCRMLEADADD, ONCRMLEADUPDATE, ONCRMLEADDELETE и такие же для DEAL, CONTACT и COMPANY; ONTASKADD, ONTASKUPDATE, ONTASKDELETE для задач; ONCRMPRODUCTADD, ONCRMPRODUCTUPDATE, ONCRMPRODUCTDELETE для товаров.",
+          "Сохраните и скопируйте токен приложения, который покажет Битрикс24, в поле подключения «Токен исходящего вебхука»."
+        ]
+      }
     }
   }
 }

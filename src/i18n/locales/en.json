@@ -9,8 +9,6 @@
     "userManagement": "User Management",
     "apiKeys": "API Keys",
     "fileManagement": "File Management",
-    "openCartPlugins": "OpenCart Plugins",
-    "catalogs": "Catalogs",
     "settings": "Settings",
     "logout": "Logout",
     "signOut": "Sign out",
@@ -23,14 +21,10 @@
       "knowledge": "Knowledge",
       "team": "Team"
     },
-    "roles": {
-      "owner": "Owner",
-      "admin": "Admin",
-      "user": "Member"
-    },
     "language": "Switch language",
     "toggleSidebar": "Show or hide the menu",
-    "account": "Account"
+    "account": "Account",
+    "connections": "Connections"
   },
   "actions": {
     "save": "Save",
@@ -107,63 +101,6 @@
     "organizationPendingApproval": "Your organization is pending approval. Please contact your administrator."
   },
   "search": {
-    "title": "Search",
-    "askAQuestionAboutYourKnowledgeBase": "Ask a question about your knowledge base...",
-    "searchYourKnowledgeBase": "Search Your Knowledge Base",
-    "askQuestionsAboutYourDocuments": "Ask questions about your documents and get AI-powered answers with source references",
-    "tryAsking": "Try asking:",
-    "aiResponsesWillAppearHere": "AI responses will appear here",
-    "searching": "Searching...",
-    "settings": "Settings",
-    "all": "All",
-    "documents": "Documents",
-    "products": "Products",
-    "sources": "Sources",
-    "foundRelevantSources": "Found {{count}} relevant sources:",
-    "generatingAiOverview": "Generating AI overview...",
-    "aiResponse": "AI Response",
-    "aiOverview": "AI Overview",
-    "aiRanked": "AI-Ranked",
-    "allSources": "All Sources",
-    "aiAgentSearch": "AI-agent Search",
-    "comingSoon": "Coming Soon",
-    "searchSettings": "Search Settings",
-    "configureYourSearchPreferencesAndScope": "Configure your search preferences and scope",
-    "searchScope": "Search Scope",
-    "allDocumentsAndProducts": "All (Documents & Products)",
-    "searchBothKnowledgeBaseDocumentsAndOpenCartProducts": "Search both knowledge base documents and OpenCart products",
-    "documentsOnly": "Documents Only",
-    "searchOnlyKnowledgeBaseDocuments": "Search only knowledge base documents",
-    "documentsPluginNotEnabled": "Documents plugin is not enabled",
-    "productsOnly": "Products Only",
-    "searchOnlyOpenCartProducts": "Search only OpenCart products",
-    "displayAiGeneratedSummaryOfSearchResults": "Display AI-generated summary of search results",
-    "done": "Done",
-    "reportAnIssue": "Report an Issue",
-    "helpUsImproveByDescribingWhatWasWrongWithThisResponse": "Help us improve by describing what was wrong with this response.",
-    "describeTheIssue": "Describe the issue...",
-    "submitFeedback": "Submit Feedback",
-    "responseCopiedToClipboard": "Response copied to clipboard",
-    "documentPreviewNotAvailable": "Document preview not available in search results",
-    "pleaseOpenThisFileFromTheFilesPageForFullViewing": "Please open this file from the Files page for full viewing",
-    "wordDocumentPreviewNotAvailable": "Word document preview not available in search results",
-    "loadingDocument": "Loading document...",
-    "documentPreviewWithSearchHighlighting": "Document preview with search highlighting",
-    "close": "Close",
-    "loadingDocument2": "Loading document...",
-    "pdfPreviewNotAvailable": "PDF preview not available in search results",
-    "wordDocumentPreviewNotAvailable2": "Word document preview not available in search results",
-    "pleaseOpenThisFileFromTheFilesPageForFullViewing2": "Please open this file from the Files page for full viewing",
-    "searchingAcrossYourKnowledgeBase": "Searching across your Knowledge Base...",
-    "sorryIEncounteredAnErrorWhileSearchingPleaseTryAgain": "Sorry, I encountered an error while searching. Please try again.",
-    "whatProductsDoWeHaveInStock": "What products do we have in stock?",
-    "howDoIConfigureTheSystemSettings": "How do I configure the system settings?",
-    "whatAreTheMainFeaturesOfThePlatform": "What are the main features of the platform?",
-    "showMeRecentOrderStatistics": "Show me recent order statistics",
-    "feedbackSubmittedSuccessfully": "Feedback submitted successfully",
-    "failedToSubmitFeedback": "Failed to submit feedback",
-    "copy": "Copy",
-    "clear": "Clear",
     "page": {
       "title": "Ask the knowledge base",
       "subtitle": "WikiAI finds the answer in your company's documents and shows where it came from.",
@@ -504,7 +441,6 @@
       "clearSelection": "Clear selection",
       "chunks": "Chunks: {{count}}",
       "updated": "Updated {{date}}",
-      "fromConnector": "Source: {{name}}",
       "open": "Open",
       "download": "Download",
       "edit": "Edit",
@@ -540,7 +476,15 @@
         "indexed": "Ready",
         "failed": "Failed",
         "duplicate": "Already indexed"
-      }
+      },
+      "origin": {
+        "label": "Where documents come from",
+        "all": "All",
+        "uploaded": "Uploaded",
+        "connected": "From connections · {{count}}"
+      },
+      "changedAtSource": "Changed at source {{date}}",
+      "openOriginal": "Open in {{platform}}"
     },
     "reader": {
       "description": "The document text WikiAI searches.",
@@ -688,34 +632,25 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Manage your account and application preferences",
-    "accountInformation": "Account Information",
-    "accountDescription": "Your account details",
+    "subtitle": "Your profile, appearance and interface language.",
+    "profile": "Profile",
     "username": "Username",
     "role": "Role",
     "organization": "Organization",
-    "noOrganization": "No organization",
+    "permissions": "What you can do",
     "appearance": "Appearance",
-    "appearanceDescription": "Customize how the application looks",
-    "darkMode": "Dark Mode",
-    "darkModeDescription": "Enable dark mode for the application",
-    "systemTheme": "System Theme",
-    "systemThemeDescription": "Follow your system's theme preference",
-    "notifications": "Notifications",
-    "notificationsDescription": "Manage your notification preferences",
-    "emailNotifications": "Email Notifications",
-    "emailNotificationsDescription": "Receive email updates about system events",
-    "reportAlerts": "Report Alerts",
-    "reportAlertsDescription": "Get notified when new reports are created",
-    "languageAndRegion": "Language & Region",
-    "languageDescription": "Set your preferred language",
+    "theme": "Theme",
+    "themeText": "Applies right away and is remembered in this browser.",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "language": "Language",
-    "selectLanguage": "Select language",
-    "current": "Current",
-    "languageChangeNote": "Language changes will be applied immediately across the application.",
-    "saveChanges": "Save Changes",
-    "saving": "Saving...",
-    "settingsSavedSuccessfully": "Settings saved successfully"
+    "languageText": "The interface language. WikiAI answers in the language of the question.",
+    "session": "Session",
+    "signOut": "Sign out",
+    "signOutText": "End the session on this device."
   },
   "userDashboard": {
     "welcomeBack": "Welcome back, {{username}}",
@@ -725,7 +660,6 @@
     "queryYourDocuments": "Query your documents",
     "manageFiles": "Manage Files",
     "documentsIndexed": "{{count}} documents indexed",
-    "catalogs": "Catalogs",
     "productSearch": "Product search",
     "myQueries": "My Queries",
     "personalQueries": "Personal queries",
@@ -761,8 +695,6 @@
       "askText": "Answers that link to the source documents",
       "filesTitle": "Documents",
       "filesText": "Every file WikiAI knows about",
-      "catalogsTitle": "Catalogs",
-      "catalogsText": "Search products and line items",
       "recentTitle": "Recent documents",
       "recentText": "Latest additions to the knowledge base",
       "viewAll": "All documents",
@@ -1275,6 +1207,14 @@
         "contact": "Message us",
         "back": "Back to sign-in",
         "account": "Account"
+      },
+      "notFound": {
+        "metaTitle": "WikiAI | Page not found",
+        "code": "Error 404",
+        "title": "This page doesn’t exist",
+        "subtitle": "The link may be outdated or the address has a typo. Start from the home page or go back to the app.",
+        "home": "Home page",
+        "app": "Open the app"
       }
     }
   },
@@ -1462,6 +1402,160 @@
       "noMatch": "Nothing found",
       "key": "Key",
       "search": "Find by name or key prefix"
+    }
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "Bitrix24, Jira and other systems your team works in. Their records are indexed automatically and kept up to date.",
+    "tabs": {
+      "connections": "Connections",
+      "data": "Data"
+    },
+    "add": "Add connection",
+    "stats": {
+      "connections": "Connections",
+      "connectionsHint": "{{errors}} need attention",
+      "connectionsOk": "All syncing normally",
+      "records": "Records",
+      "recordsHint": "Indexed from connected systems",
+      "latest": "Latest change",
+      "latestHint": "In a connected system",
+      "today": "Updates today",
+      "todayHint": "Added, changed or removed"
+    },
+    "state": {
+      "ok": "Synced",
+      "syncing": "Syncing",
+      "pending": "Waiting for first sync",
+      "error": "Error",
+      "paused": "Paused"
+    },
+    "card": {
+      "records": "Records",
+      "sourceUpdated": "Changed at source",
+      "lastSync": "Last sync",
+      "never": "Not yet",
+      "every": "Every {{minutes}} min",
+      "syncNow": "Sync now",
+      "fullSync": "Full sync",
+      "settings": "Settings",
+      "webhook": "Instant updates",
+      "pause": "Pause",
+      "resume": "Resume",
+      "delete": "Delete",
+      "history": "Sync history",
+      "webhookOn": "Instant updates on",
+      "more": "More actions"
+    },
+    "empty": {
+      "title": "No connections yet",
+      "description": "Connect Bitrix24 or another system: deals, contacts and tasks become searchable here and update by themselves.",
+      "memberDescription": "Ask an admin to connect Bitrix24 or another system your team uses."
+    },
+    "toast": {
+      "syncQueued": "Sync started",
+      "created": "Connection added. The first sync has started.",
+      "saved": "Settings saved",
+      "deleted": "Connection deleted",
+      "paused": "Connection paused",
+      "resumed": "Connection resumed",
+      "failed": "Something went wrong"
+    },
+    "form": {
+      "addTitle": "Add a connection",
+      "editTitle": "Connection settings",
+      "choose": "Choose a platform",
+      "chooseHint": "Records sync on a schedule; platforms with webhooks also send changes within seconds.",
+      "name": "Name",
+      "namePlaceholder": "For example, Sales CRM",
+      "kinds": "What to sync",
+      "schedule": "Check for changes",
+      "scheduleOptions": {
+        "5": "Every 5 minutes",
+        "15": "Every 15 minutes",
+        "60": "Every hour",
+        "360": "Every 6 hours",
+        "1440": "Once a day"
+      },
+      "secretSet": "Saved. Leave empty to keep it.",
+      "test": "Test connection",
+      "testing": "Testing…",
+      "save": "Save",
+      "saving": "Saving…",
+      "create": "Connect",
+      "back": "Back",
+      "cancel": "Cancel",
+      "testOk": "Connected",
+      "testFailed": "Couldn't connect",
+      "webhookHint": "Instant updates can be turned on after saving."
+    },
+    "webhook": {
+      "title": "Instant updates",
+      "description": "The platform calls this address whenever a record changes, so the change shows up here within seconds instead of at the next scheduled sync.",
+      "create": "Create address",
+      "rotate": "Create a new address",
+      "rotateHint": "The current address stops working.",
+      "disable": "Turn off",
+      "url": "Handler address",
+      "copy": "Copy",
+      "copied": "Copied",
+      "shownOnce": "Copy it now: for security the full address is shown only once.",
+      "setup": "Set up in the platform",
+      "enabled": "On. The address key starts with {{prefix}}…",
+      "disabled": "Off. Changes arrive with scheduled syncs.",
+      "relative": "The service has no public address yet (CONNECTOR_PUBLIC_URL), so platforms can't reach it from the internet. Scheduled syncs still work."
+    },
+    "delete": {
+      "title": "Delete “{{name}}”?",
+      "description": "Syncing stops and this connection's list of records is removed.",
+      "purge": "Also remove its documents from the knowledge base",
+      "confirm": "Delete",
+      "purgeQueued": "{{count}} documents will be removed from the knowledge base"
+    },
+    "history": {
+      "title": "Sync history",
+      "empty": "No syncs yet",
+      "mode": {
+        "full": "Full sync",
+        "incremental": "Changes",
+        "refs": "Webhook update"
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "succeeded": "Done",
+        "partial": "Done with errors",
+        "failed": "Failed"
+      },
+      "stats": "{{created}} new · {{updated}} changed · {{deleted}} removed · {{unchanged}} unchanged"
+    },
+    "data": {
+      "search": "Search by title",
+      "allPlatforms": "All platforms",
+      "allKinds": "All types",
+      "allConnections": "All connections",
+      "auto": "Auto",
+      "sourceUpdated": "Changed at source",
+      "synced": "Synced",
+      "openOriginal": "Open in {{platform}}",
+      "readText": "Indexed text",
+      "loadMore": "Show more",
+      "empty": "No records yet",
+      "emptyHint": "Records appear here after the first sync.",
+      "noMatches": "Nothing matches these filters"
+    },
+    "feed": {
+      "title": "Updates from connected systems",
+      "description": "Changes in Bitrix24 and other systems, as they are indexed.",
+      "empty": "No updates yet",
+      "emptyHint": "Connect a system and its changes will show up here.",
+      "connect": "Connect a system",
+      "viewAll": "All connected data",
+      "action": {
+        "created": "Added in {{platform}}",
+        "updated": "Updated in {{platform}}",
+        "deleted": "Removed in {{platform}}"
+      }
     }
   }
 }

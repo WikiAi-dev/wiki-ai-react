@@ -4,12 +4,12 @@ import type React from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Download,
+  ExternalLink,
   Eye,
   FileText,
   Loader2,
   MoreHorizontal,
   Pencil,
-  Plug,
   RefreshCw,
   Search,
   Trash2,
@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi } from "@/lib/api"
+import { documentSource, fullTime, type DocumentSource } from "@/lib/connections"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/src/i18n"
 import { useUploadStatusPoll, type UploadStatusValue } from "@/hooks/use-upload-status-poll"
@@ -26,6 +27,8 @@ import { PageBody, PageHeader } from "@/components/page-header"
 import { StatCard, StatGrid } from "@/components/stat-card"
 import { EmptyState } from "@/components/empty-state"
 import { UploadStatusBadge } from "@/components/upload-status-badge"
+import { ProviderMark, SourceBadge, useProviderText } from "@/components/connections/shared"
+import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -66,8 +69,13 @@ interface Doc {
   status?: string
   chunks?: number
   updatedAt?: string
-  connector?: string
+  /** File name for the reader (connector documents are Markdown). */
+  fileName: string
+  /** Set for documents synced from Bitrix24 and other connected systems. */
+  source: DocumentSource | null
 }
+
+type Origin = "all" | "uploaded" | "connected"
 
 interface ViewerFile {
   id: string
@@ -95,7 +103,8 @@ function toDoc(doc: any, index: number): Doc {
     status: doc.status || doc.Status,
     chunks: typeof doc.chunk_count === "number" ? doc.chunk_count : undefined,
     updatedAt: doc.updated_at || doc.created_at,
-    connector: metadata.source === "connector" ? metadata.connector_name || metadata.connector_type : undefined,
+    fileName: metadata.original_filename || name,
+    source: documentSource(metadata),
   }
 }
 
@@ -121,6 +130,8 @@ export function DocumentLibrary() {
   const [docs, setDocs] = useState<Doc[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [query, setQuery] = useState("")
+  const [origin, setOrigin] = useState<Origin>("all")
+  const providerText = useProviderText()
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -225,10 +236,16 @@ export function DocumentLibrary() {
     upload(Array.from(e.dataTransfer.files))
   }
 
+  const connectedCount = useMemo(() => docs.filter((doc) => doc.source).length, [docs])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return q ? docs.filter((doc) => doc.name.toLowerCase().includes(q)) : docs
-  }, [docs, query])
+    return docs.filter(
+      (doc) =>
+        (origin === "all" || (origin === "connected") === Boolean(doc.source)) &&
+        (!q || doc.name.toLowerCase().includes(q) || (doc.source?.providerTitle.toLowerCase().includes(q) ?? false)),
+    )
+  }, [docs, query, origin])
 
   const counts = useMemo(
     () => ({
@@ -242,7 +259,7 @@ export function DocumentLibrary() {
   const open = (doc: Doc) =>
     setViewerFile({
       id: doc.id,
-      filename: doc.name,
+      filename: doc.fileName,
       size: 0,
       upload_date: doc.updatedAt || new Date().toISOString(),
       content_type: "", // the reader works it out from the file name
@@ -254,7 +271,7 @@ export function DocumentLibrary() {
     try {
       const result = await filesApi.getContent(token, doc.id)
       if (result.status !== "success" || !result.response) throw new Error(result.message)
-      downloadText(doc.name, result.response.content || "")
+      downloadText(doc.fileName, result.response.content || "")
     } catch (error) {
       console.error("Download failed:", error)
       toast.error(t("files.library.downloadFailed"))
@@ -454,6 +471,19 @@ export function DocumentLibrary() {
               className="pl-10"
             />
           </div>
+          {connectedCount > 0 && (
+            <SegmentedControl
+              value={origin}
+              onChange={setOrigin}
+              label={t("files.library.origin.label")}
+              options={[
+                { value: "all", label: t("files.library.origin.all") },
+                { value: "uploaded", label: t("files.library.origin.uploaded") },
+                { value: "connected", label: t("files.library.origin.connected", { count: connectedCount }) },
+              ]}
+              className="max-sm:w-full"
+            />
+          )}
           {isAdmin && selected.size > 0 ? (
             <div className="flex flex-wrap items-center gap-2 max-sm:w-full sm:ml-auto">
               <span className="text-sm font-medium tabular-nums">{t("files.library.selected", { count: selected.size })}</span>
@@ -507,11 +537,20 @@ export function DocumentLibrary() {
             )}
             <ul className="divide-y divide-border">
               {filtered.map((doc) => {
-                const meta = [
-                  doc.kind || null,
-                  typeof doc.chunks === "number" && doc.chunks > 0 ? t("files.library.chunks", { count: doc.chunks }) : null,
-                  formatDate(doc.updatedAt) ? t("files.library.updated", { date: formatDate(doc.updatedAt) }) : null,
-                ].filter(Boolean)
+                const src = doc.source
+                const meta = src
+                  ? [
+                      src.kind ? providerText.kind(src.provider, src.kind, src.kindTitle) : null,
+                      src.connectionName || null,
+                      formatDate(src.updatedAt ?? undefined)
+                        ? t("files.library.changedAtSource", { date: formatDate(src.updatedAt ?? undefined) })
+                        : null,
+                    ].filter(Boolean)
+                  : [
+                      doc.kind || null,
+                      typeof doc.chunks === "number" && doc.chunks > 0 ? t("files.library.chunks", { count: doc.chunks }) : null,
+                      formatDate(doc.updatedAt) ? t("files.library.updated", { date: formatDate(doc.updatedAt) }) : null,
+                    ].filter(Boolean)
                 return (
                   <li
                     key={doc.id}
@@ -528,19 +567,23 @@ export function DocumentLibrary() {
                       onClick={() => open(doc)}
                       className="flex min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none"
                     >
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
-                        {doc.connector ? (
-                          <Plug className="size-4" strokeWidth={1.75} aria-hidden />
-                        ) : (
+                      {src ? (
+                        <ProviderMark provider={src.provider} title={src.providerTitle} className="size-9 text-[10px]" />
+                      ) : (
+                        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
                           <FileText className="size-4" strokeWidth={1.75} aria-hidden />
-                        )}
-                      </span>
+                        </span>
+                      )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-foreground group-hover:text-primary">{doc.name}</span>
-                        <span className="mt-0.5 block truncate text-xs tabular-nums text-muted-foreground">
-                          {[...meta, doc.connector ? t("files.library.fromConnector", { name: doc.connector }) : null]
-                            .filter(Boolean)
-                            .join(" · ")}
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate text-sm font-medium text-foreground group-hover:text-primary">{doc.name}</span>
+                          {src && <SourceBadge providerTitle={src.providerTitle} />}
+                        </span>
+                        <span
+                          className="mt-0.5 block truncate text-xs tabular-nums text-muted-foreground"
+                          title={src?.updatedAt ? fullTime(src.updatedAt, locale) : undefined}
+                        >
+                          {meta.join(" · ")}
                         </span>
                       </span>
                     </button>
@@ -556,13 +599,21 @@ export function DocumentLibrary() {
                           <Eye />
                           {t("files.library.open")}
                         </DropdownMenuItem>
+                        {src?.url && (
+                          <DropdownMenuItem asChild>
+                            <a href={src.url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink />
+                              {t("files.library.openOriginal", { platform: src.providerTitle })}
+                            </a>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => download(doc)}>
                           <Download />
                           {t("files.library.download")}
                         </DropdownMenuItem>
                         {isAdmin && (
                           <>
-                            {!doc.connector && (
+                            {!src && (
                               <DropdownMenuItem onClick={() => startEdit(doc)}>
                                 <Pencil />
                                 {t("files.library.edit")}

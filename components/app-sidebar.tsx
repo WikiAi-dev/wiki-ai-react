@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, ChevronsUpDown, FileText, Home, Key, LogOut, Mail, Search, Settings, Users } from "lucide-react"
+import { BarChart3, Cable, ChevronsUpDown, FileText, Home, Key, LogOut, Mail, Search, Settings, Users } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/src/i18n"
 import { Wordmark } from "@/components/wordmark"
@@ -51,6 +51,7 @@ export function AppSidebar() {
       items: [
         { title: t("navigation.search"), url: "/app/search", icon: Search },
         { title: t("navigation.files"), url: "/app/admin/files", icon: FileText },
+        { title: t("navigation.connections"), url: "/app/connections", icon: Cable },
       ],
     },
     {
@@ -70,6 +71,7 @@ export function AppSidebar() {
       items: [
         { title: t("navigation.search"), url: "/app/search", icon: Search },
         { title: t("navigation.files"), url: "/app/files", icon: FileText },
+        { title: t("navigation.connections"), url: "/app/connections", icon: Cable },
       ],
     },
   ]
@@ -81,7 +83,8 @@ export function AppSidebar() {
       ? pathname === url || (url === "/app" && pathname.startsWith("/app/dashboard"))
       : pathname === url || pathname.startsWith(url + "/")
 
-  const roleKey = user?.role === "owner" || user?.role === "admin" ? user.role : "user"
+  // Older tokens call members "user".
+  const roleKey = !user?.role || user.role === "user" ? "member" : user.role
   const initial = user?.username?.charAt(0).toUpperCase() || "?"
 
   return (
@@ -129,7 +132,7 @@ export function AppSidebar() {
                   </span>
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className="truncate text-sm font-medium text-sidebar-foreground">{user?.username}</span>
-                    <span className="truncate text-xs text-muted-foreground">{t(`navigation.roles.${roleKey}`)}</span>
+                    <span className="truncate text-xs text-muted-foreground">{t(`team.roles.${roleKey}`)}</span>
                   </span>
                   <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
                 </SidebarMenuButton>
