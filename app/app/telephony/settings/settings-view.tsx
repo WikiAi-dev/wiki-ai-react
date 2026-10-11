@@ -13,6 +13,7 @@ import { LinesPanel } from "@/components/telephony/lines-panel"
 import { GeneralPanel } from "@/components/telephony/general-panel"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { ShieldAlert } from "lucide-react"
 
 type Tab = "trunks" | "lines" | "general"
@@ -32,20 +33,25 @@ export function TelephonySettingsView() {
   const [trunks, setTrunks] = useState<Trunk[] | null>(null)
   const [lines, setLines] = useState<Line[] | null>(null)
   const [settings, setSettings] = useState<TelephonySettings | null>(null)
+  const [failed, setFailed] = useState(false)
 
   const loadTrunks = useCallback(async (): Promise<Trunk[]> => {
     if (!token) return []
     const result = await telephonyApi.trunks(token)
-    const items = result.status === "success" && result.response ? result.response.items : []
-    if (result.status === "success") setTrunks(items)
-    else setTrunks((prev) => prev ?? [])
-    return items
+    if (result.status !== "success" || !result.response) {
+      setFailed(true)
+      return []
+    }
+    setFailed(false)
+    setTrunks(result.response.items)
+    return result.response.items
   }, [token])
 
   const loadLines = useCallback(async () => {
     if (!token) return
     const result = await telephonyApi.lines(token)
-    setLines(result.status === "success" && result.response ? result.response.items : (prev) => prev ?? [])
+    if (result.status === "success" && result.response) setLines(result.response.items)
+    else setFailed(true)
   }, [token])
 
   const loadAll = useCallback(async () => {
@@ -53,6 +59,7 @@ export function TelephonySettingsView() {
     await Promise.all([loadTrunks(), loadLines()])
     const s = await telephonyApi.settings(token)
     if (s.status === "success" && s.response) setSettings(s.response)
+    else setFailed(true)
   }, [token, loadTrunks, loadLines])
 
   useEffect(() => {
@@ -81,6 +88,17 @@ export function TelephonySettingsView() {
         <PageHeader title={t("telephony.settings.title")} description={t("telephony.settings.subtitle")} />
         {!isAdmin ? (
           <EmptyState icon={ShieldAlert} title={t("telephony.settings.adminsOnly")} className="py-16" />
+        ) : failed && (trunks === null || lines === null || (tab === "general" && settings === null)) ? (
+          <EmptyState
+            icon={ShieldAlert}
+            title={t("telephony.settings.loadFailed")}
+            action={
+              <Button variant="outline" onClick={() => loadAll()}>
+                {t("telephony.settings.retry")}
+              </Button>
+            }
+            className="py-16"
+          />
         ) : trunks === null || lines === null ? (
           <div className="grid gap-4 md:grid-cols-2">
             <Skeleton className="h-[220px] rounded-2xl" />
