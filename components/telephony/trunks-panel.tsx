@@ -5,7 +5,7 @@ import { Activity, Loader2, MoreHorizontal, Pause, Play, Plus, Server, Settings2
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { fullTime, relativeTime } from "@/lib/connections"
-import { reportedSince, telephonyApi, type Line, type Trunk } from "@/lib/telephony"
+import { apiText, reportedAfter, telephonyApi, type Line, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { TrunkStatusBadge } from "@/components/telephony/shared"
 import { TrunkFormDialog } from "@/components/telephony/trunk-form-dialog"
@@ -51,17 +51,20 @@ function TrunkCard({ trunk, lines, onChanged }: { trunk: Trunk; lines: Line[]; o
   const test = async () => {
     if (!token) return
     setTesting(true)
+    // The answer is a report newer than the last one; both times are the
+    // engine's, so the browser's clock can't skew the wait.
+    const previous = trunk.status_at
     const started = Date.now()
     try {
       const result = await telephonyApi.testTrunk(token, trunk.id)
       if (result.status !== "success") {
-        toast.error(result.message || t("telephony.toast.failed"))
+        toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
         return
       }
       while (Date.now() - started < TEST_WAIT_MS) {
         await new Promise((r) => setTimeout(r, TEST_POLL_MS))
         const fresh = (await onChanged()).find((x) => x.id === trunk.id)
-        if (fresh && reportedSince(fresh, started - 1000)) {
+        if (fresh && reportedAfter(fresh, previous)) {
           if (fresh.status === "ok") toast.success(t("telephony.trunks.test.ok"), { description: fresh.status_detail })
           else toast.error(t("telephony.trunks.test.failed"), { description: fresh.status_detail })
           return
@@ -79,7 +82,7 @@ function TrunkCard({ trunk, lines, onChanged }: { trunk: Trunk; lines: Line[]; o
     if (result.status === "success") {
       toast.success(enabled ? t("telephony.trunks.toast.enabled") : t("telephony.trunks.toast.disabled"))
       onChanged()
-    } else toast.error(result.message || t("telephony.toast.failed"))
+    } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
   }
 
   const remove = async () => {
@@ -91,7 +94,7 @@ function TrunkCard({ trunk, lines, onChanged }: { trunk: Trunk; lines: Line[]; o
         toast.success(t("telephony.trunks.toast.deleted"))
         setDeleteOpen(false)
         onChanged()
-      } else toast.error(result.message || t("telephony.toast.failed"))
+      } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setDeleting(false)
     }
