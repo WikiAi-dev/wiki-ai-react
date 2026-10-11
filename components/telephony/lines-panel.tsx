@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Loader2, MoreHorizontal, Phone, Plus, Settings2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { formatPhone, telephonyApi, type Line, type Trunk } from "@/lib/telephony"
+import { apiText, formatPhone, telephonyApi, type Line, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { LineFormDialog } from "@/components/telephony/line-form-dialog"
 import { EmptyState } from "@/components/empty-state"
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onChanged: () => void }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { token } = useAuth()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -37,7 +37,7 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
     try {
       const result = await telephonyApi.updateLine(token, line.id, { enabled })
       if (result.status === "success") onChanged()
-      else toast.error(result.message || t("telephony.toast.failed"))
+      else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setToggling(false)
     }
@@ -52,7 +52,7 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
         toast.success(t("telephony.lines.toast.deleted"))
         setDeleteOpen(false)
         onChanged()
-      } else toast.error(result.message || t("telephony.toast.failed"))
+      } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setDeleting(false)
     }
