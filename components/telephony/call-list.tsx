@@ -40,8 +40,12 @@ export function CallList({ calls }: { calls: Call[] }) {
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-foreground">
+                  {c.status === "new" && c.state === "ended" && <span className="sr-only">{t("telephony.calls.status.new")}: </span>}
                   <Caller number={c.from} />
                 </p>
+                <div className="mt-1 sm:hidden">
+                  <OutcomeBadge call={c} />
+                </div>
                 <p className="truncate text-[13px] text-muted-foreground">
                   {c.line_name || c.to}
                   {c.summary ? ` · ${c.summary}` : ""}
