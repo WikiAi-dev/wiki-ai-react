@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, Cable, ChevronsUpDown, FileText, Home, Key, LogOut, Mail, Search, Settings, Users } from "lucide-react"
+import { BarChart3, Cable, ChevronsUpDown, FileText, History, Home, Key, LogOut, Mail, PhoneCall, Search, Settings, SlidersHorizontal, Users } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/src/i18n"
 import { Wordmark } from "@/components/wordmark"
@@ -55,6 +55,14 @@ export function AppSidebar() {
       ],
     },
     {
+      label: t("navigation.groups.telephony"),
+      items: [
+        { title: t("navigation.telephonyLive"), url: "/app/telephony", icon: PhoneCall },
+        { title: t("navigation.telephonyHistory"), url: "/app/telephony/history", icon: History },
+        { title: t("navigation.telephonySettings"), url: "/app/telephony/settings", icon: SlidersHorizontal },
+      ],
+    },
+    {
       label: t("navigation.groups.team"),
       items: [
         { title: t("navigation.users"), url: "/app/admin/users", icon: Users },
@@ -74,12 +82,20 @@ export function AppSidebar() {
         { title: t("navigation.connections"), url: "/app/connections", icon: Cable },
       ],
     },
+    {
+      label: t("navigation.groups.telephony"),
+      items: [
+        { title: t("navigation.telephonyLive"), url: "/app/telephony", icon: PhoneCall },
+        { title: t("navigation.telephonyHistory"), url: "/app/telephony/history", icon: History },
+      ],
+    },
   ]
 
-  // "/app" and "/app/admin" are prefixes of every other route, so they only
-  // match exactly; everything else also matches its nested routes.
+  // "/app", "/app/admin" and "/app/telephony" are prefixes of other menu
+  // routes, so they only match exactly; everything else also matches its
+  // nested routes.
   const isActive = (url: string) =>
-    url === "/app" || url === "/app/admin"
+    url === "/app" || url === "/app/admin" || url === "/app/telephony"
       ? pathname === url || (url === "/app" && pathname.startsWith("/app/dashboard"))
       : pathname === url || pathname.startsWith(url + "/")
 
