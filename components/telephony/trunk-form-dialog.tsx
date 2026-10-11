@@ -4,7 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { telephonyApi, type Trunk, type TrunkInput, type TrunkMode } from "@/lib/telephony"
+import { apiText, telephonyApi, type Trunk, type TrunkInput, type TrunkMode } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -64,7 +64,7 @@ export function TrunkFormDialog({
   trunk?: Trunk
   onSaved: (trunk: Trunk) => void
 }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { token } = useAuth()
   const editing = Boolean(trunk)
   const [form, setForm] = useState<FormState>(() => initialState(trunk))
@@ -104,8 +104,16 @@ export function TrunkFormDialog({
         onOpenChange(false)
         return
       }
-      setErrors(result.fields ?? {})
-      setError(result.fields ? "" : result.message || t("telephony.toast.failed"))
+      // Field errors go next to their inputs; one for a field this form
+      // doesn't show (or none at all) goes in the banner.
+      const fields: Record<string, string> = {}
+      for (const [k, v] of Object.entries(result.fields ?? {})) fields[k] = apiText(v, locale)
+      const shown = form.mode === "peer" ? ["name", "allowed_ips", "host"] : ["name", "host", "port", "transport", "username", "password"]
+      const hidden = Object.keys(fields).filter((k) => !shown.includes(k))
+      setErrors(fields)
+      setError(
+        hidden.length > 0 ? fields[hidden[0]] : Object.keys(fields).length > 0 ? "" : apiText(result.message, locale) || t("telephony.toast.failed"),
+      )
     } finally {
       setSaving(false)
     }
