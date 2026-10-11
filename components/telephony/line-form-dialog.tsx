@@ -4,7 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { telephonyApi, type Line, type LineInput, type Trunk } from "@/lib/telephony"
+import { apiText, telephonyApi, type Line, type LineInput, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,7 +37,7 @@ export function LineFormDialog({
   line?: Line
   onSaved: (line: Line) => void
 }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { token } = useAuth()
   const editing = Boolean(line)
   const [name, setName] = useState(line?.name ?? "")
@@ -64,8 +64,13 @@ export function LineFormDialog({
         onOpenChange(false)
         return
       }
-      setErrors(result.fields ?? {})
-      setError(result.fields ? "" : result.message || t("telephony.toast.failed"))
+      const fields: Record<string, string> = {}
+      for (const [k, v] of Object.entries(result.fields ?? {})) fields[k] = apiText(v, locale)
+      const hidden = Object.keys(fields).filter((k) => !["did", "name", "trunk_id", "max_concurrent"].includes(k))
+      setErrors(fields)
+      setError(
+        hidden.length > 0 ? fields[hidden[0]] : Object.keys(fields).length > 0 ? "" : apiText(result.message, locale) || t("telephony.toast.failed"),
+      )
     } finally {
       setSaving(false)
     }
