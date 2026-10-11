@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { telephonyApi, type TelephonySettings } from "@/lib/telephony"
+import { apiText, telephonyApi, type TelephonySettings } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 
 /** Organization-wide telephony options: the call limit across all lines, how long recordings are kept. */
 export function GeneralPanel({ settings, onSaved }: { settings: TelephonySettings; onSaved: (s: TelephonySettings) => void }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { token } = useAuth()
   const [maxCalls, setMaxCalls] = useState(String(settings.max_concurrent_calls))
   const [retention, setRetention] = useState(String(settings.recording_retention_days))
@@ -35,8 +35,12 @@ export function GeneralPanel({ settings, onSaved }: { settings: TelephonySetting
         onSaved(result.response)
         return
       }
-      setErrors(result.fields ?? {})
-      if (!result.fields) toast.error(result.message || t("telephony.toast.failed"))
+      const fields: Record<string, string> = {}
+      for (const [k, v] of Object.entries(result.fields ?? {})) fields[k] = apiText(v, locale)
+      setErrors(fields)
+      const hidden = Object.keys(fields).filter((k) => k !== "max_concurrent_calls" && k !== "recording_retention_days")
+      if (hidden.length > 0) toast.error(fields[hidden[0]])
+      else if (!result.fields) toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setSaving(false)
     }
