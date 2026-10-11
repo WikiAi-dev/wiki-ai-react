@@ -14,8 +14,12 @@ import { CallList } from "@/components/telephony/call-list"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Calls in progress change by the second; the board rereads often.
-const REFRESH_MS = 3_000
+// Calls in progress change by the second; the board rereads them often,
+// today's numbers less often, and nothing while the tab is hidden.
+const LIVE_MS = 3_000
+const STATS_MS = 15_000
+// Today's numbers read at most this many pages of 200 calls.
+const STATS_PAGES = 5
 
 const ANSWERED = new Set(["resolved_by_bot", "operator_handled", "message_taken", "transferred"])
 const UNANSWERED = new Set(["missed", "abandoned", "rejected", "failed"])
@@ -25,32 +29,64 @@ export function LiveView() {
   const { t, locale } = useTranslation()
   const { token, isAdmin } = useAuth()
   const [today, setToday] = useState<Call[] | null>(null)
-  const [recent, setRecent] = useState<Call[]>([])
+  const [todayCapped, setTodayCapped] = useState(false)
+  const [recent, setRecent] = useState<Call[] | null>(null)
   const [trunks, setTrunks] = useState<Trunk[] | null>(null)
 
-  const load = useCallback(async () => {
-    if (!token) return
+  // The latest calls, test calls included: an echo check shows up live.
+  const loadRecent = useCallback(async () => {
+    if (!token || document.hidden) return
+    const last = await telephonyApi.calls(token, { limit: 20, include_test: true })
+    if (last.status === "success" && last.response) setRecent(last.response.items)
+    else setRecent((prev) => prev ?? [])
+  }, [token])
+
+  // Today's calls for the numbers and for calls in progress older than the
+  // latest 20, following pages up to STATS_PAGES.
+  const loadToday = useCallback(async () => {
+    if (!token || document.hidden) return
     const start = new Date()
     start.setHours(0, 0, 0, 0)
-    const [day, last] = await Promise.all([
-      telephonyApi.calls(token, { since: start.toISOString(), limit: 200, include_test: true }),
-      telephonyApi.calls(token, { limit: 10, include_test: true }),
-    ])
-    if (day.status === "success" && day.response) setToday(day.response.items)
-    else setToday((prev) => prev ?? [])
-    if (last.status === "success" && last.response) setRecent(last.response.items)
+    const all: Call[] = []
+    let cursor: string | undefined
+    for (let page = 0; page < STATS_PAGES; page++) {
+      const r = await telephonyApi.calls(token, { since: start.toISOString(), limit: 200, include_test: true, cursor })
+      if (r.status !== "success" || !r.response) {
+        setToday((prev) => prev ?? [])
+        return
+      }
+      all.push(...r.response.items)
+      cursor = r.response.next_cursor
+      if (!cursor) break
+    }
+    setToday(all)
+    setTodayCapped(Boolean(cursor))
   }, [token])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    load()
-    const id = setInterval(load, REFRESH_MS)
-    return () => clearInterval(id)
-  }, [load])
+    loadRecent()
+    loadToday()
+    const live = setInterval(loadRecent, LIVE_MS)
+    const stats = setInterval(loadToday, STATS_MS)
+    const onVisible = () => {
+      if (!document.hidden) {
+        loadRecent()
+        loadToday()
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      clearInterval(live)
+      clearInterval(stats)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
+  }, [loadRecent, loadToday])
 
   useEffect(() => {
     if (!token || !isAdmin) return
-    telephonyApi.trunks(token).then((r) => setTrunks(r.status === "success" && r.response ? r.response.items : []))
+    // A failed read shows no setup prompt: only a real "no trunks" does.
+    telephonyApi.trunks(token).then((r) => r.status === "success" && r.response && setTrunks(r.response.items))
   }, [token, isAdmin])
 
   const stats = useMemo(() => {
@@ -62,8 +98,15 @@ export function LiveView() {
     return { total: calls.length, answered: answered.length, unanswered: unanswered.length, avg: answered.length ? talk / answered.length : 0 }
   }, [today])
 
-  const live = useMemo(() => recent.filter((c) => c.state !== "ended"), [recent])
-  const number = (n: number) => n.toLocaleString(locale === "ru" ? "ru-RU" : "en-GB")
+  // Calls in progress from both reads, newest first: a long call stays on
+  // the board after newer short ones push it out of the latest 20.
+  const live = useMemo(() => {
+    const byId = new Map<string, Call>()
+    for (const c of [...(today ?? []), ...(recent ?? [])]) byId.set(c.id, c)
+    return [...byId.values()].filter((c) => c.state !== "ended").sort((a, b) => b.started_at.localeCompare(a.started_at))
+  }, [today, recent])
+  const ended = useMemo(() => (recent ?? []).filter((c) => c.state === "ended").slice(0, 10), [recent])
+  const number = (n: number) => n.toLocaleString(locale === "ru" ? "ru-RU" : "en-GB") + (todayCapped ? "+" : "")
   const noTrunks = isAdmin && trunks !== null && trunks.length === 0
 
   return (
@@ -132,12 +175,12 @@ export function LiveView() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold tracking-tight text-foreground">{t("telephony.live.recent")}</h2>
-          {today === null ? (
+          {recent === null ? (
             <Skeleton className="h-40 rounded-2xl" />
-          ) : recent.filter((c) => c.state === "ended").length === 0 ? (
+          ) : ended.length === 0 ? (
             <EmptyState icon={PhoneCall} title={t("telephony.history.empty.title")} description={t("telephony.history.empty.description")} className="py-12" />
           ) : (
-            <CallList calls={recent.filter((c) => c.state === "ended")} />
+            <CallList calls={ended} />
           )}
         </section>
       </PageBody>
