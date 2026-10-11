@@ -235,7 +235,52 @@ export function callSeconds(c: Pick<Call, "started_at" | "answered_at" | "ended_
   return Math.max(0, (new Date(c.ended_at).getTime() - new Date(from).getTime()) / 1000)
 }
 
-/** Whether a trunk's last report is newer than a moment (a test's answer). */
-export function reportedSince(t: Trunk, since: number): boolean {
-  return t.status_at !== null && new Date(t.status_at).getTime() >= since
+/**
+ * Whether a trunk has reported since a previous report (status_at as it
+ * was before a test). Both times are voice-engine's, so the browser's
+ * clock doesn't matter.
+ */
+export function reportedAfter(t: Trunk, previous: string | null): boolean {
+  if (t.status_at === null) return false
+  if (previous === null) return true
+  return new Date(t.status_at).getTime() > new Date(previous).getTime()
+}
+
+// telephony-api answers in English; these are its messages people see in
+// forms and toasts, in Russian.
+const RU_API_TEXT: Record<string, string> = {
+  "This number is already used by a line": "Этот номер уже занят другой линией",
+  "Enter the whole number, e.g. +375 17 123-45-67 or 8 017 123-45-67": "Введите номер целиком, например +375 17 123-45-67 или 8 017 123-45-67",
+  "Number must be in international format, e.g. +375171234567": "Номер в международном формате, например +375171234567",
+  "Enter a whole phone number": "Введите номер целиком",
+  "Choose a trunk": "Выберите транк",
+  "Trunk not found": "Транк не найден",
+  "Allow 1 to 100 calls at once": "От 1 до 100 звонков одновременно",
+  "Ring operators for 5 to 120 seconds": "От 5 до 120 секунд",
+  "Unknown mode": "Неизвестный режим",
+  "Mode must be peer or register": "Выберите способ подключения",
+  "List the addresses your PBX calls from": "Укажите адреса, с которых звонит ваша АТС",
+  "Use IP addresses or CIDR ranges, e.g. 10.0.0.5 or 10.0.0.0/24": "IP-адреса или сети, например 10.0.0.5 или 10.0.0.0/24",
+  "A range is too wide: list your PBX's addresses (at most a /16 for IPv4, /48 for IPv6)":
+    "Слишком широкая сеть: укажите адреса вашей АТС (не шире /16 для IPv4 и /48 для IPv6)",
+  "Provider address is required": "Укажите сервер провайдера",
+  "Use a host name like sip.example.com or an IP address, without a port": "Имя сервера, например sip.example.by, или IP-адрес, без порта",
+  "Port must be 1 to 65535": "Порт от 1 до 65535",
+  "Transport must be udp or tcp": "Протокол UDP или TCP",
+  "Username is required": "Укажите логин",
+  "Use letters, digits and - _ . ! ~ * ' ( ) & = + $ , ; ? / % only, at most 128":
+    "Только латинские буквы, цифры и знаки - _ . ! ~ * ' ( ) & = + $ , ; ? / %, до 128 символов",
+  "Name is required": "Укажите название",
+  "Name is too long": "Слишком длинное название",
+  "Keep recordings 1 to 3650 days": "От 1 до 3650 дней",
+  "Enable the trunk to test it": "Включите транк, чтобы проверить его",
+  "Can't reach the call engine right now; try again": "Голосовой сервер сейчас недоступен, попробуйте ещё раз",
+  "The change clashes with existing data": "Изменение конфликтует с текущими данными",
+  "Something went wrong": "Что-то пошло не так",
+}
+
+/** An API message in the app's language, when it's one we know. */
+export function apiText(message: string | undefined, locale: string): string {
+  if (!message) return ""
+  return (locale === "ru" && RU_API_TEXT[message]) || message
 }
