@@ -1609,7 +1609,7 @@
         "answered": "Answered",
         "answeredHint": "By the assistant or staff",
         "unanswered": "Missed",
-        "unansweredHint": "Missed, busy, rejected or hung up",
+        "unansweredHint": "Missed, rejected, hung up or failed",
         "avg": "Average call",
         "avgHint": "Answered calls"
       }
@@ -1710,7 +1710,9 @@
         "trunks": "Trunks",
         "lines": "Numbers",
         "general": "General"
-      }
+      },
+      "loadFailed": "Couldn't load the settings. Check the connection and try again.",
+      "retry": "Try again"
     },
     "trunks": {
       "add": "Add trunk",
