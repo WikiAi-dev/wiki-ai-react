@@ -19,12 +19,17 @@
     "groups": {
       "overview": "Overview",
       "knowledge": "Knowledge",
-      "team": "Team"
+      "team": "Team",
+      "telephony": "Telephony"
     },
     "language": "Switch language",
     "toggleSidebar": "Show or hide the menu",
     "account": "Account",
-    "connections": "Connections"
+    "connections": "Connections",
+    "telephony": "Telephony",
+    "telephonyLive": "Now",
+    "telephonyHistory": "Call history",
+    "telephonySettings": "Telephony settings"
   },
   "actions": {
     "save": "Save",
@@ -1556,6 +1561,270 @@
         "updated": "Updated in {{platform}}",
         "deleted": "Removed in {{platform}}"
       }
+    }
+  },
+  "telephony": {
+    "outcome": {
+      "live": "In progress",
+      "resolved_by_bot": "Answered by assistant",
+      "message_taken": "Message taken",
+      "transferred": "Transferred",
+      "operator_handled": "Answered by staff",
+      "missed": "Missed",
+      "abandoned": "Caller hung up",
+      "rejected": "Rejected",
+      "spam": "Spam",
+      "failed": "Failed"
+    },
+    "toast": {
+      "saved": "Saved",
+      "failed": "Something went wrong. Try again."
+    },
+    "form": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "calls": {
+      "hiddenNumber": "Hidden number",
+      "status": {
+        "new": "New",
+        "processed": "Handled"
+      }
+    },
+    "live": {
+      "title": "Calls now",
+      "subtitle": "Calls in progress and today's numbers. The page updates by itself.",
+      "allCalls": "All calls",
+      "now": "In progress: {{count}}",
+      "noneNow": "No calls right now.",
+      "recent": "Latest calls",
+      "setup": {
+        "title": "Connect your PBX or SIP provider",
+        "description": "Add a trunk and a number, and calls to that number come to WikiAI.",
+        "action": "Set up telephony"
+      },
+      "stats": {
+        "today": "Calls today",
+        "todayHint": "Since midnight",
+        "answered": "Answered",
+        "answeredHint": "By the assistant or staff",
+        "unanswered": "Missed",
+        "unansweredHint": "Missed, busy, rejected or hung up",
+        "avg": "Average call",
+        "avgHint": "Answered calls"
+      }
+    },
+    "history": {
+      "title": "Call history",
+      "subtitle": "Every call to your numbers: who called, how it ended, what was said.",
+      "searchNumber": "Caller's number",
+      "period": "Period",
+      "line": "Line",
+      "outcome": "Outcome",
+      "status": "Status",
+      "periods": {
+        "all": "All time",
+        "today": "Today",
+        "week": "Last 7 days",
+        "month": "Last 30 days"
+      },
+      "allLines": "All lines",
+      "allOutcomes": "All outcomes",
+      "allStatuses": "All statuses",
+      "reset": "Reset",
+      "more": "Show more",
+      "emptyFiltered": "No calls match these filters.",
+      "empty": {
+        "title": "No calls yet",
+        "description": "Calls appear here as soon as someone dials one of your numbers."
+      }
+    },
+    "call": {
+      "title": "Call",
+      "notFound": "This call doesn't exist or was deleted.",
+      "test": "Test call",
+      "markProcessed": "Mark as handled",
+      "reopen": "Mark as new",
+      "delete": "Delete call",
+      "deleteTitle": "Delete this call?",
+      "deleteDescription": "The recording, transcript and the call itself are deleted for good. The deletion is logged.",
+      "line": "Line",
+      "dialled": "Number dialled",
+      "duration": "Duration",
+      "handledBy": "Handled by",
+      "handled": {
+        "none": "Nobody",
+        "bot": "Assistant",
+        "operator": "Staff",
+        "both": "Assistant and staff"
+      },
+      "summary": "Summary",
+      "noSummary": "A summary appears here once the assistant answers calls.",
+      "recording": "Recording",
+      "play": "Play recording",
+      "noRecording": "No recording for this call.",
+      "recordingFailed": "Couldn't load the recording.",
+      "transcript": "Transcript",
+      "noTranscript": "No transcript for this call.",
+      "speaker": {
+        "caller": "Caller",
+        "bot": "Assistant",
+        "operator": "Staff"
+      },
+      "timeline": "What happened",
+      "routing": "Routing",
+      "notes": "Notes",
+      "states": {
+        "routing": "Routing",
+        "ringing_operators": "Ringing staff",
+        "bot": "The assistant answered",
+        "queued": "Waiting in the queue",
+        "operator": "Staff answered",
+        "hold": "On hold",
+        "wrapup": "Staff wrap-up",
+        "ended": "Call ended"
+      },
+      "events": {
+        "started": "Call came in",
+        "ended": "Call ended: {{outcome}} · hung up: {{by}}",
+        "dtmf": "Pressed {{digit}}",
+        "recording": "Recording saved"
+      },
+      "hungUpBy": {
+        "caller": "caller",
+        "bot": "assistant",
+        "operator": "staff",
+        "system": "system"
+      },
+      "toast": {
+        "processed": "Marked as handled",
+        "reopened": "Marked as new",
+        "deleted": "Call deleted"
+      }
+    },
+    "settings": {
+      "title": "Telephony settings",
+      "subtitle": "Where calls come from, your numbers and the call limit.",
+      "adminsOnly": "Only administrators can change telephony settings.",
+      "tabs": {
+        "trunks": "Trunks",
+        "lines": "Numbers",
+        "general": "General"
+      }
+    },
+    "trunks": {
+      "add": "Add trunk",
+      "mode": {
+        "peer": "PBX by IP",
+        "register": "SIP provider account"
+      },
+      "status": {
+        "registered": "Registered",
+        "reachable": "Reachable",
+        "error": "No connection",
+        "unknown": "Not checked yet",
+        "disabled": "Off"
+      },
+      "card": {
+        "numbers": "Numbers",
+        "noNumbers": "None yet",
+        "checked": "Last checked",
+        "never": "Never",
+        "test": "Test",
+        "edit": "Edit",
+        "more": "More actions",
+        "enable": "Turn on",
+        "disable": "Turn off",
+        "delete": "Delete"
+      },
+      "test": {
+        "ok": "Connection works",
+        "failed": "No connection",
+        "noAnswer": "No answer from the call engine yet. Check again in a minute."
+      },
+      "toast": {
+        "created": "Trunk added",
+        "enabled": "Trunk turned on",
+        "disabled": "Trunk turned off",
+        "deleted": "Trunk deleted"
+      },
+      "delete": {
+        "title": "Delete “{{name}}”?",
+        "description": "Calls from this PBX or provider will no longer be accepted.",
+        "withLines": "This trunk has numbers ({{count}}). Delete them or move them to another trunk first.",
+        "confirm": "Delete"
+      },
+      "empty": {
+        "title": "No trunks yet",
+        "description": "A trunk is your PBX or SIP provider. Add one so calls can reach WikiAI."
+      },
+      "form": {
+        "addTitle": "Add trunk",
+        "editTitle": "Edit trunk",
+        "description": "Calls come from your PBX or SIP provider. WikiAI never makes outgoing calls through it.",
+        "name": "Name",
+        "namePlaceholder": "Office PBX",
+        "mode": "How it connects",
+        "peerHelp": "Your PBX sends calls to WikiAI from its own addresses. On the PBX, set up a SIP trunk to this server.",
+        "registerHelp": "WikiAI signs in to your SIP provider with your account and receives its calls.",
+        "allowedIPs": "PBX addresses",
+        "allowedIPsHelp": "One per line. A network like 10.0.0.0/24 works too. Calls from other addresses are refused.",
+        "peerHost": "PBX host for checks (optional)",
+        "peerHostHelp": "WikiAI sends it a check every minute to show whether the PBX is reachable.",
+        "host": "Provider server",
+        "port": "Port",
+        "transport": "Transport",
+        "username": "Login",
+        "password": "Password",
+        "passwordSaved": "Saved. Leave empty to keep it",
+        "create": "Add trunk"
+      }
+    },
+    "lines": {
+      "add": "Add number",
+      "noTrunk": "no trunk",
+      "callsAtOnce": "up to {{count}} at once",
+      "enable": "Turn on",
+      "disable": "Turn off",
+      "more": "More actions",
+      "edit": "Edit",
+      "toast": {
+        "created": "Number added",
+        "deleted": "Number deleted"
+      },
+      "delete": {
+        "action": "Delete",
+        "title": "Delete {{number}}?",
+        "description": "Calls to this number will get “not found”. Past calls stay in the history.",
+        "confirm": "Delete"
+      },
+      "empty": {
+        "title": "No numbers yet",
+        "description": "Add the number your clients call, and choose the trunk it comes on.",
+        "needTrunk": "Add a trunk first: the number arrives through it."
+      },
+      "form": {
+        "addTitle": "Add number",
+        "editTitle": "Edit number",
+        "description": "The number your clients dial, and the trunk its calls come on.",
+        "did": "Phone number",
+        "didHelp": "Any format: +375 17 222-33-44 or 8 017 222-33-44.",
+        "name": "Name",
+        "namePlaceholder": "Reception",
+        "trunk": "Trunk",
+        "trunkPlaceholder": "Choose a trunk",
+        "maxConcurrent": "Calls at once",
+        "maxConcurrentHelp": "More calls at the same time hear “busy” and are saved as missed.",
+        "record": "Record calls",
+        "recordHelp": "Recordings are stored encrypted and deleted after the retention period.",
+        "create": "Add number"
+      }
+    },
+    "general": {
+      "maxCalls": "Calls at once across all numbers",
+      "maxCallsHelp": "From 1 to 100. Beyond that, callers hear “busy”.",
+      "retention": "Keep recordings, days",
+      "retentionHelp": "Older recordings are deleted automatically. Calls stay in the history."
     }
   }
 }
