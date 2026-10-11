@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Loader2, PhoneCall, Search, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { telephonyApi, type Call, type CallOutcome, type CallQuery, type CallStatus, type Line } from "@/lib/telephony"
+import { apiText, telephonyApi, type Call, type CallOutcome, type CallQuery, type CallStatus, type Line } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
 import { PageBody, PageHeader } from "@/components/page-header"
@@ -15,7 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const PAGE = 50
-const OUTCOMES: Exclude<CallOutcome, "">[] = ["resolved_by_bot", "operator_handled", "message_taken", "missed", "rejected", "abandoned", "spam", "failed"]
+const OUTCOMES: Exclude<CallOutcome, "">[] = [
+  "resolved_by_bot",
+  "operator_handled",
+  "message_taken",
+  "transferred",
+  "missed",
+  "rejected",
+  "abandoned",
+  "spam",
+  "failed",
+]
 const PERIODS = ["all", "today", "week", "month"] as const
 type Period = (typeof PERIODS)[number]
 
@@ -30,9 +40,14 @@ function since(period: Period): string | undefined {
 
 /** Past calls with filters: period, line, outcome, status, the caller's number. */
 export function HistoryView() {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const { token, isAdmin } = useAuth()
   const [calls, setCalls] = useState<Call[] | null>(null)
+  // Lines seen in any loaded page (members don't list lines); it only grows,
+  // so picking a line doesn't take the others out of the filter.
+  const [seenLines, setSeenLines] = useState<Map<string, string>>(new Map())
+  // Answers to an older query (filters changed meanwhile) are dropped.
+  const request = useRef(0)
   const [next, setNext] = useState<string | undefined>()
   const [loadingMore, setLoadingMore] = useState(false)
   const [lines, setLines] = useState<Line[]>([])
@@ -56,18 +71,35 @@ export function HistoryView() {
     [period, lineId, outcome, status, numberFilter],
   )
 
+  const remember = useCallback((items: Call[]) => {
+    setSeenLines((prev) => {
+      let next = prev
+      for (const c of items) {
+        if (c.line_id && !next.has(c.line_id)) {
+          if (next === prev) next = new Map(prev)
+          next.set(c.line_id, c.line_name)
+        }
+      }
+      return next
+    })
+  }, [])
+
   const load = useCallback(async () => {
     if (!token) return
+    const id = ++request.current
+    setNext(undefined)
     const result = await telephonyApi.calls(token, query)
+    if (id !== request.current) return
     if (result.status === "success" && result.response) {
       setCalls(result.response.items)
       setNext(result.response.next_cursor)
+      remember(result.response.items)
       setError("")
     } else {
       setCalls((prev) => prev ?? [])
-      setError(result.fields?.from || result.message || t("telephony.toast.failed"))
+      setError(apiText(result.fields?.from || result.message, locale) || t("telephony.toast.failed"))
     }
-  }, [token, query, t])
+  }, [token, query, t, locale, remember])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -81,12 +113,16 @@ export function HistoryView() {
 
   const more = async () => {
     if (!token || !next) return
+    const id = request.current
     setLoadingMore(true)
     try {
       const result = await telephonyApi.calls(token, { ...query, cursor: next })
+      if (id !== request.current) return
       if (result.status === "success" && result.response) {
-        setCalls((prev) => [...(prev ?? []), ...result.response!.items])
+        const items = result.response.items
+        setCalls((prev) => [...(prev ?? []), ...items])
         setNext(result.response.next_cursor)
+        remember(items)
       }
     } finally {
       setLoadingMore(false)
@@ -94,12 +130,10 @@ export function HistoryView() {
   }
 
   // Members don't list lines; the calls name theirs.
-  const lineOptions = useMemo(() => {
-    if (lines.length > 0) return lines.map((l) => ({ id: l.id, name: l.name }))
-    const seen = new Map<string, string>()
-    for (const c of calls ?? []) if (c.line_id && !seen.has(c.line_id)) seen.set(c.line_id, c.line_name)
-    return [...seen].map(([id, name]) => ({ id, name }))
-  }, [lines, calls])
+  const lineOptions = useMemo(
+    () => (lines.length > 0 ? lines.map((l) => ({ id: l.id, name: l.name })) : [...seenLines].map(([id, name]) => ({ id, name }))),
+    [lines, seenLines],
+  )
 
   const filtered = period !== "all" || lineId !== "all" || outcome !== "all" || status !== "all" || numberFilter !== ""
   const reset = () => {
@@ -148,7 +182,7 @@ export function HistoryView() {
               ))}
             </SelectContent>
           </Select>
-          {lineOptions.length > 1 && (
+          {(lineOptions.length > 1 || lineId !== "all") && (
             <Select value={lineId} onValueChange={setLineId}>
               <SelectTrigger className="w-44" aria-label={t("telephony.history.line")}>
                 <SelectValue />
