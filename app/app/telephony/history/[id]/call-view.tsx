@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { getApiUrl } from "@/lib/config"
 import { fullTime } from "@/lib/connections"
-import { callSeconds, formatDuration, formatPhone, telephonyApi, type CallDetail, type CallEvent } from "@/lib/telephony"
+import { apiText, callSeconds, formatDuration, formatPhone, telephonyApi, type CallDetail, type CallEvent } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
 import { PageBody } from "@/components/page-header"
@@ -89,14 +89,27 @@ export function CallView() {
   const load = useCallback(async () => {
     if (!token || !params.id) return
     const result = await telephonyApi.call(token, params.id)
-    if (result.status === "success" && result.response) setCall(result.response)
-    else setMissing(true)
+    if (result.status === "success" && result.response) {
+      setCall(result.response)
+      setMissing(false)
+    } else if (result.httpStatus === 404) {
+      // Only a 404 means there's no such call; a network blip or a 5xx
+      // leaves the page as it is and the next poll tries again.
+      setMissing(true)
+    }
   }, [token, params.id])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
+
+  // A first load that failed (not a 404) is retried.
+  useEffect(() => {
+    if (call || missing) return
+    const id = setInterval(load, 5000)
+    return () => clearInterval(id)
+  }, [call, missing, load])
 
   // A call in progress updates as its events arrive.
   useEffect(() => {
@@ -117,7 +130,7 @@ export function CallView() {
       if (result.status === "success" && result.response) {
         setCall(result.response)
         toast.success(status === "processed" ? t("telephony.call.toast.processed") : t("telephony.call.toast.reopened"))
-      } else toast.error(result.message || t("telephony.toast.failed"))
+      } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setSaving(false)
     }
@@ -150,7 +163,7 @@ export function CallView() {
       if (result.status === "success") {
         toast.success(t("telephony.call.toast.deleted"))
         router.push("/app/telephony/history")
-      } else toast.error(result.message || t("telephony.toast.failed"))
+      } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
     } finally {
       setDeleting(false)
     }
