@@ -106,7 +106,12 @@ function AssistantRow({ scenario, scopes, lines, onChanged }: { scenario: Scenar
         </p>
         <p className="truncate text-[13px] text-muted-foreground">
           {scenario.draft.company || t("telephony.assistants.noCompany")} ·{" "}
-          {t("telephony.assistants.filesCount", { count: scope?.items.length ?? 0 })} ·{" "}
+          {t("telephony.assistants.filesCount", { count: scope?.items.filter((i) => i.kind === "document").length ?? 0 })} ·{" "}
+          {!!scope?.items.some((i) => i.kind === "connection") && (
+            <>
+              {t("telephony.assistants.sourcesCount", { count: scope.items.filter((i) => i.kind === "connection").length })} ·{" "}
+            </>
+          )}
           {numbers.length ? numbers.map((l) => formatPhone(l.did)).join(", ") : t("telephony.assistants.noNumbers")}
         </p>
       </Link>
