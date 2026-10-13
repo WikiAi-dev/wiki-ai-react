@@ -1700,6 +1700,19 @@
         "processed": "Marked as handled",
         "reopened": "Marked as new",
         "deleted": "Call deleted"
+      },
+      "crm": {
+        "title": "CRM",
+        "contact": "Contact",
+        "responsible": "responsible: {{name}}",
+        "many": "Several CRM contacts have this number",
+        "logged": "Logged to",
+        "created": "created by the call",
+        "entity": {
+          "lead": "Lead",
+          "deal": "Deal",
+          "contact": "Contact"
+        }
       }
     },
     "settings": {
@@ -1917,6 +1930,22 @@
         "description": "The checked numbers answer with this assistant once saved.",
         "none": "No numbers yet: add them on the Numbers tab.",
         "other": "another assistant now"
+      }
+    },
+    "operator": {
+      "answer": "Answer",
+      "answering": "Connecting to the call…",
+      "needed": "Operator needed",
+      "onCall": "On the line: {{who}}",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "hangup": "Hang up",
+      "ended": "The call has ended",
+      "errors": {
+        "microphone": "No microphone access: allow it in the browser",
+        "taken": "Someone else already answered this call",
+        "gone": "The call has already ended",
+        "failed": "Couldn't connect to the call. Answering works from the office network or over VPN"
       }
     }
   }

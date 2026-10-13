@@ -169,7 +169,7 @@ export function LiveView() {
           {live.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">{t("telephony.live.noneNow")}</p>
           ) : (
-            <CallList calls={live} />
+            <CallList calls={live} answerable />
           )}
         </section>
 
