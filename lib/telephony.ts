@@ -64,9 +64,78 @@ export interface LineInput {
   did?: string
   name?: string
   mode?: LineMode
+  /** The assistant: its scenario and the knowledge scope saved with it; "" for none. */
+  scenario_id?: string
+  scope_id?: string
   record?: boolean
   max_concurrent?: number
   enabled?: boolean
+}
+
+/** A step of the conversation map; x and y are where the editor draws it. */
+export interface ScenarioNode {
+  id: string
+  title: string
+  description: string
+  x: number
+  y: number
+}
+
+/** A transition between steps; label is when ("клиент спросил о цене"), "" for "then". */
+export interface ScenarioEdge {
+  id: string
+  from: string
+  to: string
+  label: string
+}
+
+/**
+ * What an admin writes for the assistant. scope_id links the knowledge
+ * scope saved with the assistant: the editor keeps the two together.
+ */
+export interface ScenarioDraft {
+  company: string
+  assistant_name: string
+  greeting: string
+  instructions: string
+  nodes: ScenarioNode[]
+  edges: ScenarioEdge[]
+  scope_id?: string
+}
+
+export interface ScenarioVersion {
+  id: string
+  version: number
+  prompt: string
+  greeting: string
+  created_at: string
+}
+
+export interface Scenario {
+  id: string
+  name: string
+  template_key: string
+  draft: Partial<ScenarioDraft>
+  published_version_id: string
+  published: ScenarioVersion | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ScopeItem {
+  kind: "document" | "connection"
+  document_id?: string
+  connection_id?: string
+  kinds?: string[]
+}
+
+/** The files the assistant may search. */
+export interface KnowledgeScope {
+  id: string
+  name: string
+  items: ScopeItem[]
+  created_at: string
+  updated_at: string
 }
 
 export interface TelephonySettings {
@@ -189,6 +258,25 @@ export const telephonyApi = {
   updateLine: (token: string, id: string, input: LineInput) =>
     apiRequest<Line>({ url: `${base}/lines/${id}`, method: "PATCH", token, data: json(input) }),
   deleteLine: (token: string, id: string) => apiRequest({ url: `${base}/lines/${id}`, method: "DELETE", token }),
+
+  scenarios: (token: string) => apiRequest<List<Scenario>>({ url: `${base}/scenarios`, token }),
+  scenario: (token: string, id: string) => apiRequest<Scenario>({ url: `${base}/scenarios/${id}`, token }),
+  createScenario: (token: string, input: { name: string; draft: Partial<ScenarioDraft> }) =>
+    apiRequest<Scenario>({ url: `${base}/scenarios`, method: "POST", token, data: json(input) }),
+  updateScenario: (token: string, id: string, input: { name?: string; draft?: Partial<ScenarioDraft> }) =>
+    apiRequest<Scenario>({ url: `${base}/scenarios/${id}`, method: "PATCH", token, data: json(input) }),
+  deleteScenario: (token: string, id: string) => apiRequest({ url: `${base}/scenarios/${id}`, method: "DELETE", token }),
+  publishScenario: (token: string, id: string) => apiRequest<Scenario>({ url: `${base}/scenarios/${id}/publish`, method: "POST", token }),
+  previewScenario: (token: string, draft: Partial<ScenarioDraft>) =>
+    apiRequest<{ prompt: string; greeting: string }>({ url: `${base}/scenarios/preview`, method: "POST", token, data: json({ draft }) }),
+
+  scopes: (token: string) => apiRequest<List<KnowledgeScope>>({ url: `${base}/scopes`, token }),
+  scope: (token: string, id: string) => apiRequest<KnowledgeScope>({ url: `${base}/scopes/${id}`, token }),
+  createScope: (token: string, input: { name: string; items: ScopeItem[] }) =>
+    apiRequest<KnowledgeScope>({ url: `${base}/scopes`, method: "POST", token, data: json(input) }),
+  saveScope: (token: string, id: string, input: { name: string; items: ScopeItem[] }) =>
+    apiRequest<KnowledgeScope>({ url: `${base}/scopes/${id}`, method: "PUT", token, data: json(input) }),
+  deleteScope: (token: string, id: string) => apiRequest({ url: `${base}/scopes/${id}`, method: "DELETE", token }),
 
   settings: (token: string) => apiRequest<TelephonySettings>({ url: `${base}/settings`, token }),
   updateSettings: (token: string, input: Partial<TelephonySettings>) =>

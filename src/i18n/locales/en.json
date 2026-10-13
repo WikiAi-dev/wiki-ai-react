@@ -1709,7 +1709,8 @@
       "tabs": {
         "trunks": "Trunks",
         "lines": "Numbers",
-        "general": "General"
+        "general": "General",
+        "assistants": "Assistants"
       },
       "loadFailed": "Couldn't load the settings. Check the connection and try again.",
       "retry": "Try again"
@@ -1819,14 +1820,104 @@
         "maxConcurrentHelp": "More calls at the same time hear “busy” and are saved as missed.",
         "record": "Record calls",
         "recordHelp": "Recordings are stored encrypted and deleted after the retention period.",
-        "create": "Add number"
-      }
+        "create": "Add number",
+        "assistant": "Assistant",
+        "assistantHelp": "Who answers this number's calls. The default one answers from the whole knowledge base with general instructions."
+      },
+      "defaultAssistant": "default assistant"
     },
     "general": {
       "maxCalls": "Calls at once across all numbers",
       "maxCallsHelp": "From 1 to 100. Beyond that, callers hear “busy”.",
       "retention": "Keep recordings, days",
       "retentionHelp": "Older recordings are deleted automatically. Calls stay in the history."
+    },
+    "assistants": {
+      "title": "Assistant",
+      "subtitle": "Who the assistant speaks for, how it leads the conversation and which files it answers from. Saving switches calls to the new version at once.",
+      "add": "Create an assistant",
+      "defaultName": "Assistant",
+      "version": "Version {{version}}",
+      "draft": "Not saved",
+      "unsaved": "Unsaved changes",
+      "noCompany": "no company set",
+      "filesCount": "files: {{count}}",
+      "noNumbers": "on no numbers",
+      "missing": "There's no such assistant",
+      "preview": "What the model sees",
+      "previewTitle": "The assistant's instructions",
+      "previewDescription": "This is how the current settings go into the system prompt. The assistant adds its safety rules and reply format after this text.",
+      "previewEmpty": "Empty so far: fill in the company, the instructions or the scenario.",
+      "save": "Save and switch on",
+      "toast": {
+        "saved": "Saved: calls use version {{version}}",
+        "deleted": "Assistant deleted"
+      },
+      "delete": {
+        "title": "Delete “{{name}}”?",
+        "description": "Its numbers will answer with the default instructions from the whole knowledge base."
+      },
+      "empty": {
+        "title": "No assistants yet",
+        "description": "Create an assistant: name the company, write instructions, draw the conversation and pick the files it answers from."
+      },
+      "company": {
+        "title": "Company",
+        "description": "The assistant speaks for the company: “we”, “our”.",
+        "name": "Assistant name",
+        "company": "Company",
+        "companyPlaceholder": "Romashka LLC",
+        "assistantName": "Introduces itself as",
+        "assistantNameHelp": "The name the assistant gives itself. May stay empty.",
+        "greeting": "Greeting",
+        "greetingHelp": "When empty, the assistant says: “Здравствуйте! Компания …, меня зовут … Чем могу помочь?”",
+        "greetingPlaceholder": "Здравствуйте! Компания «Ромашка». Чем могу помочь?"
+      },
+      "instructions": {
+        "title": "Instructions",
+        "description": "The system prompt in your own words: what the company does, what to tell a client, what not to talk about, which tone to use. The assistant speaks Russian, so write in Russian.",
+        "label": "Instructions for the assistant",
+        "placeholder": "Мы доставляем цветы по Минску с 9 до 21 без выходных. Скидки обсуждает менеджер: предложи оставить номер."
+      },
+      "map": {
+        "sectionTitle": "Conversation scenario",
+        "sectionDescription": "The steps the assistant leads the conversation through, and the transitions between them with their conditions. Optional: without it the assistant follows the instructions.",
+        "untitled": "Untitled",
+        "newStep": "Новый шаг",
+        "addStep": "Add a step",
+        "step": "Step",
+        "title": "Title",
+        "description": "What to do at this step",
+        "descriptionPlaceholder": "Узнай букет, адрес и время доставки.",
+        "removeStep": "Remove the step",
+        "transition": "Transition",
+        "condition": "Condition",
+        "conditionPlaceholder": "клиент спрашивает о цене",
+        "conditionHelp": "When to move on. Empty means “then”.",
+        "removeTransition": "Remove the transition",
+        "howTitle": "How to use it",
+        "howSelect": "Click a step or an arrow to edit its text. Drag steps to move them.",
+        "howConnect": "To add a transition, drag from a step's bottom dot to another step's top dot.",
+        "howOrder": "The conversation starts at the step no arrow leads to. Backspace removes what's selected."
+      },
+      "files": {
+        "title": "Files to answer from",
+        "description": "The assistant searches only the checked files. While none is checked, it answers from the instructions alone.",
+        "none": "The knowledge base has no files yet. Upload them under Files.",
+        "search": "Find a file",
+        "chooseShown": "Check all",
+        "clearShown": "Uncheck all",
+        "count": "{{chosen}} of {{total}} checked",
+        "gone": "File removed from the knowledge base",
+        "chunks": "Passages: {{count}}",
+        "nothingFound": "Nothing found"
+      },
+      "numbers": {
+        "title": "Numbers",
+        "description": "The checked numbers answer with this assistant once saved.",
+        "none": "No numbers yet: add them on the Numbers tab.",
+        "other": "another assistant now"
+      }
     }
   }
 }

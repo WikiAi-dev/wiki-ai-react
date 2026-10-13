@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { telephonyApi, type Line, type TelephonySettings, type Trunk } from "@/lib/telephony"
+import { telephonyApi, type KnowledgeScope, type Line, type Scenario, type TelephonySettings, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
 import { PageBody, PageHeader } from "@/components/page-header"
@@ -11,13 +11,14 @@ import { EmptyState } from "@/components/empty-state"
 import { TrunksPanel } from "@/components/telephony/trunks-panel"
 import { LinesPanel } from "@/components/telephony/lines-panel"
 import { GeneralPanel } from "@/components/telephony/general-panel"
+import { AssistantsPanel } from "@/components/telephony/assistants-panel"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { ShieldAlert } from "lucide-react"
 
-type Tab = "trunks" | "lines" | "general"
-const TABS: Tab[] = ["trunks", "lines", "general"]
+type Tab = "trunks" | "lines" | "assistants" | "general"
+const TABS: Tab[] = ["trunks", "lines", "assistants", "general"]
 
 // Trunk statuses change on their own (registration, keep-alive): the page
 // rereads them now and then.
@@ -33,6 +34,8 @@ export function TelephonySettingsView() {
   const [trunks, setTrunks] = useState<Trunk[] | null>(null)
   const [lines, setLines] = useState<Line[] | null>(null)
   const [settings, setSettings] = useState<TelephonySettings | null>(null)
+  const [scenarios, setScenarios] = useState<Scenario[]>([])
+  const [scopes, setScopes] = useState<KnowledgeScope[]>([])
   const [failed, setFailed] = useState(false)
 
   const loadTrunks = useCallback(async (): Promise<Trunk[]> => {
@@ -54,13 +57,21 @@ export function TelephonySettingsView() {
     else setFailed(true)
   }, [token])
 
+  // Assistants are a scenario and the files saved with it (a scope).
+  const loadAssistants = useCallback(async () => {
+    if (!token) return
+    const [sc, sp] = await Promise.all([telephonyApi.scenarios(token), telephonyApi.scopes(token)])
+    if (sc.status === "success" && sc.response) setScenarios(sc.response.items)
+    if (sp.status === "success" && sp.response) setScopes(sp.response.items)
+  }, [token])
+
   const loadAll = useCallback(async () => {
     if (!token) return
-    await Promise.all([loadTrunks(), loadLines()])
+    await Promise.all([loadTrunks(), loadLines(), loadAssistants()])
     const s = await telephonyApi.settings(token)
     if (s.status === "success" && s.response) setSettings(s.response)
     else setFailed(true)
-  }, [token, loadTrunks, loadLines])
+  }, [token, loadTrunks, loadLines, loadAssistants])
 
   useEffect(() => {
     if (!token || !isAdmin) return
@@ -113,6 +124,7 @@ export function TelephonySettingsView() {
               options={[
                 { value: "trunks", label: t("telephony.settings.tabs.trunks") },
                 { value: "lines", label: t("telephony.settings.tabs.lines") },
+                { value: "assistants", label: t("telephony.settings.tabs.assistants") },
                 { value: "general", label: t("telephony.settings.tabs.general") },
               ]}
               className="w-full sm:w-auto sm:self-start"
@@ -122,7 +134,17 @@ export function TelephonySettingsView() {
               await loadLines()
               return fresh
             }} />}
-            {tab === "lines" && <LinesPanel lines={lines} trunks={trunks} onChanged={refreshBoth} />}
+            {tab === "lines" && <LinesPanel lines={lines} trunks={trunks} scenarios={scenarios} onChanged={refreshBoth} />}
+            {tab === "assistants" && (
+              <AssistantsPanel
+                scenarios={scenarios}
+                scopes={scopes}
+                lines={lines}
+                onChanged={async () => {
+                  await Promise.all([loadAssistants(), loadLines()])
+                }}
+              />
+            )}
             {tab === "general" &&
               (settings ? (
                 <GeneralPanel key={settings.updated_at ?? "defaults"} settings={settings} onSaved={setSettings} />
