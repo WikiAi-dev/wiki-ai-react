@@ -6,6 +6,7 @@ import { Bot, Eye, Loader2, ShieldAlert } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { filesApi } from "@/lib/api"
+import { connectionsApi, type Connection } from "@/lib/connections"
 import {
   apiText,
   formatPhone,
@@ -21,7 +22,13 @@ import { AppHeader } from "@/components/app-header"
 import { PageBody, PageHeader } from "@/components/page-header"
 import { EmptyState } from "@/components/empty-state"
 import { ScenarioMap } from "@/components/telephony/scenario-map"
-import { FilePicker, type KnowledgeFile } from "@/components/telephony/file-picker"
+import {
+  FilePicker,
+  selectionFromItems,
+  selectionToItems,
+  type KnowledgeFile,
+  type KnowledgeSelection,
+} from "@/components/telephony/file-picker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -68,7 +75,8 @@ export function AssistantView() {
   const [form, setForm] = useState<Form>({ company: "", assistant_name: "", greeting: "", instructions: "" })
   const [map, setMap] = useState<{ nodes: ScenarioNode[]; edges: ScenarioEdge[] }>({ nodes: [], edges: [] })
   const [files, setFiles] = useState<KnowledgeFile[] | null>(null)
-  const [chosen, setChosen] = useState<string[]>([])
+  const [connections, setConnections] = useState<Connection[]>([])
+  const [chosen, setChosen] = useState<KnowledgeSelection>({ documents: [], connections: [] })
   const [lines, setLines] = useState<Line[]>([])
   const [numbers, setNumbers] = useState<string[]>([])
   const [dirty, setDirty] = useState(false)
@@ -89,14 +97,14 @@ export function AssistantView() {
     setName(sc.name)
     setForm({ company: d.company ?? "", assistant_name: d.assistant_name ?? "", greeting: d.greeting ?? "", instructions: d.instructions ?? "" })
     setMap({ nodes: d.nodes ?? [], edges: d.edges ?? [] })
-    const [scope, ls, docs] = await Promise.all([
+    const [scope, ls, docs, conns] = await Promise.all([
       d.scope_id ? telephonyApi.scope(token, d.scope_id) : Promise.resolve(null),
       telephonyApi.lines(token),
       filesApi.list(token),
+      connectionsApi.list(token),
     ])
-    if (scope?.status === "success" && scope.response) {
-      setChosen(scope.response.items.filter((i) => i.kind === "document" && i.document_id).map((i) => i.document_id as string))
-    }
+    if (scope?.status === "success" && scope.response) setChosen(selectionFromItems(scope.response.items))
+    setConnections(conns.status === "success" && conns.response ? conns.response.items : [])
     if (ls.status === "success" && ls.response) {
       setLines(ls.response.items)
       setNumbers(ls.response.items.filter((l) => l.scenario_id === sc.id).map((l) => l.id))
@@ -134,7 +142,7 @@ export function AssistantView() {
     setSaving(true)
     setErrors({})
     try {
-      const items = chosen.map((id) => ({ kind: "document" as const, document_id: id }))
+      const items = selectionToItems(chosen)
       let scopeId = scenario.draft.scope_id
       const scope = scopeId
         ? await telephonyApi.saveScope(token, scopeId, { name: name.trim(), items })
@@ -286,7 +294,13 @@ export function AssistantView() {
               {files === null ? (
                 <Skeleton className="h-40 rounded-2xl" />
               ) : (
-                <FilePicker files={files} selected={chosen} onChange={(ids) => (setChosen(ids), setDirty(true))} disabled={saving} />
+                <FilePicker
+                  files={files}
+                  connections={connections}
+                  selected={chosen}
+                  onChange={(next) => (setChosen(next), setDirty(true))}
+                  disabled={saving}
+                />
               )}
             </Section>
 
