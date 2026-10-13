@@ -1669,7 +1669,8 @@
       "speaker": {
         "caller": "Caller",
         "bot": "Assistant",
-        "operator": "Staff"
+        "operator": "Staff",
+        "operatorNamed": "Staff · {{name}}"
       },
       "timeline": "What happened",
       "routing": "Routing",
@@ -1680,6 +1681,7 @@
         "bot": "The assistant answered",
         "queued": "Waiting in the queue",
         "operator": "Staff answered",
+        "operatorNamed": "Staff answered: {{name}}",
         "hold": "On hold",
         "wrapup": "Staff wrap-up",
         "ended": "Call ended"

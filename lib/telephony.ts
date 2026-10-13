@@ -197,6 +197,8 @@ export interface CallEvent {
 
 export interface TranscriptSegment {
   speaker: "caller" | "bot" | "operator"
+  /** Who said an operator's phrase; the call's call.state event names them. */
+  operator_id?: string
   start_ms: number
   end_ms: number
   text: string

@@ -7,7 +7,8 @@ import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { getApiUrl } from "@/lib/config"
 import { fullTime } from "@/lib/connections"
-import { apiText, callSeconds, formatDuration, formatPhone, telephonyApi, type CallDetail, type CallEvent } from "@/lib/telephony"
+import { apiText, callSeconds, formatDuration, formatPhone, telephonyApi, type CallDetail, type CallEvent, type TranscriptSegment } from "@/lib/telephony"
+import { cn } from "@/lib/utils"
 import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
 import { PageBody } from "@/components/page-header"
@@ -27,6 +28,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+
+/** Each speaker's name in the transcript has a colour of its own. */
+const speakerColor: Record<TranscriptSegment["speaker"], string> = {
+  caller: "text-foreground",
+  bot: "text-primary",
+  operator: "text-success",
+}
 
 function Fact({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
@@ -57,6 +65,7 @@ function useEventText() {
       case "call.started":
         return t("telephony.call.events.started")
       case "call.state":
+        if (d.to === "operator" && d.operator_name) return t("telephony.call.states.operatorNamed", { name: d.operator_name })
         return t(`telephony.call.states.${d.to}`, { reason: d.reason ?? "" })
       case "call.ended":
         return t("telephony.call.events.ended", {
@@ -202,6 +211,16 @@ export function CallView() {
 
   const seconds = callSeconds(call)
   const timeline = call.events.filter((e) => ["call.started", "call.state", "call.ended", "dtmf", "recording.uploaded"].includes(e.type))
+  // Operators by id, named by the call.state that handed them the call.
+  const operatorNames = new Map<string, string>()
+  for (const e of call.events) {
+    const d = e.data as Record<string, string>
+    if (e.type === "call.state" && d.operator_id && d.operator_name) operatorNames.set(d.operator_id, d.operator_name)
+  }
+  const speakerLabel = (s: TranscriptSegment) => {
+    const name = s.speaker === "operator" && s.operator_id ? operatorNames.get(s.operator_id) : undefined
+    return name ? t("telephony.call.speaker.operatorNamed", { name }) : t(`telephony.call.speaker.${s.speaker}`)
+  }
 
   return (
     <>
@@ -292,7 +311,7 @@ export function CallView() {
                     <li key={i} className="flex gap-3">
                       <span className="w-12 shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground">{formatDuration(s.start_ms / 1000)}</span>
                       <p className="text-[15px] leading-relaxed">
-                        <span className="font-medium text-foreground">{t(`telephony.call.speaker.${s.speaker}`)}: </span>
+                        <span className={cn("font-medium", speakerColor[s.speaker])}>{speakerLabel(s)}: </span>
                         <span className="text-foreground">{s.text}</span>
                       </p>
                     </li>
