@@ -12,7 +12,7 @@ type Variant = "success" | "default" | "secondary" | "destructive" | "warning"
 const OUTCOME_STYLE: Record<Exclude<CallOutcome, "">, { variant: Variant; icon: typeof PhoneIncoming }> = {
   resolved_by_bot: { variant: "success", icon: CheckCircle2 },
   message_taken: { variant: "default", icon: Voicemail },
-  transferred: { variant: "default", icon: PhoneIncoming },
+  transferred: { variant: "destructive", icon: PhoneIncoming },
   operator_handled: { variant: "success", icon: PhoneIncoming },
   missed: { variant: "warning", icon: PhoneMissed },
   abandoned: { variant: "secondary", icon: PhoneOff },

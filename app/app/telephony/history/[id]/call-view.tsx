@@ -15,6 +15,7 @@ import { PageBody } from "@/components/page-header"
 import { EmptyState } from "@/components/empty-state"
 import { Caller, OutcomeBadge } from "@/components/telephony/shared"
 import { CRMSection } from "@/components/telephony/crm-section"
+import { askedForOperator } from "@/components/telephony/call-list"
 import { useOperator } from "@/components/telephony/operator-provider"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -233,10 +234,10 @@ export function CallView() {
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <OutcomeBadge call={call} />
-              {call.state === "queued" && (
+              {(call.state === "queued" || askedForOperator(call)) && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                   <Headset className="size-3.5" aria-hidden />
-                  {t("telephony.operator.needed")}
+                  {call.state === "queued" ? t("telephony.operator.needed") : t("telephony.operator.callBack")}
                 </span>
               )}
               <span>{fullTime(call.started_at, locale)}</span>
