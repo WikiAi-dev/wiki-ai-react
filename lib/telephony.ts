@@ -204,6 +204,24 @@ export interface TranscriptSegment {
   sources: string[]
 }
 
+/** A record a call was logged to in a CRM. */
+export interface CRMLink {
+  provider: string
+  entity: "lead" | "deal" | "contact" | string
+  id: string
+  url: string
+  created: boolean
+}
+
+/** The CRM's contact for the caller's number, and their last call. */
+export interface CRMMatch {
+  found?: "none" | "one" | "many"
+  provider?: string
+  contact?: { id: string; name: string; company?: string; post?: string; responsible?: string; url?: string }
+  deals?: { title: string; stage?: string; amount?: string }[]
+  last_call?: { at: string; outcome: CallOutcome; summary?: string; topic?: string }
+}
+
 export interface CallNote {
   id: string
   user_id: string
@@ -213,8 +231,10 @@ export interface CallNote {
 
 export interface CallDetail extends Call {
   importance_reason: string
-  extracted: Record<string, unknown>
-  crm_match: Record<string, unknown>
+  /** The analysis; `crm` lists the records the call was logged to. */
+  extracted: { crm?: CRMLink[] } & Record<string, unknown>
+  /** Who the caller is in the CRM, found while the assistant greeted them. */
+  crm_match: CRMMatch
   operator_ids: string[]
   quality: Record<string, unknown>
   decision: string[]
@@ -277,6 +297,12 @@ export const telephonyApi = {
   saveScope: (token: string, id: string, input: { name: string; items: ScopeItem[] }) =>
     apiRequest<KnowledgeScope>({ url: `${base}/scopes/${id}`, method: "PUT", token, data: json(input) }),
   deleteScope: (token: string, id: string) => apiRequest({ url: `${base}/scopes/${id}`, method: "DELETE", token }),
+
+  // Operators (voice-engine, through the gateway's /v1/telephony/live).
+  liveIce: (token: string) => apiRequest<{ ice_servers: RTCIceServer[] }>({ url: `${base}/live/ice`, token }),
+  answerCall: (token: string, id: string, sdp: string) =>
+    apiRequest<{ sdp: string }>({ url: `${base}/live/calls/${id}/answer`, method: "POST", token, data: { sdp } }),
+  hangupCall: (token: string, id: string) => apiRequest({ url: `${base}/live/calls/${id}/hangup`, method: "POST", token }),
 
   settings: (token: string) => apiRequest<TelephonySettings>({ url: `${base}/settings`, token }),
   updateSettings: (token: string, input: Partial<TelephonySettings>) =>
