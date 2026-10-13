@@ -346,7 +346,16 @@ export const filesApi = {
     }
 
     return apiRequest<{
-      documents: Array<{ document_id: string; title: string; created_at: string; updated_at: string; tenant_id: string; chunk_count: number }>
+      documents: Array<{
+        document_id: string
+        title: string
+        created_at: string
+        updated_at: string
+        tenant_id: string
+        chunk_count: number
+        /** Where a synced record came from (connector-service's source, connection_id, kind…). */
+        metadata?: Record<string, unknown>
+      }>
     }>({
       url: API_CONFIG.ENDPOINTS.FILES_LIST,
       token,
