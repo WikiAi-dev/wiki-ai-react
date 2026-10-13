@@ -4,7 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { apiText, telephonyApi, type Line, type LineInput, type Trunk } from "@/lib/telephony"
+import { apiText, telephonyApi, type Line, type LineInput, type Scenario, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,17 +23,22 @@ function Field({ id, label, help, error, children }: { id: string; label: string
   )
 }
 
-/** Adds or edits a line: a number on one of the trunks, and how many calls it takes at once. */
+// The assistant select's value for "none": Radix selects can't hold "".
+const NO_ASSISTANT = "none"
+
+/** Adds or edits a line: a number on one of the trunks, its assistant, and how many calls it takes at once. */
 export function LineFormDialog({
   open,
   onOpenChange,
   trunks,
+  scenarios,
   line,
   onSaved,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   trunks: Trunk[]
+  scenarios: Scenario[]
   line?: Line
   onSaved: (line: Line) => void
 }) {
@@ -43,6 +48,7 @@ export function LineFormDialog({
   const [name, setName] = useState(line?.name ?? "")
   const [did, setDid] = useState(line?.did ?? "")
   const [trunkId, setTrunkId] = useState(line?.trunk_id ?? (trunks.length === 1 ? trunks[0].id : ""))
+  const [assistantId, setAssistantId] = useState(line?.scenario_id || NO_ASSISTANT)
   const [maxConcurrent, setMaxConcurrent] = useState(String(line?.max_concurrent ?? 5))
   const [record, setRecord] = useState(line?.record ?? true)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -55,7 +61,16 @@ export function LineFormDialog({
     setSaving(true)
     setErrors({})
     setError("")
-    const input: LineInput = { name: name.trim(), did: did.trim(), trunk_id: trunkId, max_concurrent: Number(maxConcurrent) || 0, record }
+    const assistant = scenarios.find((s) => s.id === assistantId)
+    const input: LineInput = {
+      name: name.trim(),
+      did: did.trim(),
+      trunk_id: trunkId,
+      scenario_id: assistant?.id ?? "",
+      scope_id: assistant?.draft.scope_id ?? "",
+      max_concurrent: Number(maxConcurrent) || 0,
+      record,
+    }
     try {
       const result = editing && line ? await telephonyApi.updateLine(token, line.id, input) : await telephonyApi.createLine(token, input)
       if (result.status === "success" && result.response) {
@@ -66,7 +81,7 @@ export function LineFormDialog({
       }
       const fields: Record<string, string> = {}
       for (const [k, v] of Object.entries(result.fields ?? {})) fields[k] = apiText(v, locale)
-      const hidden = Object.keys(fields).filter((k) => !["did", "name", "trunk_id", "max_concurrent"].includes(k))
+      const hidden = Object.keys(fields).filter((k) => !["did", "name", "trunk_id", "scenario_id", "max_concurrent"].includes(k))
       setErrors(fields)
       setError(
         hidden.length > 0 ? fields[hidden[0]] : Object.keys(fields).length > 0 ? "" : apiText(result.message, locale) || t("telephony.toast.failed"),
@@ -117,6 +132,21 @@ export function LineFormDialog({
                 {trunks.map((tr) => (
                   <SelectItem key={tr.id} value={tr.id}>
                     {tr.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field id="line-assistant" label={t("telephony.lines.form.assistant")} help={t("telephony.lines.form.assistantHelp")} error={errors.scenario_id}>
+            <Select value={assistantId} onValueChange={setAssistantId} disabled={saving}>
+              <SelectTrigger id="line-assistant" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_ASSISTANT}>{t("telephony.lines.defaultAssistant")}</SelectItem>
+                {scenarios.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
