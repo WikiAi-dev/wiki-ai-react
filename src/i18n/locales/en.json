@@ -1714,6 +1714,26 @@
           "lead": "Lead",
           "deal": "Deal",
           "contact": "Contact"
+        },
+        "kind": {
+          "contact": "Contact",
+          "company": "Company (a company number)",
+          "lead": "Request from this number"
+        },
+        "status": "status: {{status}}",
+        "openDeals": "Open deals",
+        "closedDeals": "Closed deals",
+        "won": "won",
+        "lost": "lost",
+        "leads": "Requests in work",
+        "activities": "Latest contacts",
+        "activity": {
+          "callIn": "Incoming call",
+          "callOut": "Outgoing call",
+          "meeting": "Meeting",
+          "email": "E-mail",
+          "task": "Task",
+          "other": "Activity"
         }
       }
     },

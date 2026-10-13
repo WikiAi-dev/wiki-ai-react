@@ -215,12 +215,29 @@ export interface CRMLink {
   created: boolean
 }
 
-/** The CRM's contact for the caller's number, and their last call. */
+/**
+ * The CRM's record for the caller's number (a contact, or a company or a
+ * request with it), what hangs off it, and their last call.
+ */
 export interface CRMMatch {
   found?: "none" | "one" | "many"
   provider?: string
-  contact?: { id: string; name: string; company?: string; post?: string; responsible?: string; url?: string }
-  deals?: { title: string; stage?: string; amount?: string }[]
+  contact?: {
+    id: string
+    kind?: "contact" | "company" | "lead"
+    name: string
+    company?: string
+    post?: string
+    responsible?: string
+    emails?: string[]
+    notes?: string
+    status?: string
+    url?: string
+  }
+  /** Open deals first, then the last closed ones. */
+  deals?: { title: string; stage?: string; amount?: string; closed?: boolean; won?: boolean; date?: string }[]
+  leads?: { title: string; status?: string; date?: string }[]
+  activities?: { kind: "call" | "meeting" | "email" | "task" | "other"; subject?: string; date?: string; incoming?: boolean; done?: boolean }[]
   last_call?: { at: string; outcome: CallOutcome; summary?: string; topic?: string }
 }
 
