@@ -1,3 +1,4 @@
+import { refreshSession, setSession } from "./session"
 import { API_CONFIG, getApiUrl, getWsUrl } from "./config"
 
 // Unified API configuration - all requests use api.wikiai.by
@@ -100,44 +101,24 @@ export async function apiRequest<T = unknown>({
     })
 
     if (!response.ok) {
-      // Auto-refresh token on 401
-      if (response.status === 401 && typeof window !== "undefined") {
-        const storedRefreshToken = localStorage.getItem("refresh_token")
-        if (storedRefreshToken) {
-          try {
-            const refreshRes = await fetch(getApiUrl("/v1/auth/refresh"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true" },
-              body: JSON.stringify({ refresh_token: storedRefreshToken }),
-            })
-            if (refreshRes.ok) {
-              const refreshData = await refreshRes.json()
-              const tokenPair = refreshData.token_pair as Record<string, unknown> | undefined
-              const newToken = (tokenPair?.access_token as string) || refreshData.token || refreshData.access_token
-              const newRefreshToken = (tokenPair?.refresh_token as string) || refreshData.refresh_token
-              if (newToken) {
-                // NOTE: must match the key lib/auth-context.tsx's AuthProvider reads ("auth_token").
-                // This used to write "token" here, which the live session context never read,
-                // silently desyncing a refreshed token from the session state.
-                localStorage.setItem("auth_token", newToken)
-                if (newRefreshToken) localStorage.setItem("refresh_token", newRefreshToken)
-                headers["Authorization"] = `Bearer ${newToken}`
-                const retryRes = await fetch(fullUrl, {
-                  method,
-                  headers,
-                  body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined,
-                })
-                if (retryRes.ok) {
-                  const retryResult = await retryRes.json()
-                  return { status: "success", response: retryResult }
-                }
-                result = await retryRes.json()
-                response = retryRes
-              }
-            }
-          } catch (e) {
-            console.error("Token refresh failed:", e)
+      // An expired access token: one shared refresh, then this request
+      // again with the new token (WAI-232). Requests without a token (the
+      // login itself) aren't retried.
+      if (response.status === 401 && typeof window !== "undefined" && token) {
+        const fresh = await refreshSession(token)
+        if (fresh) {
+          headers["Authorization"] = `Bearer ${fresh}`
+          const retryRes = await fetch(fullUrl, {
+            method,
+            headers,
+            body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined,
+          })
+          if (retryRes.ok) {
+            const retryResult = retryRes.status === 204 ? {} : await retryRes.json().catch(() => ({}))
+            return { status: "success", response: retryResult }
           }
+          result = await retryRes.json().catch(() => ({}))
+          response = retryRes
         }
       }
 
@@ -203,12 +184,7 @@ export const authApi = {
       const accessToken = (tokenPair?.access_token as string) || (data.token as string) || (data.access_token as string) || ""
       const refreshToken = (tokenPair?.refresh_token as string) || (data.refresh_token as string) || ""
 
-      if (typeof window !== "undefined") {
-        // NOTE: must match the key lib/auth-context.tsx's AuthProvider reads ("auth_token") —
-        // see comment in the 401-retry logic above for why this key must be consistent everywhere.
-        localStorage.setItem("auth_token", accessToken)
-        if (refreshToken) localStorage.setItem("refresh_token", refreshToken)
-      }
+      if (accessToken) setSession(accessToken, refreshToken)
 
       return {
         status: "success",
