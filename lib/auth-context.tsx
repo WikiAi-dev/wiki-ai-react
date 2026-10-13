@@ -1,8 +1,9 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
-import { authApi, apiRequest } from "./api"
+import { authApi } from "./api"
 import { API_CONFIG } from "./config"
+import { accessToken, clearSession, expiresSoon, logoutSession, onSessionChange, refreshSession, setSession, tokenExpiresAt } from "./session"
 
 /** identity-service roles; "user" is what older tokens call a member. */
 export type Role = "owner" | "admin" | "member" | "viewer" | "user"
@@ -55,7 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await authApi.validateToken(storedToken)
     if (result.status === "success" && (result.response?.valid || (result as any).valid)) {
       const data = result.response || result
-      setToken(storedToken)
+      // Validating may have refreshed the token: keep the current one.
+      setToken(accessToken() || storedToken)
       // /v1/token/validate has no organization name; /v1/me has the full
       // profile, so prefer it and fall back to the token's claims.
       const profile = await authApi.me(storedToken).catch(() => null)
@@ -68,20 +70,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }))
       return true
     }
-    localStorage.removeItem("auth_token")
     return false
   }, [])
 
   useEffect(() => {
-    // One-time auth bootstrap from localStorage on mount.
-    const storedToken = localStorage.getItem("auth_token")
-    if (storedToken) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      validateAndSetToken(storedToken).finally(() => setIsLoading(false))
-    } else {
-      setIsLoading(false)
+    // One-time auth bootstrap from storage on mount. An access token that
+    // expired while the app was closed is renewed with the refresh token
+    // instead of signing out (WAI-232).
+    const boot = async () => {
+      let stored = accessToken()
+      if (stored && expiresSoon(stored)) stored = await refreshSession(stored)
+      if (!stored) return
+      if (await validateAndSetToken(stored)) return
+      const fresh = await refreshSession(stored)
+      if (fresh && (await validateAndSetToken(fresh))) return
+      clearSession()
     }
+    boot().finally(() => setIsLoading(false))
   }, [validateAndSetToken])
+
+  // A refreshed token (by a request, a timer or another tab) reaches the
+  // pages; a session that ended signs out.
+  useEffect(() => {
+    const unsubscribe = onSessionChange((next) => {
+      setToken(next)
+      if (!next) setUser(null)
+    })
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== "auth_token") return
+      setToken(e.newValue)
+      if (!e.newValue) setUser(null)
+    }
+    window.addEventListener("storage", onStorage)
+    return () => {
+      unsubscribe()
+      window.removeEventListener("storage", onStorage)
+    }
+  }, [])
+
+  // Renew a minute before the access token expires, and when the tab comes
+  // back after a while, so requests rarely meet an expired token.
+  useEffect(() => {
+    if (!token) return
+    const at = tokenExpiresAt(token)
+    const timer = at ? setTimeout(() => void refreshSession(token), Math.max(5_000, at - Date.now() - 60_000)) : undefined
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && expiresSoon(token, 60_000)) void refreshSession(token)
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => {
+      if (timer) clearTimeout(timer)
+      document.removeEventListener("visibilitychange", onVisible)
+    }
+  }, [token])
 
   const extractUserFromResponse = (data: any): User | null => {
     if (data.username || data.role) {
@@ -101,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // and legacy format ({status: "success", token: "..."})
     const token = (result as any).access_token || result.token
     if (token) {
-      localStorage.setItem("auth_token", token)
+      setSession(token, (result as any).refresh_token)
       setToken(token)
 
       const userData = (result as any).user
@@ -120,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (result.status === "success" && result.token) {
-      localStorage.setItem("auth_token", result.token)
+      setSession(result.token, (result as any).refresh_token)
       setToken(result.token)
       await validateAndSetToken(result.token)
       return { success: true }
@@ -129,36 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { success: false, error: result.message || "Login failed" }
   }
 
-  const refreshTokenFn = async (): Promise<boolean> => {
-    const storedRefreshToken = localStorage.getItem(API_CONFIG.REFRESH_TOKEN_KEY)
-    if (!storedRefreshToken) return false
-    try {
-      const res = await apiRequest<{ token: string; refresh_token?: string }>({
-        url: API_CONFIG.ENDPOINTS.REFRESH,
-        method: "POST",
-        data: { refresh_token: storedRefreshToken },
-      })
-      if (res.status === "success" && res.response) {
-        const newToken = (res.response as any).token_pair?.access_token || (res.response as any).token || (res.response as any).access_token
-        if (newToken) {
-          localStorage.setItem("auth_token", newToken)
-          setToken(newToken)
-          const newRefresh = (res.response as any).token_pair?.refresh_token || (res.response as any).refresh_token
-          if (newRefresh) {
-            localStorage.setItem(API_CONFIG.REFRESH_TOKEN_KEY, newRefresh)
-          }
-          return true
-        }
-      }
-    } catch (err) {
-      console.error("Token refresh failed:", err)
-    }
-    return false
-  }
+  const refreshTokenFn = async (): Promise<boolean> => !!(await refreshSession(token))
 
+  // Signing out revokes the refresh token on the server, not only here.
   const logout = () => {
-    localStorage.removeItem("auth_token")
-    localStorage.removeItem(API_CONFIG.REFRESH_TOKEN_KEY)
+    void logoutSession()
     setToken(null)
     setUser(null)
   }
@@ -168,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await authApi.switchOrganization(token, { organization_id: organizationId })
     if (result.status === "success" && (result.response?.token || (result as any).token)) {
       const newToken = result.response?.token || (result as any).token
-      localStorage.setItem("auth_token", newToken)
+      setSession(newToken, (result.response as any)?.refresh_token || (result as any).refresh_token)
       await validateAndSetToken(newToken)
       return true
     }

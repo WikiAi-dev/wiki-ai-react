@@ -26,6 +26,13 @@ export function callTime(value: string, locale: string, now = new Date()): strin
 export const needsOperator = (c: Pick<Call, "state">) => c.state === "queued"
 
 /**
+ * A call that ended while the caller waited for a person, and nobody has
+ * handled it yet: someone should call back (WAI-245).
+ */
+export const askedForOperator = (c: Pick<Call, "state" | "outcome" | "status">) =>
+  c.state === "ended" && c.outcome === "transferred" && c.status === "new"
+
+/**
  * Calls as rows: who called, which line, how it ended, how long; each
  * opens its page. With answerable, calls in progress get "Ответить", and a
  * caller who asked for a person is red.
@@ -37,7 +44,9 @@ export function CallList({ calls, answerable = false }: { calls: Call[]; answera
     <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
       {calls.map((c) => {
         const seconds = callSeconds(c)
-        const red = needsOperator(c)
+        const waiting = needsOperator(c)
+        const callBack = askedForOperator(c)
+        const red = waiting || callBack
         const canAnswer = answerable && (c.state === "bot" || c.state === "queued") && !active
         return (
           <li key={c.id} className={cn("flex items-center", red && "border-l-4 border-destructive bg-destructive/5")}>
@@ -61,7 +70,7 @@ export function CallList({ calls, answerable = false }: { calls: Call[]; answera
                 {red && (
                   <p className="mt-0.5 flex items-center gap-1.5 text-[13px] font-medium text-destructive">
                     <Headset className="size-3.5" aria-hidden />
-                    {t("telephony.operator.needed")}
+                    {waiting ? t("telephony.operator.needed") : t("telephony.operator.callBack")}
                   </p>
                 )}
                 <p className="truncate text-[13px] text-muted-foreground">
