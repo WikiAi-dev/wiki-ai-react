@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Loader2, MoreHorizontal, Phone, Plus, Settings2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
-import { apiText, formatPhone, telephonyApi, type Line, type Trunk } from "@/lib/telephony"
+import { apiText, formatPhone, telephonyApi, type Line, type Scenario, type Trunk } from "@/lib/telephony"
 import { useTranslation } from "@/src/i18n"
 import { LineFormDialog } from "@/components/telephony/line-form-dialog"
 import { EmptyState } from "@/components/empty-state"
@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onChanged: () => void }) {
+function LineRow({ line, trunks, scenarios, onChanged }: { line: Line; trunks: Trunk[]; scenarios: Scenario[]; onChanged: () => void }) {
   const { t, locale } = useTranslation()
   const { token } = useAuth()
   const [editOpen, setEditOpen] = useState(false)
@@ -30,6 +30,7 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
   const [deleting, setDeleting] = useState(false)
   const [toggling, setToggling] = useState(false)
   const trunk = trunks.find((tr) => tr.id === line.trunk_id)
+  const assistant = scenarios.find((s) => s.id === line.scenario_id)
 
   const setEnabled = async (enabled: boolean) => {
     if (!token) return
@@ -66,7 +67,8 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium tabular-nums text-foreground">{formatPhone(line.did)}</p>
         <p className="truncate text-[13px] text-muted-foreground">
-          {line.name} · {trunk?.name ?? t("telephony.lines.noTrunk")} · {t("telephony.lines.callsAtOnce", { count: line.max_concurrent })}
+          {line.name} · {trunk?.name ?? t("telephony.lines.noTrunk")} · {assistant?.name ?? t("telephony.lines.defaultAssistant")} ·{" "}
+          {t("telephony.lines.callsAtOnce", { count: line.max_concurrent })}
         </p>
       </div>
       <Switch
@@ -93,7 +95,15 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <LineFormDialog key={`edit-${line.id}-${editOpen}`} open={editOpen} onOpenChange={setEditOpen} trunks={trunks} line={line} onSaved={onChanged} />
+      <LineFormDialog
+        key={`edit-${line.id}-${editOpen}`}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        trunks={trunks}
+        scenarios={scenarios}
+        line={line}
+        onSaved={onChanged}
+      />
       <AlertDialog open={deleteOpen} onOpenChange={(open) => !deleting && setDeleteOpen(open)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -121,7 +131,7 @@ function LineRow({ line, trunks, onChanged }: { line: Line; trunks: Trunk[]; onC
 }
 
 /** The organization's numbers: which trunk each arrives on, its limit, on or off. */
-export function LinesPanel({ lines, trunks, onChanged }: { lines: Line[]; trunks: Trunk[]; onChanged: () => void }) {
+export function LinesPanel({ lines, trunks, scenarios, onChanged }: { lines: Line[]; trunks: Trunk[]; scenarios: Scenario[]; onChanged: () => void }) {
   const { t } = useTranslation()
   const [addOpen, setAddOpen] = useState(false)
   const add = (
@@ -145,12 +155,12 @@ export function LinesPanel({ lines, trunks, onChanged }: { lines: Line[]; trunks
           <div className="flex justify-end">{add}</div>
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
             {lines.map((l) => (
-              <LineRow key={l.id} line={l} trunks={trunks} onChanged={onChanged} />
+              <LineRow key={l.id} line={l} trunks={trunks} scenarios={scenarios} onChanged={onChanged} />
             ))}
           </ul>
         </>
       )}
-      <LineFormDialog key={`add-${addOpen}`} open={addOpen} onOpenChange={setAddOpen} trunks={trunks} onSaved={onChanged} />
+      <LineFormDialog key={`add-${addOpen}`} open={addOpen} onOpenChange={setAddOpen} trunks={trunks} scenarios={scenarios} onSaved={onChanged} />
     </>
   )
 }
