@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { CheckCheck, Loader2, PhoneOff, Play, RotateCcw, Trash2 } from "lucide-react"
+import { CheckCheck, Headset, Loader2, PhoneOff, Play, RotateCcw, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
 import { getApiUrl } from "@/lib/config"
@@ -13,6 +13,8 @@ import { AppHeader } from "@/components/app-header"
 import { PageBody } from "@/components/page-header"
 import { EmptyState } from "@/components/empty-state"
 import { Caller, OutcomeBadge } from "@/components/telephony/shared"
+import { CRMSection } from "@/components/telephony/crm-section"
+import { useOperator } from "@/components/telephony/operator-provider"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -78,6 +80,7 @@ export function CallView() {
   const router = useRouter()
   const params = useParams<{ id: string }>()
   const eventText = useEventText()
+  const operator = useOperator()
   const [call, setCall] = useState<CallDetail | null>(null)
   const [missing, setMissing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -142,7 +145,8 @@ export function CallView() {
     if (!token || !call) return
     setLoadingAudio(true)
     try {
-      const res = await fetch(getApiUrl(`/v1/telephony/calls/${call.id}/recording?format=mp3`), {
+      // The format it was recorded in (WAV from the engine).
+      const res = await fetch(getApiUrl(`/v1/telephony/calls/${call.id}/recording`), {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -210,6 +214,12 @@ export function CallView() {
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <OutcomeBadge call={call} />
+              {call.state === "queued" && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                  <Headset className="size-3.5" aria-hidden />
+                  {t("telephony.operator.needed")}
+                </span>
+              )}
               <span>{fullTime(call.started_at, locale)}</span>
               {call.test && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{t("telephony.call.test")}</span>}
             </div>
@@ -227,6 +237,12 @@ export function CallView() {
                   {t("telephony.call.reopen")}
                 </Button>
               ))}
+            {(call.state === "bot" || call.state === "queued") && !operator.active && (
+              <Button variant={call.state === "queued" ? "destructive" : "default"} onClick={() => operator.answer(call)} disabled={operator.connecting !== null}>
+                {operator.connecting === call.id ? <Loader2 className="animate-spin" /> : <Headset />}
+                {t("telephony.operator.answer")}
+              </Button>
+            )}
             {isAdmin && (
               <Button variant="ghost" size="icon" onClick={() => setDeleteOpen(true)} aria-label={t("telephony.call.delete")}>
                 <Trash2 />
@@ -287,6 +303,7 @@ export function CallView() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-4">
+            <CRMSection call={call} />
             <Section title={t("telephony.call.timeline")}>
               <ol className="relative flex flex-col gap-3 border-l border-border pl-4">
                 {timeline.map((e) => (
