@@ -1,0 +1,33 @@
+/*
+ * Legal page (/presentation/legal). A document, not a slide: it imports
+ * the deck's tokens and atoms from presentation.css and only adds the
+ * two-column sheet layout.
+ */
+.tp .doc { max-width: 1160px; margin: 0 auto; padding: 48px 40px 72px; display: grid; gap: 32px; }
+.tp .doc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.tp .doc-title { font-size: 44px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin-top: 14px; }
+.tp .doc .lede { margin-top: 14px; }
+.tp .doc-warn { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 10px 16px; border-radius: 14px; background: color-mix(in oklab, var(--tp-warning) 12%, var(--card)); border: 1px solid color-mix(in oklab, var(--tp-warning) 32%, var(--border)); font-size: 14px; }
+.tp .doc-warn svg { width: 16px; height: 16px; color: var(--tp-warning); flex: none; }
+.tp .doc-back { height: 40px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--fg); font: 500 14px var(--tp-sans); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; white-space: nowrap; }
+.tp .doc-back:hover { border-color: var(--primary); }
+
+.tp .doc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.tp .doc-col { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 0.25em 0 0 var(--edge), 0 24px 40px -28px var(--shadow); padding: 26px 28px; display: grid; gap: 18px; align-content: start; }
+.tp .doc-col > h2 { font-size: 21px; font-weight: 600; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tp .doc-item { border-top: 1px solid var(--border); padding-top: 16px; display: grid; gap: 6px; }
+.tp .doc-col > .doc-item:first-of-type { border-top: 0; padding-top: 0; }
+.tp .doc-item h3 { font-size: 16px; font-weight: 600; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tp .doc-item p { font-size: 14.5px; line-height: 1.55; color: var(--muted-fg); }
+.tp .doc-item p b { color: var(--fg); font-weight: 600; }
+
+.tp .doc-src { border-top: 1px solid var(--border); padding-top: 18px; display: grid; gap: 12px; }
+.tp .doc-src .lbl { font-family: var(--tp-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-fg); }
+.tp .doc-src ul { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; font-size: 12.5px; line-height: 1.5; color: var(--muted-fg); }
+
+@media (max-width: 819px) {
+  .tp .doc { padding: 32px 16px 56px; gap: 24px; }
+  .tp .doc-title { font-size: 32px; }
+  .tp .doc-cols { grid-template-columns: 1fr; }
+  .tp .doc-src ul { grid-template-columns: 1fr; }
+}
