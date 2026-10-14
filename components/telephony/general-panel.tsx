@@ -9,12 +9,8 @@ import { useTranslation } from "@/src/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { TelegramCard } from "@/components/telephony/telegram-card"
 
-/**
- * Organization-wide telephony options (the call limit across all lines, how
- * long recordings are kept) and the user's Telegram chat.
- */
+/** Organization-wide telephony options: the call limit across all lines, how long recordings are kept. */
 export function GeneralPanel({ settings, onSaved }: { settings: TelephonySettings; onSaved: (s: TelephonySettings) => void }) {
   const { t, locale } = useTranslation()
   const { token } = useAuth()
@@ -51,46 +47,43 @@ export function GeneralPanel({ settings, onSaved }: { settings: TelephonySetting
   }
 
   return (
-    <div className="grid gap-4">
-      <form onSubmit={submit} className="grid max-w-xl gap-6 rounded-2xl border border-border bg-card p-5">
-        <div className="grid gap-1.5">
-          <Label htmlFor="max-calls">{t("telephony.general.maxCalls")}</Label>
-          <Input
-            id="max-calls"
-            inputMode="numeric"
-            value={maxCalls}
-            onChange={(e) => setMaxCalls(e.target.value.replace(/\D/g, ""))}
-            className="w-28"
-            aria-invalid={Boolean(errors.max_concurrent_calls)}
-            disabled={saving}
-          />
-          <p className={errors.max_concurrent_calls ? "text-[13px] text-destructive" : "text-[13px] text-muted-foreground"}>
-            {errors.max_concurrent_calls || t("telephony.general.maxCallsHelp")}
-          </p>
-        </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="retention">{t("telephony.general.retention")}</Label>
-          <Input
-            id="retention"
-            inputMode="numeric"
-            value={retention}
-            onChange={(e) => setRetention(e.target.value.replace(/\D/g, ""))}
-            className="w-28"
-            aria-invalid={Boolean(errors.recording_retention_days)}
-            disabled={saving}
-          />
-          <p className={errors.recording_retention_days ? "text-[13px] text-destructive" : "text-[13px] text-muted-foreground"}>
-            {errors.recording_retention_days || t("telephony.general.retentionHelp")}
-          </p>
-        </div>
-        <div>
-          <Button type="submit" disabled={saving || !dirty}>
-            {saving && <Loader2 className="animate-spin" />}
-            {t("telephony.form.save")}
-          </Button>
-        </div>
-      </form>
-      <TelegramCard />
-    </div>
+    <form onSubmit={submit} className="grid max-w-xl gap-6 rounded-2xl border border-border bg-card p-5">
+      <div className="grid gap-1.5">
+        <Label htmlFor="max-calls">{t("telephony.general.maxCalls")}</Label>
+        <Input
+          id="max-calls"
+          inputMode="numeric"
+          value={maxCalls}
+          onChange={(e) => setMaxCalls(e.target.value.replace(/\D/g, ""))}
+          className="w-28"
+          aria-invalid={Boolean(errors.max_concurrent_calls)}
+          disabled={saving}
+        />
+        <p className={errors.max_concurrent_calls ? "text-[13px] text-destructive" : "text-[13px] text-muted-foreground"}>
+          {errors.max_concurrent_calls || t("telephony.general.maxCallsHelp")}
+        </p>
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="retention">{t("telephony.general.retention")}</Label>
+        <Input
+          id="retention"
+          inputMode="numeric"
+          value={retention}
+          onChange={(e) => setRetention(e.target.value.replace(/\D/g, ""))}
+          className="w-28"
+          aria-invalid={Boolean(errors.recording_retention_days)}
+          disabled={saving}
+        />
+        <p className={errors.recording_retention_days ? "text-[13px] text-destructive" : "text-[13px] text-muted-foreground"}>
+          {errors.recording_retention_days || t("telephony.general.retentionHelp")}
+        </p>
+      </div>
+      <div>
+        <Button type="submit" disabled={saving || !dirty}>
+          {saving && <Loader2 className="animate-spin" />}
+          {t("telephony.form.save")}
+        </Button>
+      </div>
+    </form>
   )
 }

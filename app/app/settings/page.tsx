@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SegmentedControl } from "@/components/ui/segmented-control"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TelegramCard } from "@/components/telephony/telegram-card"
 
 type Theme = "light" | "dark" | "system"
 type Locale = "ru" | "en"
@@ -158,8 +157,6 @@ export default function SettingsPage() {
             />
           </Row>
         </Section>
-
-        <TelegramCard />
 
         <Section title={t("settings.session")}>
           <Row title={t("settings.signOut")} text={t("settings.signOutText")}>

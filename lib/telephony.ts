@@ -138,16 +138,6 @@ export interface KnowledgeScope {
   updated_at: string
 }
 
-/** Which calls a linked Telegram chat gets. */
-export type TelegramNotify = "all" | "important" | "off"
-
-/** The installation's bot and the signed-in user's linked chat. */
-export interface TelegramSettings {
-  /** The bot's username, "" when the server has no bot. */
-  bot: string
-  link: { username: string; name: string; notify: TelegramNotify; linked_at: string } | null
-}
-
 export interface TelephonySettings {
   recording_retention_days: number
   transcript_retention_days: number
@@ -332,14 +322,6 @@ export const telephonyApi = {
   answerCall: (token: string, id: string, sdp: string) =>
     apiRequest<{ sdp: string }>({ url: `${base}/live/calls/${id}/answer`, method: "POST", token, data: { sdp } }),
   hangupCall: (token: string, id: string) => apiRequest({ url: `${base}/live/calls/${id}/hangup`, method: "POST", token }),
-
-  // Telegram (WAI-202): the user's own chat.
-  telegram: (token: string) => apiRequest<TelegramSettings>({ url: `${base}/telegram`, token }),
-  telegramLinkToken: (token: string) =>
-    apiRequest<{ url: string; expires_at: string }>({ url: `${base}/telegram/link-token`, method: "POST", token }),
-  setTelegramNotify: (token: string, notify: TelegramNotify) =>
-    apiRequest<TelegramSettings>({ url: `${base}/telegram/link`, method: "PATCH", token, data: { notify } }),
-  unlinkTelegram: (token: string) => apiRequest({ url: `${base}/telegram/link`, method: "DELETE", token }),
 
   settings: (token: string) => apiRequest<TelephonySettings>({ url: `${base}/settings`, token }),
   updateSettings: (token: string, input: Partial<TelephonySettings>) =>
