@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { getApiUrl } from "@/lib/config"
 import { fullTime } from "@/lib/connections"
 import { apiText, callSeconds, formatDuration, formatPhone, telephonyApi, type CallDetail, type CallEvent, type TranscriptSegment } from "@/lib/telephony"
+import { useLiveCall, withLive } from "@/lib/live-call"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/src/i18n"
 import { AppHeader } from "@/components/app-header"
@@ -98,6 +99,8 @@ export function CallView() {
   const [loadingAudio, setLoadingAudio] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // A call in progress comes live through the engine's socket.
+  const live = useLiveCall(call && call.state !== "ended" ? call.id : null)
 
   const load = useCallback(async () => {
     if (!token || !params.id) return
@@ -124,12 +127,14 @@ export function CallView() {
     return () => clearInterval(id)
   }, [call, missing, load])
 
-  // A call in progress updates as its events arrive.
+  // A call in progress updates as its events arrive: live through the
+  // socket, and from the API for what only it has (the summary, the
+  // recording); every 3 s while the socket is down.
   useEffect(() => {
     if (!call || call.state === "ended") return
-    const id = setInterval(load, 3000)
+    const id = setInterval(load, live.connected ? 15000 : 3000)
     return () => clearInterval(id)
-  }, [call, load])
+  }, [call, load, live.connected])
 
   useEffect(() => () => {
     if (audio) URL.revokeObjectURL(audio)
@@ -210,11 +215,12 @@ export function CallView() {
       </>
     )
 
-  const seconds = callSeconds(call)
-  const timeline = call.events.filter((e) => ["call.started", "call.state", "call.ended", "dtmf", "recording.uploaded"].includes(e.type))
+  const view = withLive(call, live.events)
+  const seconds = callSeconds(view)
+  const timeline = view.events.filter((e) => ["call.started", "call.state", "call.ended", "dtmf", "recording.uploaded"].includes(e.type))
   // Operators by id, named by the call.state that handed them the call.
   const operatorNames = new Map<string, string>()
-  for (const e of call.events) {
+  for (const e of view.events) {
     const d = e.data as Record<string, string>
     if (e.type === "call.state" && d.operator_id && d.operator_name) operatorNames.set(d.operator_id, d.operator_name)
   }
@@ -230,23 +236,23 @@ export function CallView() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-[1.75rem]">
-              <Caller number={call.from} />
+              <Caller number={view.from} />
             </h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <OutcomeBadge call={call} />
-              {(call.state === "queued" || askedForOperator(call)) && (
+              <OutcomeBadge call={view} />
+              {(view.state === "queued" || askedForOperator(view)) && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                   <Headset className="size-3.5" aria-hidden />
-                  {call.state === "queued" ? t("telephony.operator.needed") : t("telephony.operator.callBack")}
+                  {view.state === "queued" ? t("telephony.operator.needed") : t("telephony.operator.callBack")}
                 </span>
               )}
-              <span>{fullTime(call.started_at, locale)}</span>
-              {call.test && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{t("telephony.call.test")}</span>}
+              <span>{fullTime(view.started_at, locale)}</span>
+              {view.test && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{t("telephony.call.test")}</span>}
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            {call.state === "ended" &&
-              (call.status === "new" ? (
+            {view.state === "ended" &&
+              (view.status === "new" ? (
                 <Button onClick={() => setStatus("processed")} disabled={saving}>
                   {saving ? <Loader2 className="animate-spin" /> : <CheckCheck />}
                   {t("telephony.call.markProcessed")}
@@ -257,9 +263,9 @@ export function CallView() {
                   {t("telephony.call.reopen")}
                 </Button>
               ))}
-            {(call.state === "bot" || call.state === "queued") && !operator.active && (
-              <Button variant={call.state === "queued" ? "destructive" : "default"} onClick={() => operator.answer(call)} disabled={operator.connecting !== null}>
-                {operator.connecting === call.id ? <Loader2 className="animate-spin" /> : <Headset />}
+            {(view.state === "bot" || view.state === "queued") && !operator.active && (
+              <Button variant={view.state === "queued" ? "destructive" : "default"} onClick={() => operator.answer(view)} disabled={operator.connecting !== null}>
+                {operator.connecting === view.id ? <Loader2 className="animate-spin" /> : <Headset />}
                 {t("telephony.operator.answer")}
               </Button>
             )}
@@ -272,24 +278,24 @@ export function CallView() {
         </div>
 
         <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4 sm:p-5">
-          <Fact label={t("telephony.call.line")} value={call.line_name || formatPhone(call.to)} />
-          <Fact label={t("telephony.call.dialled")} value={formatPhone(call.to)} />
+          <Fact label={t("telephony.call.line")} value={view.line_name || formatPhone(view.to)} />
+          <Fact label={t("telephony.call.dialled")} value={formatPhone(view.to)} />
           <Fact label={t("telephony.call.duration")} value={seconds > 0 ? formatDuration(seconds) : ""} />
-          <Fact label={t("telephony.call.handledBy")} value={call.handled_by ? t(`telephony.call.handled.${call.handled_by}`) : t("telephony.call.handled.none")} />
+          <Fact label={t("telephony.call.handledBy")} value={view.handled_by ? t(`telephony.call.handled.${view.handled_by}`) : t("telephony.call.handled.none")} />
         </dl>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
           <div className="flex min-w-0 flex-col gap-4">
             <Section title={t("telephony.call.summary")}>
-              {call.summary ? (
-                <p className="text-[15px] leading-relaxed text-foreground">{call.summary}</p>
+              {view.summary ? (
+                <p className="text-[15px] leading-relaxed text-foreground">{view.summary}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("telephony.call.noSummary")}</p>
               )}
             </Section>
 
             <Section title={t("telephony.call.recording")}>
-              {call.has_recording ? (
+              {view.has_recording ? (
                 audio ? (
                   <audio controls autoPlay src={audio} className="w-full" />
                 ) : (
@@ -304,11 +310,11 @@ export function CallView() {
             </Section>
 
             <Section title={t("telephony.call.transcript")}>
-              {call.transcript.length === 0 ? (
+              {view.transcript.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("telephony.call.noTranscript")}</p>
               ) : (
                 <ol className="flex flex-col gap-3">
-                  {call.transcript.map((s, i) => (
+                  {view.transcript.map((s, i) => (
                     <li key={i} className="flex gap-3">
                       <span className="w-12 shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground">{formatDuration(s.start_ms / 1000)}</span>
                       <p className="text-[15px] leading-relaxed">
@@ -323,7 +329,7 @@ export function CallView() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-4">
-            <CRMSection call={call} />
+            <CRMSection call={view} />
             <Section title={t("telephony.call.timeline")}>
               <ol className="relative flex flex-col gap-3 border-l border-border pl-4">
                 {timeline.map((e) => (
@@ -337,10 +343,10 @@ export function CallView() {
                 ))}
               </ol>
             </Section>
-            {call.decision.length > 0 && (
+            {view.decision.length > 0 && (
               <Section title={t("telephony.call.routing")}>
                 <ul className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-                  {call.decision.map((d, i) => (
+                  {view.decision.map((d, i) => (
                     <li key={i} className="break-words">
                       {d}
                     </li>
@@ -348,10 +354,10 @@ export function CallView() {
                 </ul>
               </Section>
             )}
-            {call.notes.length > 0 && (
+            {view.notes.length > 0 && (
               <Section title={t("telephony.call.notes")}>
                 <ul className="flex flex-col gap-2">
-                  {call.notes.map((n) => (
+                  {view.notes.map((n) => (
                     <li key={n.id} className="text-sm text-foreground">
                       {n.text}
                       <span className="block text-xs text-muted-foreground">{fullTime(n.created_at, locale)}</span>
