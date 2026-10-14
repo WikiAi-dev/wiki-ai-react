@@ -1981,6 +1981,29 @@
         "failed": "Couldn't connect to the call. Answering works from the office network or over VPN"
       },
       "callBack": "Asked for a person — call back"
+    },
+    "telegram": {
+      "title": "Telegram",
+      "description": "Connect your Telegram and the bot will send you call summaries and requests for an operator, with a «Handled» button.",
+      "loadFailed": "Couldn't load the Telegram settings.",
+      "notConfigured": "The Telegram bot isn't set up on the server yet: an administrator needs to set TELEGRAM_BOT_TOKEN.",
+      "connect": "Connect Telegram ({{bot}})",
+      "waiting": "Open the link in Telegram and press «Start» — the chat connects by itself.",
+      "openAgain": "Open the link",
+      "linked": "Telegram connected",
+      "unlinked": "Telegram disconnected",
+      "linkedAs": "Connected: {{who}}",
+      "yourChat": "your chat",
+      "notify": "What to send",
+      "notifyAll": "Every call",
+      "notifyImportant": "Important only",
+      "notifyOff": "Nothing",
+      "notifyHelp": {
+        "all": "The summary of every call and requests for an operator.",
+        "important": "Only calls that need a person: asked for an operator, missed, left a message, important or urgent.",
+        "off": "Notifications are off; the chat stays connected."
+      },
+      "unlink": "Disconnect"
     }
   }
 }
