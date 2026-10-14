@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { CheckCheck, Headset, Loader2, PhoneOff, Play, RotateCcw, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -18,6 +18,9 @@ import { Caller, OutcomeBadge } from "@/components/telephony/shared"
 import { CRMSection } from "@/components/telephony/crm-section"
 import { askedForOperator } from "@/components/telephony/call-list"
 import { useOperator } from "@/components/telephony/operator-provider"
+import { OperatorBrief } from "@/components/telephony/operator-brief"
+import { PastCalls } from "@/components/telephony/past-calls"
+import { HintsPanel } from "@/components/telephony/hints-panel"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -55,6 +58,44 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">{title}</h2>
       {children}
     </section>
+  )
+}
+
+/**
+ * The conversation, a line per phrase with who said it. Following, it
+ * keeps the newest line in view while the reader is at the bottom.
+ */
+function Transcript({ lines, label, follow = false }: { lines: TranscriptSegment[]; label: (s: TranscriptSegment) => string; follow?: boolean }) {
+  const { t } = useTranslation()
+  const box = useRef<HTMLDivElement>(null)
+  const atBottom = useRef(true)
+
+  useEffect(() => {
+    if (follow && atBottom.current && box.current) box.current.scrollTop = box.current.scrollHeight
+  }, [follow, lines.length])
+
+  if (lines.length === 0) return <p className="text-sm text-muted-foreground">{t("telephony.call.noTranscript")}</p>
+  return (
+    <div
+      ref={box}
+      onScroll={(e) => {
+        const el = e.currentTarget
+        atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48
+      }}
+      className={cn(follow && "max-h-[60vh] overflow-y-auto pr-1")}
+    >
+      <ol className="flex flex-col gap-3">
+        {lines.map((s, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="w-12 shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground">{formatDuration(s.start_ms / 1000)}</span>
+            <p className="text-[15px] leading-relaxed">
+              <span className={cn("font-medium", speakerColor[s.speaker])}>{label(s)}: </span>
+              <span className="text-foreground">{s.text}</span>
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
 
@@ -224,6 +265,8 @@ export function CallView() {
     const d = e.data as Record<string, string>
     if (e.type === "call.state" && d.operator_id && d.operator_name) operatorNames.set(d.operator_id, d.operator_name)
   }
+  // The member is the operator on this call: the page is their workspace.
+  const mine = operator.active?.id === view.id && view.state !== "ended"
   const speakerLabel = (s: TranscriptSegment) => {
     const name = s.speaker === "operator" && s.operator_id ? operatorNames.get(s.operator_id) : undefined
     return name ? t("telephony.call.speaker.operatorNamed", { name }) : t(`telephony.call.speaker.${s.speaker}`)
@@ -284,90 +327,98 @@ export function CallView() {
           <Fact label={t("telephony.call.handledBy")} value={view.handled_by ? t(`telephony.call.handled.${view.handled_by}`) : t("telephony.call.handled.none")} />
         </dl>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-          <div className="flex min-w-0 flex-col gap-4">
-            <Section title={t("telephony.call.summary")}>
-              {view.summary ? (
-                <p className="text-[15px] leading-relaxed text-foreground">{view.summary}</p>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t("telephony.call.noSummary")}</p>
-              )}
-            </Section>
-
-            <Section title={t("telephony.call.recording")}>
-              {view.has_recording ? (
-                audio ? (
-                  <audio controls autoPlay src={audio} className="w-full" />
+        {mine ? (
+          // The operator on this call: what was said and the brief, who the
+          // caller is, and hints from the knowledge base (WAI-239).
+          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,20rem)_minmax(0,24rem)]">
+            <div className="flex min-w-0 flex-col gap-4">
+              <OperatorBrief call={view} waiting />
+              <Section title={t("telephony.call.transcript")}>
+                <Transcript lines={view.transcript} label={speakerLabel} follow />
+              </Section>
+            </div>
+            <div className="flex min-w-0 flex-col gap-4">
+              <CRMSection call={view} />
+              <PastCalls call={view} />
+            </div>
+            <div className="min-w-0 lg:col-span-2 xl:col-span-1">
+              <HintsPanel call={view} />
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+            <div className="flex min-w-0 flex-col gap-4">
+              <Section title={t("telephony.call.summary")}>
+                {view.summary ? (
+                  <p className="text-[15px] leading-relaxed text-foreground">{view.summary}</p>
                 ) : (
-                  <Button variant="outline" onClick={playRecording} disabled={loadingAudio}>
-                    {loadingAudio ? <Loader2 className="animate-spin" /> : <Play />}
-                    {t("telephony.call.play")}
-                  </Button>
-                )
-              ) : (
-                <p className="text-sm text-muted-foreground">{t("telephony.call.noRecording")}</p>
-              )}
-            </Section>
+                  <p className="text-sm text-muted-foreground">{t("telephony.call.noSummary")}</p>
+                )}
+              </Section>
 
-            <Section title={t("telephony.call.transcript")}>
-              {view.transcript.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("telephony.call.noTranscript")}</p>
-              ) : (
-                <ol className="flex flex-col gap-3">
-                  {view.transcript.map((s, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="w-12 shrink-0 pt-0.5 text-xs tabular-nums text-muted-foreground">{formatDuration(s.start_ms / 1000)}</span>
-                      <p className="text-[15px] leading-relaxed">
-                        <span className={cn("font-medium", speakerColor[s.speaker])}>{speakerLabel(s)}: </span>
-                        <span className="text-foreground">{s.text}</span>
+              <Section title={t("telephony.call.recording")}>
+                {view.has_recording ? (
+                  audio ? (
+                    <audio controls autoPlay src={audio} className="w-full" />
+                  ) : (
+                    <Button variant="outline" onClick={playRecording} disabled={loadingAudio}>
+                      {loadingAudio ? <Loader2 className="animate-spin" /> : <Play />}
+                      {t("telephony.call.play")}
+                    </Button>
+                  )
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t("telephony.call.noRecording")}</p>
+                )}
+              </Section>
+
+              <OperatorBrief call={view} />
+
+              <Section title={t("telephony.call.transcript")}>
+                <Transcript lines={view.transcript} label={speakerLabel} />
+              </Section>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-4">
+              <CRMSection call={view} />
+              <Section title={t("telephony.call.timeline")}>
+                <ol className="relative flex flex-col gap-3 border-l border-border pl-4">
+                  {timeline.map((e) => (
+                    <li key={e.seq} className="relative">
+                      <span aria-hidden className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full bg-primary" />
+                      <p className="text-sm text-foreground">{eventText(e)}</p>
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {new Date(e.at).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                       </p>
                     </li>
                   ))}
                 </ol>
+              </Section>
+              {view.decision.length > 0 && (
+                <Section title={t("telephony.call.routing")}>
+                  <ul className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+                    {view.decision.map((d, i) => (
+                      <li key={i} className="break-words">
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
               )}
-            </Section>
+              {view.notes.length > 0 && (
+                <Section title={t("telephony.call.notes")}>
+                  <ul className="flex flex-col gap-2">
+                    {view.notes.map((n) => (
+                      <li key={n.id} className="text-sm text-foreground">
+                        {n.text}
+                        <span className="block text-xs text-muted-foreground">{fullTime(n.created_at, locale)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+            </div>
           </div>
-
-          <div className="flex min-w-0 flex-col gap-4">
-            <CRMSection call={view} />
-            <Section title={t("telephony.call.timeline")}>
-              <ol className="relative flex flex-col gap-3 border-l border-border pl-4">
-                {timeline.map((e) => (
-                  <li key={e.seq} className="relative">
-                    <span aria-hidden className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full bg-primary" />
-                    <p className="text-sm text-foreground">{eventText(e)}</p>
-                    <p className="text-xs tabular-nums text-muted-foreground">
-                      {new Date(e.at).toLocaleTimeString(locale === "ru" ? "ru-RU" : "en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                    </p>
-                  </li>
-                ))}
-              </ol>
-            </Section>
-            {view.decision.length > 0 && (
-              <Section title={t("telephony.call.routing")}>
-                <ul className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-                  {view.decision.map((d, i) => (
-                    <li key={i} className="break-words">
-                      {d}
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
-            {view.notes.length > 0 && (
-              <Section title={t("telephony.call.notes")}>
-                <ul className="flex flex-col gap-2">
-                  {view.notes.map((n) => (
-                    <li key={n.id} className="text-sm text-foreground">
-                      {n.text}
-                      <span className="block text-xs text-muted-foreground">{fullTime(n.created_at, locale)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
-          </div>
-        </div>
+        )}
       </PageBody>
 
       <AlertDialog open={deleteOpen} onOpenChange={(open) => !deleting && setDeleteOpen(open)}>
