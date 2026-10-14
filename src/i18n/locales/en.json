@@ -1980,7 +1980,42 @@
         "gone": "The call has already ended",
         "failed": "Couldn't connect to the call. Answering works from the office network or over VPN"
       },
-      "callBack": "Asked for a person — call back"
+      "callBack": "Asked for a person — call back",
+      "brief": {
+        "title": "Call brief",
+        "preparing": "Preparing a brief of the conversation with the assistant…",
+        "who": "Who is calling",
+        "wants": "What they want",
+        "answered": "What the assistant answered",
+        "why": "Why a person is needed",
+        "fields": {
+          "name": "Name",
+          "company": "Company",
+          "phone": "Phone",
+          "topic": "Topic",
+          "callback_at": "Call back",
+          "urgent": "Urgent"
+        }
+      },
+      "pastCalls": {
+        "title": "Earlier calls",
+        "none": "No earlier calls from this number."
+      },
+      "hints": {
+        "title": "Hints",
+        "description": "Searching the knowledge base when the caller asks something. You can search too.",
+        "placeholder": "Search the knowledge base",
+        "search": "Search",
+        "empty": "Hints appear when the caller asks a question.",
+        "auto": "The caller's question",
+        "manual": "Your search",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "failed": "The search failed.",
+        "nothing": "Nothing found in the knowledge base.",
+        "copy": "Copy",
+        "copied": "Copied"
+      }
     }
   }
 }
