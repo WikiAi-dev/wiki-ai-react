@@ -236,7 +236,6 @@ export const SLIDES: Slide[] = [
               <div className="ans-row" data-a="" style={d(4)}><span className="ico"><FileText /></span><div><h3>Страница звонка <span className="pill live">в проде</span></h3><p>Резюме, запись, расшифровка, ссылки в CRM</p></div></div>
               <div className="ans-row" data-a="" style={d(5)}><span className="ico"><ShieldCheck /></span><div><h3>Не выдумывает <span className="pill live">в проде</span></h3><p>Нет в документах — «уточню» и записывает вопрос</p></div></div>
               <div className="ans-row" data-a="" style={d(6)}><span className="ico"><Send /></span><div><h3>Сводка в приложении МТС <span className="pill mts">Вместе с МТС</span></h3><p>После каждого звонка, с кнопками</p></div></div>
-              <div className="ans-row" data-a="" style={d(7)}><span className="ico"><MessageCircle /></span><div><h3>Уведомления через СМС <span className="pill mts">Вместе с МТС</span></h3><p>После важных звонков, с ссылкой в приложение</p></div></div>
             </div>
           </div>
           <div className="panel mock" data-a="" style={d(4)}>
@@ -273,7 +272,7 @@ export const SLIDES: Slide[] = [
               <span className="lbl" data-a="" style={d(3)}>Ответ WikiAI Телефонии</span>
               <div className="ans-row" data-a="" style={d(4)}><span className="ico"><User /></span><div><h3>Узнаёт клиента из Bitrix24 <span className="pill live">в проде</span></h3><p>Имя, компания, сделки — до первого слова</p></div></div>
               <div className="ans-row" data-a="" style={d(5)}><span className="ico"><Headset /></span><div><h3>«Соедините с менеджером» <span className="pill live">в проде</span></h3><p>Карточка «Нужен оператор», ответ из браузера</p></div></div>
-              <div className="ans-row" data-a="" style={d(6)}><span className="ico"><Moon /></span><div><h3>Режим «Не беспокоить» <span className="pill soon">в работе</span></h3><p>Важное — сразу, остальное — сводкой</p></div></div>
+              <div className="ans-row" data-a="" style={d(6)}><span className="ico"><MessageCircle /></span><div><h3>Уведомления через СМС <span className="pill mts">Вместе с МТС</span></h3><p>После важных звонков, с ссылкой в приложение</p></div></div>
             </div>
           </div>
           <div className="panel mock" data-a="" style={d(4)}>
@@ -309,8 +308,8 @@ export const SLIDES: Slide[] = [
             <div className="answers">
               <span className="lbl" data-a="" style={d(3)}>Ответ WikiAI Телефонии</span>
               <div className="ans-row" data-a="" style={d(4)}><span className="ico"><UserPlus /></span><div><h3>Лиды в Bitrix24 сами <span className="pill live">в проде</span></h3><p>Новый контакт или дополненная карточка</p></div></div>
-              <div className="ans-row" data-a="" style={d(5)}><span className="ico"><ChartColumn /></span><div><h3>Аналитика <span className="pill soon">в работе</span></h3><p>Сэкономленное время, важные звонки</p></div></div>
-              <div className="ans-row" data-a="" style={d(6)}><span className="ico"><PenLine /></span><div><h3>Вопросы без ответа <span className="pill soon">в работе</span></h3><p>В FAQ в один клик — ассистент учится</p></div></div>
+              <div className="ans-row" data-a="" style={d(5)}><span className="ico"><ChartColumn /></span><div><h3>Аналитика <span className="pill live">в проде</span></h3><p>Сэкономленное время, важные звонки</p></div></div>
+              <div className="ans-row" data-a="" style={d(6)}><span className="ico"><PenLine /></span><div><h3>Вопросы без ответа <span className="pill live">в проде</span></h3><p>В FAQ в один клик — ассистент учится</p></div></div>
             </div>
           </div>
           <div className="panel mock" data-a="" style={d(4)}>
