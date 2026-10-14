@@ -217,16 +217,16 @@ export function CallView() {
 
   const view = withLive(call, live.events)
   const seconds = callSeconds(view)
-  const timeline = view.events.filter((e) => ["view.started", "view.state", "view.ended", "dtmf", "recording.uploaded"].includes(e.type))
-  // Operators by id, named by the view.state that handed them the view.
+  const timeline = view.events.filter((e) => ["call.started", "call.state", "call.ended", "dtmf", "recording.uploaded"].includes(e.type))
+  // Operators by id, named by the call.state that handed them the call.
   const operatorNames = new Map<string, string>()
   for (const e of view.events) {
     const d = e.data as Record<string, string>
-    if (e.type === "view.state" && d.operator_id && d.operator_name) operatorNames.set(d.operator_id, d.operator_name)
+    if (e.type === "call.state" && d.operator_id && d.operator_name) operatorNames.set(d.operator_id, d.operator_name)
   }
   const speakerLabel = (s: TranscriptSegment) => {
     const name = s.speaker === "operator" && s.operator_id ? operatorNames.get(s.operator_id) : undefined
-    return name ? t("telephony.view.speaker.operatorNamed", { name }) : t(`telephony.view.speaker.${s.speaker}`)
+    return name ? t("telephony.call.speaker.operatorNamed", { name }) : t(`telephony.call.speaker.${s.speaker}`)
   }
 
   return (
@@ -247,7 +247,7 @@ export function CallView() {
                 </span>
               )}
               <span>{fullTime(view.started_at, locale)}</span>
-              {view.test && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{t("telephony.view.test")}</span>}
+              {view.test && <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{t("telephony.call.test")}</span>}
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -255,12 +255,12 @@ export function CallView() {
               (view.status === "new" ? (
                 <Button onClick={() => setStatus("processed")} disabled={saving}>
                   {saving ? <Loader2 className="animate-spin" /> : <CheckCheck />}
-                  {t("telephony.view.markProcessed")}
+                  {t("telephony.call.markProcessed")}
                 </Button>
               ) : (
                 <Button variant="outline" onClick={() => setStatus("new")} disabled={saving}>
                   {saving ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-                  {t("telephony.view.reopen")}
+                  {t("telephony.call.reopen")}
                 </Button>
               ))}
             {(view.state === "bot" || view.state === "queued") && !operator.active && (
@@ -270,7 +270,7 @@ export function CallView() {
               </Button>
             )}
             {isAdmin && (
-              <Button variant="ghost" size="icon" onClick={() => setDeleteOpen(true)} aria-label={t("telephony.view.delete")}>
+              <Button variant="ghost" size="icon" onClick={() => setDeleteOpen(true)} aria-label={t("telephony.call.delete")}>
                 <Trash2 />
               </Button>
             )}
@@ -278,40 +278,40 @@ export function CallView() {
         </div>
 
         <dl className="grid grid-cols-2 gap-4 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4 sm:p-5">
-          <Fact label={t("telephony.view.line")} value={view.line_name || formatPhone(view.to)} />
-          <Fact label={t("telephony.view.dialled")} value={formatPhone(view.to)} />
-          <Fact label={t("telephony.view.duration")} value={seconds > 0 ? formatDuration(seconds) : ""} />
-          <Fact label={t("telephony.view.handledBy")} value={view.handled_by ? t(`telephony.view.handled.${view.handled_by}`) : t("telephony.view.handled.none")} />
+          <Fact label={t("telephony.call.line")} value={view.line_name || formatPhone(view.to)} />
+          <Fact label={t("telephony.call.dialled")} value={formatPhone(view.to)} />
+          <Fact label={t("telephony.call.duration")} value={seconds > 0 ? formatDuration(seconds) : ""} />
+          <Fact label={t("telephony.call.handledBy")} value={view.handled_by ? t(`telephony.call.handled.${view.handled_by}`) : t("telephony.call.handled.none")} />
         </dl>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
           <div className="flex min-w-0 flex-col gap-4">
-            <Section title={t("telephony.view.summary")}>
+            <Section title={t("telephony.call.summary")}>
               {view.summary ? (
                 <p className="text-[15px] leading-relaxed text-foreground">{view.summary}</p>
               ) : (
-                <p className="text-sm text-muted-foreground">{t("telephony.view.noSummary")}</p>
+                <p className="text-sm text-muted-foreground">{t("telephony.call.noSummary")}</p>
               )}
             </Section>
 
-            <Section title={t("telephony.view.recording")}>
+            <Section title={t("telephony.call.recording")}>
               {view.has_recording ? (
                 audio ? (
                   <audio controls autoPlay src={audio} className="w-full" />
                 ) : (
                   <Button variant="outline" onClick={playRecording} disabled={loadingAudio}>
                     {loadingAudio ? <Loader2 className="animate-spin" /> : <Play />}
-                    {t("telephony.view.play")}
+                    {t("telephony.call.play")}
                   </Button>
                 )
               ) : (
-                <p className="text-sm text-muted-foreground">{t("telephony.view.noRecording")}</p>
+                <p className="text-sm text-muted-foreground">{t("telephony.call.noRecording")}</p>
               )}
             </Section>
 
-            <Section title={t("telephony.view.transcript")}>
+            <Section title={t("telephony.call.transcript")}>
               {view.transcript.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("telephony.view.noTranscript")}</p>
+                <p className="text-sm text-muted-foreground">{t("telephony.call.noTranscript")}</p>
               ) : (
                 <ol className="flex flex-col gap-3">
                   {view.transcript.map((s, i) => (
@@ -330,7 +330,7 @@ export function CallView() {
 
           <div className="flex min-w-0 flex-col gap-4">
             <CRMSection call={view} />
-            <Section title={t("telephony.view.timeline")}>
+            <Section title={t("telephony.call.timeline")}>
               <ol className="relative flex flex-col gap-3 border-l border-border pl-4">
                 {timeline.map((e) => (
                   <li key={e.seq} className="relative">
@@ -344,7 +344,7 @@ export function CallView() {
               </ol>
             </Section>
             {view.decision.length > 0 && (
-              <Section title={t("telephony.view.routing")}>
+              <Section title={t("telephony.call.routing")}>
                 <ul className="flex flex-col gap-1 text-[13px] text-muted-foreground">
                   {view.decision.map((d, i) => (
                     <li key={i} className="break-words">
@@ -355,7 +355,7 @@ export function CallView() {
               </Section>
             )}
             {view.notes.length > 0 && (
-              <Section title={t("telephony.view.notes")}>
+              <Section title={t("telephony.call.notes")}>
                 <ul className="flex flex-col gap-2">
                   {view.notes.map((n) => (
                     <li key={n.id} className="text-sm text-foreground">
@@ -373,8 +373,8 @@ export function CallView() {
       <AlertDialog open={deleteOpen} onOpenChange={(open) => !deleting && setDeleteOpen(open)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("telephony.view.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("telephony.view.deleteDescription")}</AlertDialogDescription>
+            <AlertDialogTitle>{t("telephony.call.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("telephony.call.deleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>{t("telephony.form.cancel")}</AlertDialogCancel>
@@ -387,7 +387,7 @@ export function CallView() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting && <Loader2 className="animate-spin" />}
-              {t("telephony.view.delete")}
+              {t("telephony.call.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
