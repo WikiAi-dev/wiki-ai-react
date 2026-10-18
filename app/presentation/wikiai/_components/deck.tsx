@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Expand, NotebookText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SCRIPT } from "@/video/pitch/script";
+import { APPENDIX, DECK, SCRIPT } from "@/video/pitch/script";
 
 const ScenePlayer = dynamic(() => import("./scene-player").then((m) => m.ScenePlayer), { ssr: false });
 const ScenePreview = dynamic(() => import("./scene-player").then((m) => m.ScenePreview), { ssr: false });
@@ -17,13 +17,14 @@ const NARROW = "(max-width: 819px)";
 /*
  * Where the presentation is: the scene comes from the URL hash (#3 is the
  * third scene, so a link or a reload lands there); whether to show it already
- * built (after stepping back) lives next to it.
+ * built (after stepping back) lives next to it. The appendix follows the
+ * pitch in the same sequence.
  */
 let instant = false;
 
 function readScene() {
   const n = parseInt(window.location.hash.slice(1), 10);
-  return Number.isFinite(n) ? Math.max(0, Math.min(SCRIPT.length - 1, n - 1)) : 0;
+  return Number.isFinite(n) ? Math.max(0, Math.min(DECK.length - 1, n - 1)) : 0;
 }
 
 function readPosition() {
@@ -48,7 +49,7 @@ function moveTo(scene: number, atOnce: boolean) {
 /** The next scene, played from the start. */
 function next() {
   const scene = readScene();
-  if (scene < SCRIPT.length - 1) moveTo(scene + 1, false);
+  if (scene < DECK.length - 1) moveTo(scene + 1, false);
 }
 
 /** The previous scene, shown already built. */
@@ -75,11 +76,13 @@ export function PlatformDeck() {
   const [idle, setIdle] = useState(false);
 
   const [index, atOnce] = position.split("|").map(Number);
-  const cue = SCRIPT[index];
+  const cue = DECK[index];
+  const extra = index >= SCRIPT.length;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof Element && e.target.closest("input, textarea")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) {
         e.preventDefault();
         next();
@@ -88,6 +91,7 @@ export function PlatformDeck() {
         prev();
       } else if (e.key === "Home") moveTo(0, false);
       else if (e.key === "End") moveTo(SCRIPT.length - 1, true);
+      else if (["a", "A", "ф", "Ф"].includes(e.key)) moveTo(SCRIPT.length, false);
       else if (["n", "N", "т", "Т"].includes(e.key)) setNotesOpen((open) => !open);
       else if (["f", "F", "а", "А"].includes(e.key)) toggleFullscreen();
     };
@@ -116,10 +120,10 @@ export function PlatformDeck() {
     return (
       <div className="tp wd">
         <main className="wd-list">
-          {SCRIPT.map((c, k) => (
+          {DECK.map((c, k) => (
             <section key={c.id} aria-label={`${k + 1}: ${c.section}`}>
               <ScenePreview cue={c} />
-              <p><b>{pad(k + 1)}</b> {c.section}</p>
+              <p><b>{k < SCRIPT.length ? pad(k + 1) : `П${k - SCRIPT.length + 1}`}</b> {c.section}</p>
             </section>
           ))}
         </main>
@@ -127,11 +131,11 @@ export function PlatformDeck() {
     );
   }
 
-  const pace = cue.pace === "main" ? "Главное" : "Быстро";
+  const pace = { main: "Главное", quick: "Быстро", qa: "Вопросы" }[cue.pace];
 
   return (
     <div className={cn("tp wd", idle && !notesOpen && "idle")}>
-      <main className="viewport wd-screen" onClick={next} aria-roledescription="презентация" aria-label={`${index + 1} из ${SCRIPT.length}: ${cue.section}`}>
+      <main className="viewport wd-screen" onClick={next} aria-roledescription="презентация" aria-label={`${index + 1} из ${DECK.length}: ${cue.section}`}>
         <AnimatePresence initial={false}>
           <motion.div
             key={index}
@@ -160,7 +164,7 @@ export function PlatformDeck() {
           <ChevronLeft />
         </button>
         <span className="count">
-          {pad(index + 1)} / {pad(SCRIPT.length)}
+          {extra ? `П${index - SCRIPT.length + 1} / П${APPENDIX.length}` : `${pad(index + 1)} / ${pad(SCRIPT.length)}`}
         </span>
         <button type="button" aria-label="Дальше" onClick={next}>
           <ChevronRight />
@@ -170,18 +174,18 @@ export function PlatformDeck() {
           <span className={cn("wd-pace", cue.pace)}>{pace}</span>
         </span>
         <div className="dots">
-          {SCRIPT.map((c, k) => (
+          {DECK.map((c, k) => (
             <button
               key={c.id}
               type="button"
-              aria-label={`Сцена ${k + 1}: ${c.section}`}
+              aria-label={k < SCRIPT.length ? `Сцена ${k + 1}: ${c.section}` : c.section}
               aria-current={k === index}
-              className={cn(c.pace, k === index && "on")}
+              className={cn(c.pace, k === SCRIPT.length && "first-qa", k === index && "on")}
               onClick={() => moveTo(k, false)}
             />
           ))}
         </div>
-        <span className="hint">→ дальше · N заметки · F экран</span>
+        <span className="hint">→ дальше · A приложение · N заметки</span>
         <button type="button" aria-label="Во весь экран" onClick={toggleFullscreen}>
           <Expand />
         </button>

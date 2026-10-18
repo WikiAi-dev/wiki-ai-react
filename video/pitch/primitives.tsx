@@ -45,13 +45,13 @@ export function Stage({ light = LIGHT.cobalt, x = 72, y = 38, children }: { ligh
   );
 }
 
-/** Small chapter mark in the corner, so a viewer of the film knows where they are. */
-export function Chapter({ n, children }: { n: number; children: ReactNode }) {
+/** Small chapter mark in the corner, so a viewer of the film knows where they are. Appendix scenes pass a label such as "П1". */
+export function Chapter({ n, children }: { n: number | string; children: ReactNode }) {
   const frame = useFrame();
   return (
     <div style={{ position: "absolute", left: 140, top: 70, display: "flex", alignItems: "center", gap: 16, fontSize: 22, color: C.dim, opacity: prog(frame, 0, 16) }}>
       <span style={{ width: 28, height: 2, background: C.cobalt }} />
-      <span style={{ color: C.soft, fontVariantNumeric: "tabular-nums" }}>{String(n).padStart(2, "0")}</span>
+      <span style={{ color: C.soft, fontVariantNumeric: "tabular-nums" }}>{typeof n === "number" ? String(n).padStart(2, "0") : n}</span>
       {children}
     </div>
   );
