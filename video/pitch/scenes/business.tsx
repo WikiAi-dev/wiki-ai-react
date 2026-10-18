@@ -170,7 +170,7 @@ export function Unit() {
 
       <div style={{ position: "absolute", left: 140, right: 140, top: 878, paddingTop: 22, borderTop: `1px solid ${C.rule}`, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 40 }}>
         {[
-          { n: <Num at={104} to={76} suffix="%" />, k: "валовая маржа смешанного клиента" },
+          { n: <Num at={104} to={77} suffix="%" />, k: "валовая маржа смешанного клиента" },
           { n: <Num at={114} to={7.4} decimals={1} suffix="×" />, k: "LTV / CAC смешанного клиента" },
           { n: <Num at={124} to={99} suffix="%" />, k: "удержание выручки колл-центров" },
           { n: <Num at={134} to={0.042} decimals={3} />, k: "BYN стоит нам минута ассистента" },
@@ -181,7 +181,7 @@ export function Unit() {
           </Up>
         ))}
       </div>
-      <Source at={150}>CAC, отток и рост чека: оценки. LTV: валовая прибыль за 3 года с учётом оттока, без роста чека. Лист «Юнит».</Source>
+      <Source at={150}>CAC, отток и рост чека: оценки. LTV: валовая прибыль за 3 года с учётом оттока, без роста чека, плюс маржа внедрения. Лист «Юнит».</Source>
     </Stage>
   );
 }
@@ -208,7 +208,7 @@ export function Market() {
       {[
         { d: 560, at: 18, border: `1.5px solid ${C.rule}`, bg: "transparent", n: "$2,41 млрд", k: "ИИ в контакт-центрах, мир, +21% в год", size: 38 },
         { d: 380, at: 32, border: `2px solid ${C.cobalt}`, bg: "rgba(91,132,255,0.06)", n: "$277 млн", k: "технологии для колл-центров России, Беларуси, Казахстана, Узбекистана", size: 34 },
-        { d: 200, at: 46, border: "none", bg: "linear-gradient(160deg, #3D67FF, #1C38C8)", n: "$7,7 млн", k: "ARR в 2031: 2,8% рынка", size: 40 },
+        { d: 200, at: 46, border: "none", bg: "linear-gradient(160deg, #3D67FF, #1C38C8)", n: "$2,2 млн", k: "ARR в 2031: 0,8% рынка", size: 40 },
       ].map((r) => (
         <div
           key={r.n}
@@ -276,7 +276,7 @@ export function Close() {
         <Line at={10} size={104}>Клиент не ждёт.</Line>
         <Line at={18} size={104} color={C.soft}>Оператор не ищет.</Line>
         <Up at={48} style={{ marginTop: 48, fontSize: 36, color: C.soft, lineHeight: 1.4 }}>
-          <b style={{ color: C.ink, fontWeight: 600 }}>Pre-seed $500 тыс.</b> и пилоты с колл-центрами.
+          <b style={{ color: C.ink, fontWeight: 600 }}>Pre-seed $20 тыс.</b> и пилоты с колл-центрами.
         </Up>
         <Up at={58} style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, fontSize: 28, color: C.soft }}>
           <Pulse color={C.ok} />
