@@ -82,6 +82,7 @@ export function PlatformDeck() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof Element && e.target.closest("input, textarea")) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) {
         e.preventDefault();
         next();
