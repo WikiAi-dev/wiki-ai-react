@@ -1,0 +1,43 @@
+/*
+ * WikiAI platform pitch (/presentation/wikiai). The scenes are Remotion
+ * compositions (video/pitch) played with @remotion/player; this file only
+ * styles the room around them. The presenter bar and notes come from
+ * ../telephony/presentation.css, recoloured here for the dark film.
+ */
+.tp.wd {
+  --bg: #000;
+  --fg: oklch(0.96 0.004 255);
+  --muted-fg: oklch(0.7 0.014 258);
+  --card: oklch(0.18 0.01 264);
+  --border: oklch(1 0 0 / 0.12);
+  --muted: oklch(0.22 0.012 264);
+  --primary: oklch(0.68 0.16 263);
+  --primary-fg: #fff;
+  --accent-bg: oklch(0.25 0.04 263);
+  --shadow: oklch(0 0 0 / 0.6);
+  color-scheme: dark;
+  background: #000;
+  color: var(--fg);
+}
+
+/* the film fills the window; the presenter bar floats over it when visible */
+.tp.wd .viewport.wd-screen { inset: 0; cursor: pointer; }
+.tp .wd-frame { position: absolute; inset: 0; display: grid; place-items: center; }
+.tp.wd.idle, .tp.wd.idle .wd-screen { cursor: none; }
+
+.tp.wd .nav { background: oklch(0 0 0 / 0.72); border-top-color: var(--border); transition: opacity .35s ease; }
+.tp.wd.idle .nav { opacity: 0; pointer-events: none; }
+.tp.wd.idle .nav:focus-within { opacity: 1; pointer-events: auto; }
+.tp .wd-section { font-size: 13px; font-weight: 500; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; }
+.tp .wd-pace { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; margin-left: 8px; }
+.tp .wd-pace.main { color: var(--primary); background: color-mix(in oklab, var(--primary) 18%, transparent); }
+.tp .wd-pace.quick { color: var(--muted-fg); background: var(--muted); }
+.tp .dots button.main { width: 34px; }
+.tp .dots button.quick { width: 14px; }
+@media (max-width: 1240px) { .tp.wd .hint { display: none; } }
+
+/* phones: every scene as its own small player in a scrolling list */
+.tp .wd-list { display: grid; gap: 28px; padding: 16px; }
+.tp .wd-list section { display: grid; gap: 10px; }
+.tp .wd-list p { font-size: 14px; color: var(--muted-fg); }
+.tp .wd-list b { color: var(--fg); font-weight: 600; margin-right: 6px; }
