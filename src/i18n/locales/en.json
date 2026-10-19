@@ -1958,6 +1958,27 @@
         "selected": "Checked files and records: {{files}}, sources and kinds: {{sources}}",
         "empty": "Nothing is checked: the assistant answers only from its instructions and scenario."
       },
+      "pinned": {
+        "title": "Documents at hand",
+        "description": "The assistant gets their full text before the conversation starts and answers from them at once, with no search and no pause. Pin what matters most: prices, opening hours, addresses, delivery terms. Up to 8,000 characters in total; leave long documents to the search below.",
+        "meter": "{{used}} of {{limit}} characters",
+        "count": "{{count}} of {{max}} documents",
+        "measuring": "Measuring…",
+        "over": "The documents grew past the limit: the end of their text won't reach the assistant. Unpin a document or shorten it.",
+        "none": "Nothing is pinned: the assistant searches for every fact, and the caller waits longer.",
+        "add": "Pin a document",
+        "remove": "Unpin “{{title}}”",
+        "full": "{{max}} documents are pinned, the most allowed.",
+        "chars": "{{count}} chars",
+        "unreadable": "can't be read",
+        "uploaded": "Uploaded file",
+        "pickDescription": "{{free}} characters free. The whole document goes into every call.",
+        "tooBig": "“{{title}}” has {{size}} characters, but {{free}} are free. Leave it to the search below: the assistant finds the right passage when asked.",
+        "failed": "Couldn't read the document. Try again.",
+        "pinnedMark": "pinned",
+        "more": "{{count}} more: narrow the search",
+        "preview": "Documents at hand: they follow this text in full, before the rules."
+      },
       "numbers": {
         "title": "Numbers",
         "description": "The checked numbers answer with this assistant once saved.",
