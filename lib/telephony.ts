@@ -100,6 +100,8 @@ export interface ScenarioDraft {
   instructions: string
   nodes: ScenarioNode[]
   edges: ScenarioEdge[]
+  /** What the assistant has before the caller says a word: documents in full (WAI-236). */
+  preflight?: { documents?: string[] }
   scope_id?: string
 }
 
@@ -400,6 +402,8 @@ export function reportedAfter(t: Trunk, previous: string | null): boolean {
 // telephony-api answers in English; these are its messages people see in
 // forms and toasts, in Russian.
 const RU_API_TEXT: Record<string, string> = {
+  "At most 10 documents are pinned": "Закрепить можно не больше 10 документов",
+  "Not a document id": "Неверный документ",
   "This number is already used by a line": "Этот номер уже занят другой линией",
   "Enter the whole number, e.g. +375 17 123-45-67 or 8 017 123-45-67": "Введите номер целиком, например +375 17 123-45-67 или 8 017 123-45-67",
   "Number must be in international format, e.g. +375171234567": "Номер в международном формате, например +375171234567",

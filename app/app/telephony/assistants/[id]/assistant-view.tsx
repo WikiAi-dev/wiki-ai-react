@@ -29,6 +29,7 @@ import {
   type KnowledgeFile,
   type KnowledgeSelection,
 } from "@/components/telephony/file-picker"
+import { PinnedDocuments, pinnedText } from "@/components/telephony/pinned-documents"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -62,7 +63,8 @@ type Form = Pick<ScenarioDraft, "company" | "assistant_name" | "greeting" | "ins
 
 /**
  * An assistant's page: who it speaks for and how (instructions and the
- * conversation map), the files it may search, and the numbers it answers.
+ * conversation map), the documents it has at hand from the start of a call,
+ * the files it may search, and the numbers it answers.
  * Saving publishes it: calls from then on use it.
  */
 export function AssistantView() {
@@ -77,12 +79,13 @@ export function AssistantView() {
   const [files, setFiles] = useState<KnowledgeFile[] | null>(null)
   const [connections, setConnections] = useState<Connection[]>([])
   const [chosen, setChosen] = useState<KnowledgeSelection>({ documents: [], connections: [] })
+  const [pinned, setPinned] = useState<string[]>([])
   const [lines, setLines] = useState<Line[]>([])
   const [numbers, setNumbers] = useState<string[]>([])
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [preview, setPreview] = useState<{ prompt: string; greeting: string } | null>(null)
+  const [preview, setPreview] = useState<{ prompt: string; greeting: string; documents: { title: string; text: string | null }[] } | null>(null)
 
   const load = useCallback(async () => {
     if (!token) return
@@ -97,6 +100,7 @@ export function AssistantView() {
     setName(sc.name)
     setForm({ company: d.company ?? "", assistant_name: d.assistant_name ?? "", greeting: d.greeting ?? "", instructions: d.instructions ?? "" })
     setMap({ nodes: d.nodes ?? [], edges: d.edges ?? [] })
+    setPinned(d.preflight?.documents ?? [])
     const [scope, ls, docs, conns] = await Promise.all([
       d.scope_id ? telephonyApi.scope(token, d.scope_id) : Promise.resolve(null),
       telephonyApi.lines(token),
@@ -128,13 +132,18 @@ export function AssistantView() {
     setDirty(true)
   }, [])
 
-  const draft = (scopeId: string | undefined): ScenarioDraft => ({ ...form, ...map, scope_id: scopeId })
+  const draft = (scopeId: string | undefined): ScenarioDraft => ({ ...form, ...map, preflight: { documents: pinned }, scope_id: scopeId })
 
   const showPreview = async () => {
     if (!token) return
-    const result = await telephonyApi.previewScenario(token, draft(scenario?.draft.scope_id))
-    if (result.status === "success" && result.response) setPreview(result.response)
-    else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
+    const [result, texts] = await Promise.all([
+      telephonyApi.previewScenario(token, draft(scenario?.draft.scope_id)),
+      Promise.all(pinned.map((id) => pinnedText(token, id))),
+    ])
+    if (result.status === "success" && result.response) {
+      const title = (id: string) => files?.find((f) => f.document_id === id)?.title || t("telephony.assistants.files.gone")
+      setPreview({ ...result.response, documents: pinned.map((id, i) => ({ title: title(id), text: texts[i] })) })
+    } else toast.error(apiText(result.message, locale) || t("telephony.toast.failed"))
   }
 
   const save = async () => {
@@ -290,6 +299,15 @@ export function AssistantView() {
               )}
             </Section>
 
+            <Section title={t("telephony.assistants.pinned.title")} description={t("telephony.assistants.pinned.description")}>
+              {files === null ? (
+                <Skeleton className="h-28 rounded-2xl" />
+              ) : (
+                <PinnedDocuments token={token} files={files} pinned={pinned} onChange={(ids) => (setPinned(ids), setDirty(true))} disabled={saving} />
+              )}
+              {errors["draft.preflight.documents"] && <p className="mt-2 text-[13px] text-destructive">{errors["draft.preflight.documents"]}</p>}
+            </Section>
+
             <Section title={t("telephony.assistants.files.title")} description={t("telephony.assistants.files.description")}>
               {files === null ? (
                 <Skeleton className="h-40 rounded-2xl" />
@@ -350,9 +368,21 @@ export function AssistantView() {
                 <span className="text-muted-foreground">{t("telephony.assistants.company.greeting")}: </span>
                 {preview.greeting}
               </p>
-              <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-xl bg-muted p-3 text-[13px] leading-relaxed text-foreground">
-                {preview.prompt || t("telephony.assistants.previewEmpty")}
-              </pre>
+              <div className="grid max-h-[60vh] gap-3 overflow-auto">
+                <pre className="whitespace-pre-wrap rounded-xl bg-muted p-3 text-[13px] leading-relaxed text-foreground">
+                  {preview.prompt || t("telephony.assistants.previewEmpty")}
+                </pre>
+                {preview.documents.length > 0 && (
+                  <div className="grid gap-1.5">
+                    <p className="text-[13px] text-muted-foreground">{t("telephony.assistants.pinned.preview")}</p>
+                    <pre className="whitespace-pre-wrap rounded-xl bg-muted p-3 text-[13px] leading-relaxed text-foreground">
+                      {preview.documents
+                        .map((d) => `=== ${d.title} ===\n${d.text ?? t("telephony.assistants.pinned.unreadable")}`)
+                        .join("\n\n")}
+                    </pre>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
