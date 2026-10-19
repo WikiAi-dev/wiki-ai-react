@@ -113,9 +113,11 @@ export function PinnedDocuments({
     if (pinned.includes(f.document_id) || full || measuring || adding) return
     setRefusal("")
     setAdding(f.document_id)
-    const size = f.document_id in sizes ? sizes[f.document_id] : await measure(f.document_id)
+    // One that couldn't be read before is asked again.
+    const known = sizes[f.document_id]
+    const size = typeof known === "number" ? known : await measure(f.document_id)
     setAdding(null)
-    if (size === null || size === undefined) {
+    if (size === null) {
       setRefusal(t("telephony.assistants.pinned.failed"))
       return
     }
