@@ -70,7 +70,7 @@ export function Solution() {
           {frame > 200 && WIRES_OUT.map((w, j) => OUT[j].soon ? null : <Spark key={`po${j}`} p={at(w, (live / 50 + j * 0.27) % 1)} />)}
         </svg>
 
-        <Up at={34} style={{ position: "absolute", left: 140, width: G.inRight - 140, top: G.inTop - 70, textAlign: "right", fontSize: 21, color: C.dim }}>Ваши системы</Up>
+        <Up at={34} style={{ position: "absolute", left: 140, width: G.inRight - 140, top: G.inTop - 70, textAlign: "right", fontSize: 21, color: C.dim }}>Коннекторы</Up>
         {IN.map((n, i) => (
           <Up key={n.name} at={30 + i * 5} dist={0} style={{ position: "absolute", left: 140, width: G.inRight - 140, top: inY(i) - 20, textAlign: "right", fontSize: 30, fontWeight: n.soon ? 400 : 500, color: n.soon ? C.dim : C.ink }}>
             {n.name}
@@ -96,7 +96,7 @@ export function Solution() {
           }}
         >
           <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: "-0.04em" }}>WikiAI</div>
-          <div style={{ fontSize: 24, opacity: 0.8, marginTop: -8 }}>RAG и граф знаний</div>
+          <div style={{ fontSize: 24, opacity: 0.8, marginTop: -8 }}>Ядро: поиск и коннекторы</div>
           <div style={{ display: "grid", gap: 10, fontSize: 21, lineHeight: 1.32, marginTop: 12, opacity: 0.92 }}>
             <span>Синхронизируется с источниками</span>
             <span>Отвечает со ссылкой на документ</span>
@@ -104,7 +104,7 @@ export function Solution() {
           </div>
         </div>
 
-        <Up at={150} style={{ position: "absolute", left: G.outX, top: G.outTop - 70, fontSize: 21, color: C.dim }}>Где отвечает</Up>
+        <Up at={150} style={{ position: "absolute", left: G.outX, top: G.outTop - 70, fontSize: 21, color: C.dim }}>Модули на ядре</Up>
         {OUT.map((n, j) => (
           <Up key={n.name} at={160 + j * 7} dist={0} style={{ position: "absolute", left: G.outX, top: outY(j) - 20, fontSize: 30, fontWeight: n.soon ? 400 : 600, color: n.soon ? C.dim : C.ink }}>
             {n.name}
