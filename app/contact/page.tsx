@@ -1,27 +1,20 @@
 import type { Metadata } from "next";
-import "../landing/landing.css";
-import ru from "@/src/i18n/locales/ru.json";
-import { Nav } from "../landing/_components/nav";
-import { Footer } from "../landing/_components/closing";
-import { MotionRoot } from "../landing/_components/motion";
-import { ContactView } from "./_components/contact-view";
+import { Geist, Geist_Mono } from "next/font/google";
+import { ContactSite } from "../landing/_site/contact-page";
+import { dictionaries } from "../landing/_site/content";
+import "../landing/_site/site.css";
+
+/* The contact page, in the same style as the landing (app/landing/_site). */
+
+const sans = Geist({ subsets: ["latin", "cyrillic"], variable: "--font-ws-sans", display: "swap" });
+const mono = Geist_Mono({ subsets: ["latin", "cyrillic"], variable: "--font-ws-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: ru.landing.contact.metaTitle,
-  description: ru.landing.contact.metaDescription,
+  title: dictionaries.ru.contactPage.meta.title,
+  description: dictionaries.ru.contactPage.meta.description,
+  authors: [{ name: "Афанасьев Иван" }],
 };
 
 export default function ContactPage() {
-  return (
-    <MotionRoot>
-      {/* One screen: nav, the card centred in the remaining space, and a thin copyright bar. */}
-      <div className="wl flex min-h-[100dvh] flex-col bg-background font-sans text-foreground antialiased">
-        <Nav showCta={false} />
-        <main className="flex flex-1 items-center">
-          <ContactView />
-        </main>
-        <Footer compact />
-      </div>
-    </MotionRoot>
-  );
+  return <ContactSite fontClass={`${sans.variable} ${mono.variable}`} />;
 }
