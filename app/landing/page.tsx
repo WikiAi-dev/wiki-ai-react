@@ -1,39 +1,33 @@
 import type { Metadata } from "next";
-import "./landing.css";
-import { Nav } from "./_components/nav";
-import { Hero } from "./_components/hero";
-import { Pains } from "./_components/pains";
-import { Systems } from "./_components/systems";
-import { HowItWorks } from "./_components/how-it-works";
-import { Results } from "./_components/results";
-import { Pilot } from "./_components/pilot";
-import { Faq } from "./_components/faq";
-import { FinalCta, Footer } from "./_components/closing";
-import { MotionRoot } from "./_components/motion";
+import { Geist, Geist_Mono } from "next/font/google";
+import { dictionaries } from "./_site/content";
+import { Site } from "./_site/site";
+import "./_site/site.css";
+
+/*
+ * WikiAI landing (November 2026, WAI-258) in the owner's brand system from
+ * afanasieff.by (BusinessCardSite): the concrete (light) and graphite (dark)
+ * palettes and Geist, with the WikiAI blue as the accent. Its elements are
+ * its own, after the afanasieff.by moodboard (giant word with an object in
+ * the gap, grain, text ring, kinetic manifesto, bracket viewfinder, webhook
+ * log, wave lines, horizontal rail, self-drawing mark) and webdad.by (pill
+ * nav and CTAs, before/after rows). Scroll effects: ./_site/scroll.ts.
+ * Audience, pains and prices: Docs/WikiAI_economics_KP_CJM.xlsx, the deck.
+ * /contact uses the same style (./_site/contact-page.tsx); the previous
+ * landing's components in ./_components still serve /login and the other
+ * auth pages.
+ */
+
+// The afanasieff.by brand faces: Geist and Geist Mono, both with Cyrillic.
+const sans = Geist({ subsets: ["latin", "cyrillic"], variable: "--font-ws-sans", display: "swap" });
+const mono = Geist_Mono({ subsets: ["latin", "cyrillic"], variable: "--font-ws-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "WikiAI | База знаний компании, которая подключается к Битрикс24 и 1С",
-  description:
-    "WikiAI собирает данные из Битрикс24, 1С, документов и других систем в одну базу знаний, сам её обновляет и отвечает сотрудникам, клиентам и ИИ-агентам со ссылкой на источник.",
+  title: dictionaries.ru.meta.title,
+  description: dictionaries.ru.meta.description,
+  authors: [{ name: "Афанасьев Иван" }],
 };
 
 export default function LandingPage() {
-  return (
-    <MotionRoot>
-      <div className="wl min-h-[100dvh] bg-background font-sans text-foreground antialiased">
-        <Nav />
-        <main>
-          <Hero />
-          <Pains />
-          <Systems />
-          <HowItWorks />
-          <Results />
-          <Pilot />
-          <Faq />
-          <FinalCta />
-        </main>
-        <Footer />
-      </div>
-    </MotionRoot>
-  );
+  return <Site fontClass={`${sans.variable} ${mono.variable}`} />;
 }
