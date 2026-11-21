@@ -373,7 +373,7 @@ export function formatPhone(e164: string): string {
 
 /** "1:05" or "1:02:03" for a number of seconds. */
 export function formatDuration(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds))
+  const s = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
   const sec = String(s % 60).padStart(2, "0")
