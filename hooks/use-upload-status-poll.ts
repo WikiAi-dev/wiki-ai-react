@@ -13,10 +13,11 @@ export interface UploadStatusEntry {
 }
 
 const POLL_INTERVAL_MS = 5000
-// A status request that keeps failing (the document was deleted, a 404 for
-// good) must not poll forever: after this many failures in a row the entry
-// is marked as an error and polling stops.
-const MAX_CONSECUTIVE_FAILURES = 6
+// A status request that fails (a network error, a 5xx during a deploy) says
+// nothing about the document, which keeps indexing on the server: keep
+// polling, backing off up to MAX_BACKOFF_MS. Only a definitive answer stops
+// it: a terminal status, or a 404 (the document is gone).
+const MAX_BACKOFF_MS = 30000
 const TERMINAL_STATUSES: UploadStatusValue[] = ["indexed", "failed", "duplicate", "error"]
 
 // Frontend counterpart to knowledge-service's async ingest (WAI-52) and its
@@ -27,12 +28,12 @@ const TERMINAL_STATUSES: UploadStatusValue[] = ["indexed", "failed", "duplicate"
 // UI show live pending -> indexing -> indexed/failed progress per file.
 export function useUploadStatusPoll(token: string | null) {
   const [entries, setEntries] = useState<UploadStatusEntry[]>([])
-  const timersRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   const stopPolling = useCallback((documentId: string) => {
     const timer = timersRef.current.get(documentId)
     if (timer) {
-      clearInterval(timer)
+      clearTimeout(timer)
       timersRef.current.delete(documentId)
     }
   }, [])
@@ -51,17 +52,27 @@ export function useUploadStatusPoll(token: string | null) {
         if (timersRef.current.has(documentId)) continue
 
         let failures = 0
-        const timer = setInterval(async () => {
-          const result = await filesApi.getStatus(token, documentId)
-          if (result.status !== "success" || !result.response) {
-            if (++failures >= MAX_CONSECUTIVE_FAILURES) {
+        const schedule = () => {
+          const delay = Math.min(POLL_INTERVAL_MS * 2 ** failures, MAX_BACKOFF_MS)
+          const timer = setTimeout(poll, delay)
+          timersRef.current.set(documentId, timer)
+        }
+        const poll = async () => {
+          const result = await filesApi.getStatus(token, documentId).catch(() => null)
+          // Stopped (dismissed, cleared, unmounted) while the request ran.
+          if (!timersRef.current.has(documentId)) return
+          if (!result || result.status !== "success" || !result.response) {
+            if (result?.httpStatus === 404) {
               stopPolling(documentId)
               setEntries((prev) =>
                 prev.map((e) =>
                   e.documentId === documentId ? { ...e, status: "error", message: result.message || "Could not get the indexing status" } : e,
                 ),
               )
+              return
             }
+            failures++
+            schedule()
             return
           }
           failures = 0
@@ -71,10 +82,11 @@ export function useUploadStatusPoll(token: string | null) {
 
           if (TERMINAL_STATUSES.includes(nextStatus)) {
             stopPolling(documentId)
+            return
           }
-        }, POLL_INTERVAL_MS)
-
-        timersRef.current.set(documentId, timer)
+          schedule()
+        }
+        schedule()
       }
     },
     [token, stopPolling],
@@ -98,7 +110,7 @@ export function useUploadStatusPoll(token: string | null) {
   useEffect(() => {
     const timers = timersRef.current
     return () => {
-      for (const timer of timers.values()) clearInterval(timer)
+      for (const timer of timers.values()) clearTimeout(timer)
       timers.clear()
     }
   }, [])
