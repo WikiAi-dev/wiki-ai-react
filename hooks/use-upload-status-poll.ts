@@ -13,6 +13,10 @@ export interface UploadStatusEntry {
 }
 
 const POLL_INTERVAL_MS = 5000
+// A status request that keeps failing (the document was deleted, a 404 for
+// good) must not poll forever: after this many failures in a row the entry
+// is marked as an error and polling stops.
+const MAX_CONSECUTIVE_FAILURES = 6
 const TERMINAL_STATUSES: UploadStatusValue[] = ["indexed", "failed", "duplicate", "error"]
 
 // Frontend counterpart to knowledge-service's async ingest (WAI-52) and its
@@ -46,9 +50,21 @@ export function useUploadStatusPoll(token: string | null) {
         if (!documentId || TERMINAL_STATUSES.includes(entry.status)) continue
         if (timersRef.current.has(documentId)) continue
 
+        let failures = 0
         const timer = setInterval(async () => {
           const result = await filesApi.getStatus(token, documentId)
-          if (result.status !== "success" || !result.response) return
+          if (result.status !== "success" || !result.response) {
+            if (++failures >= MAX_CONSECUTIVE_FAILURES) {
+              stopPolling(documentId)
+              setEntries((prev) =>
+                prev.map((e) =>
+                  e.documentId === documentId ? { ...e, status: "error", message: result.message || "Could not get the indexing status" } : e,
+                ),
+              )
+            }
+            return
+          }
+          failures = 0
 
           const nextStatus = (result.response.status as UploadStatusValue) || "pending"
           setEntries((prev) => prev.map((e) => (e.documentId === documentId ? { ...e, status: nextStatus } : e)))
