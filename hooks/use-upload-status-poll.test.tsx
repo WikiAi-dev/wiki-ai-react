@@ -109,25 +109,78 @@ describe("useUploadStatusPoll", () => {
     root = createRoot(document.createElement("div"))
   })
 
-  it("stops polling a document whose status keeps failing (E13)", async () => {
+  it("stops polling a document that is gone (404)", async () => {
     getStatus.mockResolvedValue({ status: "error", message: "Not found", httpStatus: 404 })
     await track([{ filename: "gone.md", documentId: "g", status: "pending" }])
-    await tick(5_000 * 20)
-    expect(getStatus.mock.calls.length).toBeLessThanOrEqual(6)
+    await tick(5_000)
+    expect(getStatus).toHaveBeenCalledTimes(1)
     expect(hook.entries[0].status).toBe("error")
     expect(hook.entries[0].message).toBe("Not found")
     expect(vi.getTimerCount()).toBe(0)
+    await tick(60_000)
+    expect(getStatus).toHaveBeenCalledTimes(1)
   })
 
-  it("keeps polling through a few failures and resets the count on success", async () => {
+  it("keeps polling through an outage, backing off to 30 s, and ends indexed", async () => {
+    // Failures: 5xx and network errors (no httpStatus).
+    for (let i = 0; i < 8; i++) {
+      getStatus.mockResolvedValueOnce(i % 2 ? { status: "error", message: "network" } : { status: "error", message: "502", httpStatus: 502 })
+    }
+    getStatus.mockResolvedValue(ok("indexed"))
+    await track([{ filename: "a.md", documentId: "a", status: "pending" }])
+
+    // Delays after 0..: 5, 10, 20, 30, 30, ... s.
+    await tick(5_000)
+    expect(getStatus).toHaveBeenCalledTimes(1)
+    await tick(9_999)
+    expect(getStatus).toHaveBeenCalledTimes(1)
+    await tick(1)
+    expect(getStatus).toHaveBeenCalledTimes(2)
+    await tick(20_000)
+    expect(getStatus).toHaveBeenCalledTimes(3)
+    await tick(30_000)
+    expect(getStatus).toHaveBeenCalledTimes(4)
+    expect(hook.entries[0].status).toBe("pending")
+
+    await tick(30_000 * 4)
+    expect(getStatus).toHaveBeenCalledTimes(8)
+    expect(hook.entries[0].status).toBe("pending")
+    await tick(30_000)
+    expect(hook.entries[0].status).toBe("indexed")
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it("treats a thrown status request as an outage", async () => {
+    getStatus.mockRejectedValueOnce(new Error("boom")).mockResolvedValue(ok("indexed"))
+    await track([{ filename: "a.md", documentId: "a", status: "pending" }])
+    await tick(5_000 + 5_000)
+    expect(hook.entries[0].status).toBe("pending")
+    await tick(5_000)
+    expect(hook.entries[0].status).toBe("indexed")
+  })
+
+  it("resets the backoff after a success", async () => {
     getStatus
-      .mockResolvedValueOnce({ status: "error", message: "502" })
-      .mockResolvedValueOnce({ status: "error", message: "502" })
+      .mockResolvedValueOnce({ status: "error", message: "502", httpStatus: 502 })
       .mockResolvedValueOnce(ok("indexing"))
       .mockResolvedValue(ok("indexed"))
     await track([{ filename: "a.md", documentId: "a", status: "pending" }])
-    await tick(5_000 * 4)
+    await tick(5_000) // fails, next in 10 s
+    await tick(10_000) // indexing, next in 5 s
+    expect(hook.entries[0].status).toBe("indexing")
+    await tick(5_000)
     expect(hook.entries[0].status).toBe("indexed")
+  })
+
+  it("does not update after being dismissed while a request is in flight", async () => {
+    let resolve!: (v: unknown) => void
+    getStatus.mockReturnValueOnce(new Promise((r) => (resolve = r)))
+    await track([{ filename: "a.md", documentId: "a", status: "pending" }])
+    await tick(5_000)
+    await act(async () => hook.dismiss("a"))
+    await act(async () => resolve(ok("indexing")))
+    expect(vi.getTimerCount()).toBe(0)
+    expect(hook.entries).toHaveLength(0)
   })
 
   it("dismiss stops that document's polling and removes it", async () => {
