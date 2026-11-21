@@ -61,6 +61,10 @@ describe("apiText", () => {
   it("translates a known message in Russian", () => {
     expect(apiText("Choose a trunk", "ru")).toBe("Выберите транк")
   })
+  it("translates the taken-number message, old and new", () => {
+    expect(apiText("This number is unavailable", "ru")).toBe("Этот номер недоступен")
+    expect(apiText("This number is already used by a line", "ru")).toBe("Этот номер уже занят другой линией")
+  })
   it("leaves it in English otherwise", () => {
     expect(apiText("Choose a trunk", "en")).toBe("Choose a trunk")
   })
