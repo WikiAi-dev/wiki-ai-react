@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { authApi } from "./api"
 import { API_CONFIG } from "./config"
-import { accessToken, clearSession, expiresSoon, logoutSession, onSessionChange, refreshSession, setSession, tokenExpiresAt } from "./session"
+import { accessToken, clearSession, expiresSoon, hasRefreshToken, logoutSession, onSessionChange, refreshSession, setSession, tokenExpiresAt } from "./session"
 
 /** identity-service roles; "user" is what older tokens call a member. */
 export type Role = "owner" | "admin" | "member" | "viewer" | "user"
@@ -25,6 +25,10 @@ interface AuthContextType {
   switchOrganization: (organizationId: string) => Promise<boolean>
   refreshToken: () => Promise<boolean>
 }
+
+/** How long and how often the page-load check retries while the server is unreachable. */
+const BOOT_RETRY_MS = 3_000
+const BOOT_RETRIES = 10
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
@@ -52,7 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const validateAndSetToken = useCallback(async (storedToken: string) => {
+  // "invalid": the server answered and refused the token. "unreachable": it
+  // didn't answer (network error, 5xx during a deploy): nothing is known
+  // about the token, so the session must not be touched (E2).
+  const validateAndSetToken = useCallback(async (storedToken: string): Promise<"valid" | "invalid" | "unreachable"> => {
     const result = await authApi.validateToken(storedToken)
     if (result.status === "success" && (result.response?.valid || (result as any).valid)) {
       const data = result.response || result
@@ -68,25 +75,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         organization: me?.organization?.name || (data as any).organization_name || prev?.organization || "",
         permissions: me?.permissions || prev?.permissions,
       }))
-      return true
+      return "valid"
     }
-    return false
+    if (result.status === "success" || result.httpStatus === 401 || result.httpStatus === 403) return "invalid"
+    return "unreachable"
   }, [])
 
   useEffect(() => {
     // One-time auth bootstrap from storage on mount. An access token that
     // expired while the app was closed is renewed with the refresh token
-    // instead of signing out (WAI-232).
-    const boot = async () => {
+    // instead of signing out (WAI-232). The session is cleared only when the
+    // server refused it; while the server can't be reached (a deploy) the
+    // tokens stay and the check is retried.
+    let cancelled = false
+    const attempt = async (): Promise<"done" | "retry"> => {
       let stored = accessToken()
-      if (stored && expiresSoon(stored)) stored = await refreshSession(stored)
-      if (!stored) return
-      if (await validateAndSetToken(stored)) return
+      if (!stored) return "done"
+      if (expiresSoon(stored)) {
+        const renewed = await refreshSession(stored)
+        if (renewed) stored = renewed
+        else if (!accessToken()) return "done" // the refresh token was refused
+        else if (hasRefreshToken()) return "retry"
+      }
+      const first = await validateAndSetToken(stored)
+      if (first === "valid") return "done"
+      if (first === "unreachable") return "retry"
+      // The server refused the token: renew it once more and check again.
       const fresh = await refreshSession(stored)
-      if (fresh && (await validateAndSetToken(fresh))) return
+      if (fresh) {
+        const second = await validateAndSetToken(fresh)
+        if (second === "valid") return "done"
+        if (second === "unreachable") return "retry"
+      } else if (hasRefreshToken()) {
+        return "retry" // refresh couldn't reach the server (a refused one removes the token)
+      }
       clearSession()
+      return "done"
     }
-    boot().finally(() => setIsLoading(false))
+    const boot = async () => {
+      for (let tries = 0; !cancelled; tries++) {
+        if ((await attempt()) === "done" || tries >= BOOT_RETRIES) return
+        await new Promise((resolve) => setTimeout(resolve, BOOT_RETRY_MS))
+      }
+    }
+    boot().finally(() => {
+      if (!cancelled) setIsLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [validateAndSetToken])
 
   // A refreshed token (by a request, a timer or another tab) reaches the

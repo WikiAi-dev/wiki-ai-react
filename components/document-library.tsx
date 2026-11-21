@@ -315,13 +315,16 @@ export function DocumentLibrary() {
 
   // knowledge-service has no reindex endpoint: filesApi.reindex re-ingests and
   // then deletes the old copy, which mints a new id, so the list is refetched.
+  // Content that is already indexed is left as it is.
   const reindex = async (doc: Doc) => {
     if (!token) return
     setReindexingId(doc.id)
     try {
       const result = await filesApi.reindex(token, doc.id)
       if (result.status !== "success") throw new Error(result.message)
-      toast.success(t("files.library.reindexed"))
+      // Already indexed: nothing was replaced.
+      if (result.response?.unchanged) toast.info(t("files.library.reindexUnchanged"))
+      else toast.success(t("files.library.reindexed"))
       fetchDocs()
     } catch (error) {
       console.error("Failed to reindex file:", error)
