@@ -13,6 +13,15 @@ const components: Components = {
   a: ({ node: _node, ...props }) => (
     <a className="font-medium text-primary underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...props} />
   ),
+  // Markdown is also the document viewer, so http(s) images render. Anything
+  // else (data:, javascript:, relative paths) shows the alt text instead.
+  img: ({ node: _node, src, alt }) =>
+    typeof src === "string" && /^https?:\/\//i.test(src) ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={src} alt={alt ?? ""} loading="lazy" referrerPolicy="no-referrer" className="mt-3 h-auto max-w-full rounded-lg" />
+    ) : (
+      <span className="text-muted-foreground">{alt}</span>
+    ),
   code: ({ node: _node, ...props }) => <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.9em]" {...props} />,
   pre: ({ node: _node, ...props }) => <pre className="mt-3 overflow-x-auto rounded-xl bg-muted p-3 text-sm first:mt-0" {...props} />,
   blockquote: ({ node: _node, ...props }) => (

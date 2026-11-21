@@ -355,7 +355,7 @@ export function formatPhone(e164: string): string {
 
 /** "1:05" or "1:02:03" for a number of seconds. */
 export function formatDuration(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds))
+  const s = Number.isFinite(seconds) ? Math.max(0, Math.round(seconds)) : 0
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
   const sec = String(s % 60).padStart(2, "0")
@@ -387,6 +387,7 @@ const RU_API_TEXT: Record<string, string> = {
   "At most 10 documents are pinned": "Закрепить можно не больше 10 документов",
   "Not a document id": "Неверный документ",
   "This number is already used by a line": "Этот номер уже занят другой линией",
+  "This number is unavailable": "Этот номер недоступен",
   "Enter the whole number, e.g. +375 17 123-45-67 or 8 017 123-45-67": "Введите номер целиком, например +375 17 123-45-67 или 8 017 123-45-67",
   "Number must be in international format, e.g. +375171234567": "Номер в международном формате, например +375171234567",
   "Enter a whole phone number": "Введите номер целиком",
