@@ -461,6 +461,7 @@
       "bulkDeleted": "{{count}} documents deleted",
       "bulkPartial": "Deleted {{done}} of {{total}}",
       "reindexed": "Document reindexed",
+      "reindexUnchanged": "Already indexed, nothing to do",
       "reindexFailed": "Couldn't reindex the document",
       "editTitle": "Edit document",
       "editText": "After saving, WikiAI searches the new version.",
