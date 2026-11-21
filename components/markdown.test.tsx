@@ -27,10 +27,16 @@ describe("Markdown (untrusted knowledge-base and model text)", () => {
     expect(html).toContain('target="_blank"')
   })
 
-  it("does not load remote images (E14)", () => {
-    const html = render("![pixel](https://tracker.example/p.gif)")
+  it("renders http(s) images, as the document viewer needs", () => {
+    const html = render("![](https://example.com/storage/a.png)")
+    expect(html).toContain('<img src="https://example.com/storage/a.png"')
+    expect(html).toMatch(/referrerpolicy="no-referrer"/i)
+  })
+
+  it("does not render images with other protocols", () => {
+    const html = render("![pixel](data:image/gif;base64,R0lGOD) ![rel](/a.png)")
     expect(html).not.toMatch(/<img/i)
-    expect(html).not.toContain("tracker.example")
     expect(html).toContain("pixel")
+    expect(html).toContain("rel")
   })
 })
