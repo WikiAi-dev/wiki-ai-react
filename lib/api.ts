@@ -21,6 +21,13 @@ interface ApiResponse<T = unknown> {
   httpStatus?: number
 }
 
+/** What filesApi.reindex answers: the document's id, and unchanged when nothing was replaced. */
+interface ReindexResult {
+  document_id: string
+  status?: string
+  unchanged?: boolean
+}
+
 interface LoginResponse {
   status: "success" | "error"
   message: string
@@ -85,8 +92,8 @@ export async function apiRequest<T = unknown>({
         result = await response.json()
       } catch (jsonError) {
         const responseText = await responseClone.text()
+        // Status only: the body can carry tokens or document text.
         console.error('Failed to parse JSON response:', jsonError)
-        console.error('Response text:', responseText)
         result = {
           detail: `Invalid JSON response: ${response.status} ${response.statusText}`,
           raw_text: responseText,
@@ -94,11 +101,11 @@ export async function apiRequest<T = unknown>({
       }
     }
 
-    console.log(`API Response ${method} ${fullUrl}:`, {
-      status: response.status,
-      ok: response.ok,
-      result,
-    })
+    // Never the body: login/refresh tokens, API keys, webhook secrets and
+    // document text all pass through here (E8).
+    if (API_CONFIG.DEBUG) {
+      console.log(`API Response ${method} ${fullUrl}:`, { status: response.status, ok: response.ok })
+    }
 
     if (!response.ok) {
       // An expired access token: one shared refresh, then this request
@@ -168,6 +175,10 @@ export async function apiRequest<T = unknown>({
     }
   }
 }
+
+// A title as compared when a file is found by name: case-insensitive and
+// Unicode-normalized (macOS hands over file names decomposed, NFD).
+const titleKey = (value: string) => value.normalize("NFC").toLowerCase()
 
 // Auth endpoints
 export const authApi = {
@@ -364,9 +375,9 @@ export const filesApi = {
         return null
       }
 
-      const lowerValue = value.toLowerCase()
+      const lowerValue = titleKey(value)
       const match = listResult.response.documents.find((doc: any) => {
-        const title = (doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString().toLowerCase()
+        const title = titleKey((doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString())
         return title === lowerValue
       })
       return match?.document_id || match?.DocumentID || match?.id || match?.ID || null
@@ -554,9 +565,9 @@ export const filesApi = {
         return null
       }
 
-      const lowerValue = value.toLowerCase()
+      const lowerValue = titleKey(value)
       const match = listResult.response.documents.find((doc: any) => {
-        const title = (doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString().toLowerCase()
+        const title = titleKey((doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString())
         return title === lowerValue
       })
       return match?.document_id || match?.DocumentID || match?.id || match?.ID || null
@@ -606,9 +617,9 @@ export const filesApi = {
       return { status: "error" as const, message: "Could not retrieve documents for deletion" }
     }
 
-    const lowerFilename = filename.toLowerCase()
+    const lowerFilename = titleKey(filename)
     const match = listResult.response.documents.find((doc: any) => {
-      const title = (doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString().toLowerCase()
+      const title = titleKey((doc.title || doc.Title || doc.filename || doc.original_filename || doc.name || "").toString())
       return title === lowerFilename
     })
     const documentId = match?.document_id || match?.DocumentID || match?.id || match?.ID
@@ -634,9 +645,10 @@ export const filesApi = {
   // Instead we re-ingest the document via POST /v1/documents (which always (re)builds chunks
   // from scratch) and only delete the old one once that succeeds - ingest-then-delete, not
   // delete-then-ingest, so a failed re-ingest never destroys the only copy of the content.
-  // NOTE: this mints a new document_id - callers must treat the returned id as the document's
-  // new identity and refresh any cached document list afterward.
-  reindex: async (token: string, documentId: string) => {
+  // NOTE: when the old copy was replaced, the returned id is the document's new identity and
+  // callers must refresh any cached document list. When the content is already indexed (ingest
+  // answers with the same id / "duplicate") nothing is deleted and the result has unchanged: true.
+  reindex: async (token: string, documentId: string): Promise<ApiResponse<ReindexResult>> => {
     const tenantId = await resolveTenantId(token)
     if (!tenantId) {
       return { status: "error" as const, message: "Tenant ID is required for reindex requests" }
@@ -663,7 +675,7 @@ export const filesApi = {
       return { status: "error" as const, message: "Document has no content to reindex" }
     }
 
-    const ingestResult = await apiRequest<{ document_id: string }>({
+    const ingestResult = await apiRequest<ReindexResult>({
       url: API_CONFIG.ENDPOINTS.FILES_UPLOAD,
       method: "POST",
       token,
@@ -679,13 +691,27 @@ export const filesApi = {
       return ingestResult
     }
 
+    // Ingest dedups by content hash: identical content (always the case
+    // here) comes back as the SAME document, "duplicate" when it is already
+    // indexed. Deleting "the old copy" then deletes the only copy and its
+    // chunks, so only delete when ingest really made a different document.
+    const newId = ingestResult.response?.document_id
+    if (!newId || newId === documentId || ingestResult.response?.status === "duplicate") {
+      return {
+        status: "success" as const,
+        message: "Already indexed, nothing to do",
+        response: { document_id: newId || documentId, status: ingestResult.response?.status, unchanged: true },
+      }
+    }
+
     const deleteResult = await apiRequest({
       url: `${API_CONFIG.ENDPOINTS.FILES_LIST}/${encodeURIComponent(documentId)}`,
       method: "DELETE",
       token,
       params: { tenant_id: tenantId },
     })
-    if (deleteResult.status === "error") {
+    // 404: ingest already cleared the old document itself (a failed one).
+    if (deleteResult.status === "error" && deleteResult.httpStatus !== 404) {
       // The new copy already exists at this point - surface the delete
       // failure but don't undo the successful re-ingest, since undoing it
       // would just reintroduce the exact stale-index problem reindex exists
