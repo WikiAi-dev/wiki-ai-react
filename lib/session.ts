@@ -39,6 +39,11 @@ export function accessToken(): string | null {
   return read(ACCESS_KEY)
 }
 
+/** Whether a refresh token is stored (a session that can still be renewed). */
+export function hasRefreshToken(): boolean {
+  return !!read(REFRESH_KEY)
+}
+
 /** Keeps a new pair (the refresh token only when one came) and tells everyone. */
 export function setSession(access: string, refresh?: string | null) {
   write(ACCESS_KEY, access)
