@@ -13,6 +13,9 @@ const components: Components = {
   a: ({ node: _node, ...props }) => (
     <a className="font-medium text-primary underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...props} />
   ),
+  // Text from the knowledge base or the model must not make the browser fetch
+  // a remote image (a tracking pixel, data in the URL): show the alt text.
+  img: ({ node: _node, alt }) => <span className="text-muted-foreground">{alt}</span>,
   code: ({ node: _node, ...props }) => <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.9em]" {...props} />,
   pre: ({ node: _node, ...props }) => <pre className="mt-3 overflow-x-auto rounded-xl bg-muted p-3 text-sm first:mt-0" {...props} />,
   blockquote: ({ node: _node, ...props }) => (
